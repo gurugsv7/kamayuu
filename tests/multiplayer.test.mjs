@@ -1,0 +1,29 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {newRoom,applyIntent,playerPacket,secureGame,TURN_MS} from '../lib/multiplayer-rules.mjs';
+import {assertState,transition} from '../lib/engine.mjs';
+const users=['a','b','c','d'];
+function started(n=4){let r=newRoom('a','Alice',0);for(let p=1;p<n;p++)r=applyIntent(r,users[p],{command:'join',name:'Player '+p},0).room;for(const user of users.slice(0,n))r=applyIntent(r,user,{command:'ready',ready:true},0).room;return applyIntent(r,'a',{command:'start'},0);}
+function ready(n=4){let r=started(n).room;for(const user of users.slice(0,n))r=applyIntent(r,user,{command:'remember'},10).room;return r;}
+function packet(r,p,events=[]){return playerPacket({id:'room',code:'ABC123',version:5,data:r},users[p],events);}
+test('Secure shuffle conserves cards and does not repeat solo seeded order',()=>{const a=secureGame(4),b=secureGame(4);assertState(a.state);assertState(b.state);assert.notDeepEqual(a.state.deck,b.state.deck);});
+test('Opening payload has only your bottom two faces, no deck or knowledge secrets',()=>{const {room,events}=started();for(let p=0;p<4;p++){const v=packet(room,p,events);assert.equal(v.state.players[0].slots[0].rank,undefined);assert.ok(v.state.players[0].slots[2].rank);assert.ok(v.state.players[0].slots[3].rank);assert.equal(v.state.players[1].slots[2].rank,undefined);assert.equal(v.state.deck,undefined);assert.equal(v.state.deckCount,52-4*4-1);assert.equal(v.state.knowledge,undefined);assert.equal(v.state.seed,undefined);assert.equal(v.state.active,(4-p)%4);}});
+test('Host start and membership checks; four-player room limit',()=>{let r=newRoom('a','<b>Alice</b>');assert.ok(!r.members[0].name.includes('<'));assert.throws(()=>applyIntent(r,'x',{command:'ready',ready:true}));assert.throws(()=>applyIntent(r,'a',{command:'start'}));r=started().room;assert.throws(()=>applyIntent(r,'x',{command:'join'}));assert.throws(()=>packet(r,5));});
+test('Wrong turn and forged powers cannot mutate authoritative state',()=>{const r=ready();for(const a of [{type:'draw'},{type:'swap',target:0,i:0},{type:'peek',i:0},{type:'buzz'}])assert.throws(()=>applyIntent(r,'b',{command:'action',action:a}));assert.throws(()=>applyIntent(r,'a',{command:'action',action:{type:'forfeit',player:1}}));});
+test('Ordinary draw is private; replacement is public only for outgoing card',()=>{let r=ready();let j=r.state.deck.findIndex(c=>c.rank==='4');[r.state.deck[j],r.state.deck[r.state.deck.length-1]]=[r.state.deck.at(-1),r.state.deck[j]];let x=applyIntent(r,'a',{command:'action',action:{type:'draw'}});r=x.room;assert.ok(packet(r,0,x.events).events[0].card);assert.equal(packet(r,1,x.events).events[0].card,undefined);assert.equal(packet(r,1).state.held.rank,undefined);x=applyIntent(r,'a',{command:'action',action:{type:'replace',i:0}});assert.ok(packet(x.room,1,x.events).events[0].old);assert.equal(packet(x.room,1,x.events).events[0].card,undefined);});
+test('Jack and Queen identities reach only their actor',()=>{for(const rank of ['J','Q']){let r=ready();const row=[r.state.deck,r.state.discard,...r.state.players.map(p=>p.slots)].find(a=>a.some(c=>c?.rank===rank&&c.suit==='♥'));let j=row.findIndex(c=>c?.rank===rank&&c.suit==='♥');[row[j],r.state.deck[r.state.deck.length-1]]=[r.state.deck.at(-1),row[j]];r.state.knowledge=r.state.knowledge.map(()=>r.state.players.map(()=>[null,null,null,null]));r=applyIntent(r,'a',{command:'action',action:{type:'draw'}}).room;const x=applyIntent(r,'a',{command:'action',action:rank==='J'?{type:'peek',i:0}:{type:'inspect',target:1,i:0}});const actor=packet(x.room,0,x.events).events[0],other=packet(x.room,1,x.events).events[0];assert.ok(rank==='J'?actor.card:actor.mine&&actor.theirs);assert.equal(other.card,undefined);assert.equal(other.mine,undefined);assert.equal(other.theirs,undefined);
+ if(rank==='Q'){const y=applyIntent(x.room,'a',{command:'action',action:{type:'swap'}});const seen=packet(y.room,1,y.events).events[0];assert.equal(seen.type,'swap');assert.equal(seen.incoming,undefined);assert.equal(seen.outgoing,undefined);}}});
+test('Recover never displays a permanent memory cheat sheet',()=>{const r=ready();const v=packet(r,0);assert.ok(v.state.players.every(p=>p.slots.every(c=>!c||!c.rank)));});
+test('Deadlines cannot be accelerated and disconnected turn forfeits once',()=>{let r=ready(2);assert.throws(()=>applyIntent(r,'b',{command:'timeout'},r.deadline-1));const x=applyIntent(r,'b',{command:'timeout'},r.deadline);assert.equal(x.room.state.phase,'finished');assert.deepEqual(x.room.state.winners,[1]);assert.equal(x.room.deadline,null);});
+
+test('Only the Queen holder sees the inspected pair, and declining spends the Queen',()=>{let r=ready();const row=[r.state.deck,r.state.discard,...r.state.players.map(p=>p.slots)].find(a=>a.some(c=>c?.rank==='Q'&&c.suit==='♦'));const j=row.findIndex(c=>c?.rank==='Q'&&c.suit==='♦');[row[j],r.state.deck[r.state.deck.length-1]]=[r.state.deck.at(-1),row[j]];r.state.knowledge=r.state.knowledge.map(()=>r.state.players.map(()=>[null,null,null,null]));
+ r=applyIntent(r,'a',{command:'action',action:{type:'draw'}}).room;
+ const look=applyIntent(r,'a',{command:'action',action:{type:'inspect',target:1,i:0}});
+ assert.equal(look.room.state.phase,'swapConfirm');
+ // Opponents learn that a decision is open, never which cards it involves.
+ const watcher=packet(look.room,1,look.events);assert.deepEqual(watcher.state.pending,{target:0,i:0});assert.ok(watcher.state.players.every(p=>p.slots.every(c=>!c||!c.rank)));
+ assert.throws(()=>applyIntent(look.room,'b',{command:'action',action:{type:'swap'}}));
+ const before=look.room.state.players.map(p=>p.slots.map(c=>c.id));
+ const kept=applyIntent(look.room,'a',{command:'action',action:{type:'skip'}});
+ assert.deepEqual(kept.room.state.players.map(p=>p.slots.map(c=>c.id)),before);
+ assert.equal(kept.room.state.discard.at(-1).rank,'Q');assertState(kept.room.state);});
