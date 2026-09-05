@@ -17,8 +17,15 @@ Deployed:
 - Migration `lotus_private_multiplayer` — `lotus_private` schema (`rooms`, `results`,
   `rate_limits`), `public.lotus_memberships`, four service-role-only RPCs, and the two
   `realtime.messages` policies that scope each player to their own broadcast topic.
+- Migration `player_profiles` — `public.profiles`, its own-row policies, the stats-freezing
+  trigger and `lotus_record_result`.
+- Migration `commit_records_profile_stats` — `lotus_commit` also writes the match result
+  and moves profile stats.
 - Edge function `lotus-game` (`verify_jwt: false` — it validates the bearer token itself
   with `auth.getUser`, which is required for asymmetric Auth tokens).
+
+All three migrations are in `supabase/migrations/`, named with the versions the remote has
+applied. `supabase db push` against a fresh project reproduces production exactly.
 
 ### hCaptcha
 

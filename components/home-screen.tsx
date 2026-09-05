@@ -19,10 +19,12 @@ export interface HomeScreenProps {
   playerRating?: number;
   aiDifficulty?: string;
   onDifficultyChange?: (difficulty: string) => void;
+  playerCount?: number;
+  onPlayerCountChange?: (players: number) => void;
   onQuickMatch?: (mode: 'casual' | 'ranked') => void;
   onComingSoon?: (mode: 'casual' | 'ranked') => void;
   onPrivateTable?: () => void;
-  onPractice?: (difficulty: string) => void;
+  onPractice?: (difficulty: string, players: number) => void;
   onHowToPlay?: () => void;
   onOpenSettings?: () => void;
   onOpenFriends?: () => void;
@@ -37,6 +39,8 @@ export default function HomeScreen({
   playerRating = 1248,
   aiDifficulty = 'medium',
   onDifficultyChange,
+  playerCount = 4,
+  onPlayerCountChange,
   onQuickMatch,
   onComingSoon,
   onPrivateTable,
@@ -48,15 +52,24 @@ export default function HomeScreen({
   backgroundImageUrl = '/onboarding-identity-bg.webp',
 }: HomeScreenProps) {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>(aiDifficulty);
+  const [selectedPlayers, setSelectedPlayers] = useState<number>(playerCount);
 
-  // Follow the difficulty when it is changed elsewhere (restored settings, replay).
+  // Follow both when they change elsewhere (restored settings, replay).
   useEffect(() => {
     setSelectedDifficulty(aiDifficulty);
   }, [aiDifficulty]);
+  useEffect(() => {
+    setSelectedPlayers(playerCount);
+  }, [playerCount]);
 
   const handleDifficultySelect = (diff: string) => {
     setSelectedDifficulty(diff);
     onDifficultyChange?.(diff);
+  };
+
+  const handlePlayerSelect = (count: number) => {
+    setSelectedPlayers(count);
+    onPlayerCountChange?.(count);
   };
 
   const handleStartQuickMatch = () => {
@@ -64,7 +77,7 @@ export default function HomeScreen({
   };
 
   const handleStartPractice = () => {
-    onPractice?.(selectedDifficulty);
+    onPractice?.(selectedDifficulty, selectedPlayers);
   };
 
   return (
@@ -320,7 +333,29 @@ export default function HomeScreen({
                   </div>
                 </div>
 
-                <p className="mode-card-footer">2 – 4 players · No pressure</p>
+                <div className="ai-diff-selector" onClick={(e) => e.stopPropagation()}>
+                  <div className="diff-label-group">
+                    <Users size={15} className="diff-bot-icon" />
+                    <span>Players</span>
+                  </div>
+
+                  <div className="diff-segments" role="radiogroup" aria-label="Number of players">
+                    {[2, 3, 4].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        role="radio"
+                        aria-checked={selectedPlayers === n}
+                        className={`diff-segment ${selectedPlayers === n ? 'active' : ''}`}
+                        onClick={() => handlePlayerSelect(n)}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="mode-card-footer">You and {selectedPlayers - 1} AI · No pressure</p>
               </div>
             </div>
           </article>

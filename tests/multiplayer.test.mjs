@@ -27,3 +27,26 @@ test('Only the Queen holder sees the inspected pair, and declining spends the Qu
  const kept=applyIntent(look.room,'a',{command:'action',action:{type:'skip'}});
  assert.deepEqual(kept.room.state.players.map(p=>p.slots.map(c=>c.id)),before);
  assert.equal(kept.room.state.discard.at(-1).rank,'Q');assertState(kept.room.state);});
+test('Leaving a two-player match hands the win to the player still seated',()=>{let r=ready(2);const {room,events}=applyIntent(r,'b',{command:'leave'},20);
+ assert.equal(room.state.phase,'finished');assert.deepEqual(room.state.winners,[0]);assert.ok(events.some(e=>e.type==='eliminate'&&e.reason==='forfeit'));
+ assert.deepEqual(room.departed,['b']);assert.equal(room.members.length,2,'seats stay put while a state exists');
+ assert.equal(applyIntent(ready(2),'a',{command:'leave'},20).room.host,'b','a departing host hands the room to whoever is left');
+ assert.equal(room.deadline,null,'a finished room stops running a turn clock');
+ const view=playerPacket({id:'room',code:'ABC123',version:6,data:room},'a',events);assert.equal(view.state.phase,'finished');assert.deepEqual(view.state.winners,[0]);});
+test('Only the host can rematch, and only once the match is over',()=>{let r=ready(3);
+ assert.throws(()=>applyIntent(r,'a',{command:'rematch'},30),/still in play/);
+ assert.throws(()=>applyIntent(r,'b',{command:'rematch'},30),/still in play/);
+ r=applyIntent(r,'c',{command:'leave'},30).room;r=applyIntent(r,'b',{command:'leave'},31).room;
+ assert.equal(r.state.phase,'finished');
+ assert.throws(()=>applyIntent(r,'b',{command:'rematch'},32),/host/);
+ const {room}=applyIntent(r,'a',{command:'rematch'},33);
+ assert.equal(room.state,null);assert.equal(room.matchId,null);assert.equal(room.deadline,null);
+ assert.deepEqual(room.members.map(m=>m.id),['a'],'players who walked out are not waited on');
+ assert.deepEqual(room.departed,[]);assert.ok(room.members.every(m=>!m.ready));
+ // The room is a lobby again: someone new can join and start a fresh match.
+ let next=applyIntent(room,'d',{command:'join',name:'Dana'},34).room;
+ for(const user of ['a','d'])next=applyIntent(next,user,{command:'ready',ready:true},35).room;
+ next=applyIntent(next,'a',{command:'start'},36).room;
+ assert.equal(next.state.phase,'memory');assert.equal(next.state.players.length,2);assertState(next.state);});
+test('A rematch on a room that is already a lobby changes nothing',()=>{let r=newRoom('a','Alice',0);r=applyIntent(r,'b',{command:'join',name:'Bo'},0).room;
+ const {room,events}=applyIntent(r,'a',{command:'rematch'},1);assert.equal(events.length,0);assert.deepEqual(room.members.map(m=>m.id),['a','b']);});

@@ -7,7 +7,7 @@ export function cleanName(name) {
   return result||'Guest';
 }
 export function newRoom(userId,name,now=Date.now()) {
-  return {host:userId,members:[{id:userId,name:cleanName(name),ready:false}],state:null,matchId:null,deadline:null,memorySeen:[],receipts:[],createdAt:now};
+  return {host:userId,members:[{id:userId,name:cleanName(name),ready:false}],state:null,matchId:null,deadline:null,memorySeen:[],receipts:[],departed:[],createdAt:now};
 }
 export function secureGame(players,random=crypto) {
   // Fisher–Yates uses rejection sampling from the server CSPRNG, independent of the solo seed.
@@ -39,7 +39,23 @@ export function applyIntent(before,userId,input,now=Date.now()) {
     if(room.members.every((m,i)=>s.players[i].eliminated||room.memorySeen.includes(m.id))){const r=transition(s,{type:'remember'});room.state=r.state;events=r.events;room.deadline=now+TURN_MS;}
   }else if(input.command==='leave'){
     if(!s){room.members.splice(p,1);if(room.host===userId)room.host=room.members[0]?.id||null;}
-    else if(s.phase!=='finished'&&!s.players[p].eliminated){const r=transition(s,{type:'forfeit',player:p});room.state=r.state;events=r.events;room.deadline=now+TURN_MS;}
+    else{
+      // Seats map to state by index, so a mid-match leaver keeps their seat and is
+      // only dropped when the room returns to the lobby. Forfeiting hands the win
+      // to the last player standing.
+      room.departed=[...new Set([...(room.departed||[]),userId])];
+      // A host who walks out hands the room over, or nobody could ever restart it.
+      if(room.host===userId){const heir=room.members.find(m=>m.id!==userId&&!room.departed.includes(m.id));if(heir)room.host=heir.id;}
+      if(s.phase!=='finished'&&!s.players[p].eliminated){const r=transition(s,{type:'forfeit',player:p});room.state=r.state;events=r.events;room.deadline=now+TURN_MS;}
+    }
+  }else if(input.command==='rematch'){
+    if(!s)return {room,events};
+    if(s.phase!=='finished')throw Error('The match is still in play.');
+    if(room.host!==userId)throw Error('Only the host can start a rematch.');
+    room.state=null;room.matchId=null;room.memorySeen=[];room.deadline=null;
+    room.members=room.members.filter(m=>!(room.departed||[]).includes(m.id));
+    room.departed=[];room.members.forEach(m=>{m.ready=false;});
+    if(!room.members.some(m=>m.id===room.host))room.host=room.members[0]?.id||null;
   }else if(input.command==='timeout'){
     if(!s||!room.deadline||now<room.deadline||s.phase==='finished')throw Error('The turn is still open.');
     if(s.phase==='lastCall'){const r=transition(s,{type:'finish'});room.state=r.state;events=r.events;}

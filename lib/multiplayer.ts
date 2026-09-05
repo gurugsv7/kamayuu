@@ -52,6 +52,9 @@ export class MultiplayerService {
   this.deadline=setTimeout(async()=>{if(this.closed)return;try{const packet=await this.request('timeout');this.receive(packet);}catch{await this.recover();}},delay);
  }
  async enter(command:'create'|'join'|'recover',extra:any={}){
+  // A stale room id outranks the code on the server, so creating or joining must
+  // forget the previous room before it asks for the next one.
+  if(command!=='recover'){this.room=null;this.version=-1;}
   this.onConnection('Connecting…');const packet=await this.request(command,extra);
   this.room=packet.room;this.version=-1;
   localStorage.setItem('lotus-room',this.room.id);

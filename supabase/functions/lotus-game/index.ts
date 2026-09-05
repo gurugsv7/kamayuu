@@ -26,7 +26,7 @@ Deno.serve(async req=>{
    throw Error('Could not allocate a room. Try again.');
   }
   for(let attempt=0;attempt<4;attempt++){
-   const {data:record,error}=await server.rpc('lotus_load',{p_id:input.roomId||null,p_code:String(input.code||'').trim().toUpperCase()||null});
+   const {data:record,error}=await server.rpc('lotus_load',{p_id:input.command==='join'?null:(input.roomId||null),p_code:String(input.code||'').trim().toUpperCase()||null});
    if(error)throw Error(error.message);if(!record)throw Error('Room not found. Check the code.');
    const member=record.data.members.some((m:any)=>m.id===user);
    if(input.command!=='join'&&!member)return respond({error:'You are not a member of this room.'},403);
