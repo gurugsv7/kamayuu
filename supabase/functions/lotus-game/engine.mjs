@@ -22,14 +22,21 @@ function livePlayers(s){return s.players.flatMap((p,i)=>p.eliminated?[]:[i]);}
 function final(s,events){s.phase='finished';s.pending=null;s.remaining=[];s.totals=s.players.map(p=>p.slots.reduce((n,c)=>n+value(c),p.penalty));const live=livePlayers(s),low=Math.min(...live.map(p=>s.totals[p]));s.winners=live.filter(p=>s.totals[p]===low);events.push({type:'final',totals:s.totals});}
 // A player who calls the final round still plays the turn they are on; only the
 // automatic calls (an empty board, an exhausted deck) happen with the turn spent.
-function buzz(s,events,keepTurn=false){
- s.caller=s.active;
- const others=Array.from({length:s.players.length-1},(_,i)=>(s.active+i+1)%s.players.length).filter(p=>!s.players[p].eliminated);
- s.remaining=keepTurn?[s.active,...others]:others;
- events.push({type:'buzz',p:s.active,keepTurn});
+// A caller other than the active player is someone who just finished their own
+// turn, buzzing in the gap before the next player has drawn — that caller is
+// excluded from the rotation outright (they already had their turn) and the
+// active player, already next in line, is untouched.
+function buzz(s,events,keepTurn=false,caller=s.active){
+ s.caller=caller;
+ const others=Array.from({length:s.players.length-1},(_,i)=>(caller+i+1)%s.players.length).filter(p=>!s.players[p].eliminated);
+ s.remaining=keepTurn?[caller,...others]:others;
+ events.push({type:'buzz',p:caller,keepTurn});
  if(!s.remaining.length){final(s,events);return;}
  s.active=s.remaining[0];s.phase='ready';
 }
+// The player who just finished the turn before the current active player — the
+// only other player allowed to buzz in the "ready" gap, and only there.
+function previousPlayer(s){let f=s.active;do{f=(f-1+s.players.length)%s.players.length;}while(s.players[f].eliminated);return f;}
 function endTurn(s,events){s.held=null;s.source=null;s.pending=null;s.turn++;s.round=Math.floor(s.turn/s.players.length)+1;forget(s);if(s.caller!==null){if(s.remaining[0]!==s.active)throw Error('Final rotation corrupted');s.remaining.shift();if(!s.remaining.length){s.phase='lastCall';events.push({type:'lastCall'});return;}s.active=s.remaining[0];}else if(s.players[s.active].slots.every(c=>c===null)){buzz(s,events);return;}else{do{s.active=(s.active+1)%s.players.length;}while(s.players[s.active].eliminated);}s.phase='ready';}
 function releaseHeld(s,events){s.pending=null;if(!s.held)return;const card=s.held;s.discard.push(card);s.discardOwners[card.id]=s.active;events.push({type:'discard',p:s.active,card});s.held=null;s.source=null;}
 function eliminate(s,p,events){
@@ -81,6 +88,15 @@ export function transition(before,action){
  else if(s.phase==='ready'){
   if(action.type==='draw')draw(s,events);
   else if(action.type==='take'&&canTakeDiscard(s,p)){s.held=s.discard.pop();s.source='discard';s.phase='decision';events.push({type:'take',p,card:s.held});}
+  else if(action.type==='buzz'&&s.caller===null&&action.player!==undefined&&action.player!==s.active){
+   // The gap after a turn ends, before the next player has drawn: the player
+   // who just went may still call the final round, but does not get it kept —
+   // they already had their turn — and the newly active player is untouched.
+   if(s.turn===0||s.held)throw Error('No finished turn to buzz after');
+   const finisher=previousPlayer(s);
+   if(action.player!==finisher||s.players[finisher].eliminated)throw Error('Only the player who just finished may buzz here');
+   buzz(s,events,false,finisher);
+  }
   else if(action.type==='buzz'&&s.caller===null)buzz(s,events,true);
 
   else throw Error('Choose a valid turn action');

@@ -50,3 +50,32 @@ test('Only the host can rematch, and only once the match is over',()=>{let r=rea
  assert.equal(next.state.phase,'memory');assert.equal(next.state.players.length,2);assertState(next.state);});
 test('A rematch on a room that is already a lobby changes nothing',()=>{let r=newRoom('a','Alice',0);r=applyIntent(r,'b',{command:'join',name:'Bo'},0).room;
  const {room,events}=applyIntent(r,'a',{command:'rematch'},1);assert.equal(events.length,0);assert.deepEqual(room.members.map(m=>m.id),['a','b']);});
+test('A buzz from the finisher (a non-active player) reaches the engine, but an unrelated non-active player is still rejected',()=>{
+ let r=ready(4);
+ // Force a black (never a power card) draw so the turn resolves through a plain discard.
+ let j=r.state.deck.findIndex(c=>!['♥','♦'].includes(c.suit));
+ [r.state.deck[j],r.state.deck[r.state.deck.length-1]]=[r.state.deck.at(-1),r.state.deck[j]];
+ r=applyIntent(r,'a',{command:'action',action:{type:'draw'}}).room;
+ assert.equal(r.state.phase,'decision');
+ r=applyIntent(r,'a',{command:'action',action:{type:'discard'}}).room;
+ // Turn has passed to b (seat 1); a (seat 0) is the player who just finished.
+ assert.equal(r.state.active,1);assert.equal(r.state.turn,1);assert.equal(r.state.caller,null);
+ const before=r.deadline;
+ // An unrelated non-active player (c, seat 2) may not buzz in this gap: the multiplayer
+ // gate now lets `buzz` actions from any non-active, non-eliminated player through to
+ // the engine, so this rejection must come from the engine's own `previousPlayer` check,
+ // not from a duplicated "is this really the finisher" guard in the multiplayer layer.
+ assert.throws(()=>applyIntent(r,'c',{command:'action',action:{type:'buzz'}},before+1),/Only the player who just finished may buzz here/);
+ // The finisher (a) buzzing here is accepted and starts the final round without
+ // taking a's own turn (a is excluded from `remaining`), and b (already next in
+ // line) is left untouched as the active player.
+ const {room}=applyIntent(r,'a',{command:'action',action:{type:'buzz'}},before+1);
+ assert.equal(room.state.caller,0);assert.equal(room.state.active,1);assert.deepEqual(room.state.remaining,[1,2,3]);
+ // The buzz itself must reset the turn clock even though turn/active/phase are all
+ // numerically unchanged by it (only `caller`/`remaining` change) — otherwise the
+ // final round would inherit whatever was left of the pre-buzz timer.
+ assert.equal(room.deadline,before+1+TURN_MS);
+ // An eliminated player can never buzz, regardless of action-type gating.
+ r.state.players[0].eliminated=true;
+ assert.throws(()=>applyIntent(r,'a',{command:'action',action:{type:'buzz'}}),/not your turn/);
+});

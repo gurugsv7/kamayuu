@@ -68,12 +68,24 @@ export function applyIntent(before,userId,input,now=Date.now()) {
     if(!s||s.phase==='memory'||s.phase==='finished')throw Error('There is no active turn.');
     const a=input.action||{};
     if(!['draw','take','replace','discard','peek','inspect','swap','skip','match','buzz'].includes(a.type))throw Error('Unknown action.');
-    if(s.players[p].eliminated||(a.type!=='match'&&p!==s.active))throw Error('It is not your turn.');
+    // A buzz from the player who just finished their turn is, by definition, made by a
+    // non-active player — the engine's `previousPlayer` check is the single source of
+    // truth for whether the caller really is that finisher, so this gate only needs to
+    // let `buzz` (like the existing `match` reaction) through to it, not re-derive who
+    // may buzz. `player` below is still assigned server-side from the authenticated
+    // caller, so nothing here lets a client spoof whose buzz it is.
+    if(s.players[p].eliminated||(a.type!=='match'&&a.type!=='buzz'&&p!==s.active))throw Error('It is not your turn.');
     // The player ID and all card identities are assigned here, never accepted from the caller.
     const action={type:a.type,i:a.i,target:a.target,player:p};
     if(a.type==='match')action.expectedDiscard=a.expectedDiscard;
     const r=transition(s,action);room.state=r.state;events=r.events;
-    if(r.state.turn!==s.turn||r.state.active!==s.active||r.state.phase!==s.phase&&a.type==='buzz')room.deadline=now+TURN_MS;
+    // `&&` binds tighter than `||` here, so without the fix this parsed as
+    // `turnChanged || activeChanged || (phaseChanged && isBuzz)` — a buzz that doesn't
+    // also flip the phase (the common case: a non-active finisher's buzz leaves
+    // `active`/`turn`/`phase` numerically unchanged, since the next player was already
+    // next in line) fell through without resetting the deadline, so the final round
+    // could inherit an almost-expired timer. Any `buzz` now unconditionally resets it.
+    if(r.state.turn!==s.turn||r.state.active!==s.active||r.state.phase!==s.phase||a.type==='buzz')room.deadline=now+TURN_MS;
   }else throw Error('Unknown request.');
   if(room.state?.phase==='lastCall')room.deadline=now+12_000;
   if(room.state?.phase==='finished')room.deadline=null;
