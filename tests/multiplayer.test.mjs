@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newRoom,applyIntent,playerPacket,secureGame,TURN_MS} from '../lib/multiplayer-rules.mjs';
+import {newRoom,applyIntent,playerPacket,secureGame,TURN_MS,AFK_MS} from '../lib/multiplayer-rules.mjs';
 import {assertState,transition} from '../lib/engine.mjs';
 const users=['a','b','c','d'];
 function started(n=4){let r=newRoom('a','Alice',0);for(let p=1;p<n;p++)r=applyIntent(r,users[p],{command:'join',name:'Player '+p},0).room;for(const user of users.slice(0,n))r=applyIntent(r,user,{command:'ready',ready:true},0).room;return applyIntent(r,'a',{command:'start'},0);}
@@ -14,7 +14,23 @@ test('Ordinary draw is private; replacement is public only for outgoing card',()
 test('Jack and Queen identities reach only their actor',()=>{for(const rank of ['J','Q']){let r=ready();const row=[r.state.deck,r.state.discard,...r.state.players.map(p=>p.slots)].find(a=>a.some(c=>c?.rank===rank&&c.suit==='♥'));let j=row.findIndex(c=>c?.rank===rank&&c.suit==='♥');[row[j],r.state.deck[r.state.deck.length-1]]=[r.state.deck.at(-1),row[j]];r.state.knowledge=r.state.knowledge.map(()=>r.state.players.map(()=>[null,null,null,null]));r=applyIntent(r,'a',{command:'action',action:{type:'draw'}}).room;const x=applyIntent(r,'a',{command:'action',action:rank==='J'?{type:'peek',i:0}:{type:'inspect',target:1,i:0}});const actor=packet(x.room,0,x.events).events[0],other=packet(x.room,1,x.events).events[0];assert.ok(rank==='J'?actor.card:actor.mine&&actor.theirs);assert.equal(other.card,undefined);assert.equal(other.mine,undefined);assert.equal(other.theirs,undefined);
  if(rank==='Q'){const y=applyIntent(x.room,'a',{command:'action',action:{type:'swap'}});const seen=packet(y.room,1,y.events).events[0];assert.equal(seen.type,'swap');assert.equal(seen.incoming,undefined);assert.equal(seen.outgoing,undefined);}}});
 test('Recover never displays a permanent memory cheat sheet',()=>{const r=ready();const v=packet(r,0);assert.ok(v.state.players.every(p=>p.slots.every(c=>!c||!c.rank)));});
-test('Deadlines cannot be accelerated and disconnected turn forfeits once',()=>{let r=ready(2);assert.throws(()=>applyIntent(r,'b',{command:'timeout'},r.deadline-1));const x=applyIntent(r,'b',{command:'timeout'},r.deadline);assert.equal(x.room.state.phase,'finished');assert.deepEqual(x.room.state.winners,[1]);assert.equal(x.room.deadline,null);});
+test('Deadlines cannot be accelerated; a missed turn is passed and a second removes the player',()=>{
+ let r=ready(2);
+ assert.throws(()=>applyIntent(r,'b',{command:'timeout'},r.deadline-1));
+ // First miss: the turn moves on, the player stays in the match with one strike.
+ let x=applyIntent(r,'b',{command:'timeout'},r.deadline);
+ assert.equal(x.room.state.phase,'ready');assert.equal(x.room.state.active,1);
+ assert.equal(x.room.strikes.a,1);assert.ok(!(x.room.departed||[]).includes('a'));
+ // Claiming the turn buys the full thinking time and clears the strike.
+ const held=applyIntent(x.room,'b',{command:'hold'},x.room.deadline-1).room;
+ assert.equal(held.deadline,x.room.deadline-1+TURN_MS);
+ x=applyIntent(x.room,'a',{command:'timeout'},x.room.deadline);
+ assert.equal(x.room.state.active,0);
+ // Second miss for the same player: they are taken off the table and the match ends.
+ x=applyIntent(x.room,'b',{command:'timeout'},x.room.deadline);
+ assert.equal(x.room.state.phase,'finished');assert.deepEqual(x.room.state.winners,[1]);
+ assert.ok(x.room.departed.includes('a'));assert.equal(x.room.deadline,null);
+});
 
 test('Only the Queen holder sees the inspected pair, and declining spends the Queen',()=>{let r=ready();const row=[r.state.deck,r.state.discard,...r.state.players.map(p=>p.slots)].find(a=>a.some(c=>c?.rank==='Q'&&c.suit==='♦'));const j=row.findIndex(c=>c?.rank==='Q'&&c.suit==='♦');[row[j],r.state.deck[r.state.deck.length-1]]=[r.state.deck.at(-1),row[j]];r.state.knowledge=r.state.knowledge.map(()=>r.state.players.map(()=>[null,null,null,null]));
  r=applyIntent(r,'a',{command:'action',action:{type:'draw'}}).room;
@@ -79,8 +95,22 @@ test('A buzz from the finisher (a non-active player) reaches the engine, but an 
  // The buzz itself must reset the turn clock even though turn/active/phase are all
  // numerically unchanged by it (only `caller`/`remaining` change) — otherwise the
  // final round would inherit whatever was left of the pre-buzz timer.
- assert.equal(room.deadline,before+1+TURN_MS);
+ assert.equal(room.deadline,before+1+AFK_MS);
  // An eliminated player can never buzz, regardless of action-type gating.
  r.state.players[0].eliminated=true;
  assert.throws(()=>applyIntent(r,'a',{command:'action',action:{type:'buzz'}}),/not your turn/);
+});
+
+test('The opening turn rotates every deal while the host keeps the start button',()=>{
+ const finish=r=>{r.state.phase='finished';r.state.winners=[0];r.state.totals=r.members.map(()=>0);return r;};
+ const restart=(r,at)=>{r=applyIntent(r,'a',{command:'rematch'},at).room;
+  for(const u of users.slice(0,3))r=applyIntent(r,u,{command:'ready',ready:true},at).room;
+  assert.throws(()=>applyIntent(r,'b',{command:'start'},at),/host can start/);
+  return applyIntent(r,'a',{command:'start'},at).room;};
+ let r=started(3).room;
+ assert.equal(r.state.active,0);
+ r=restart(finish(r),50);assert.equal(r.state.active,1);
+ r=restart(finish(r),60);assert.equal(r.state.active,2);
+ r=restart(finish(r),70);assert.equal(r.state.active,0);
+ assertState(r.state);
 });

@@ -4,7 +4,7 @@ import {auth, currentSession, signInAsGuest, supabaseConfigured} from './account
 const URL=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
 const KEY=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||'';
 export class MultiplayerService {
- client:SupabaseClient; room:any=null; channels:RealtimeChannel[]=[]; closed=false; version=-1; deadline:any; reconnecting=false; myTurn=false; lastRecover=0;
+ client:SupabaseClient; room:any=null; channels:RealtimeChannel[]=[]; closed=false; version=-1; deadline:any; reconnecting=false; myTurn=false; holding=false; lastRecover=0;
  onPacket:(packet:any)=>void; onConnection:(status:string)=>void; onPresence:(ids:string[])=>void;
  constructor(onPacket:(packet:any)=>void,onConnection:(status:string)=>void,onPresence:(ids:string[])=>void){
   if(!supabaseConfigured())throw Error('Online play is not configured yet.');
@@ -43,6 +43,15 @@ export class MultiplayerService {
  }
  scheduleDeadline(){
   clearTimeout(this.deadline);if(!this.room?.deadline||this.closed)return;
+  // A turn opens on a short unclaimed window. If it is ours and we are actually
+  // looking at the table, claim it once to buy the full turn; a shut tab or a
+  // locked phone never claims, so the table skips us instead of stalling. The
+  // claim lengthens the deadline, so this cannot re-enter on its own response.
+  const unclaimed=this.room.deadline-this.room.serverTime<=8000;
+  if(this.myTurn&&unclaimed&&!this.holding&&typeof document!=='undefined'&&document.visibilityState==='visible'){
+   this.holding=true;
+   this.request('hold').then((packet:any)=>this.receive(packet)).catch(()=>{}).finally(()=>{this.holding=false;});
+  }
   // Every client watches the same deadline, so stagger the nudge: whoever fires
   // first advances the room and the rest cancel on the broadcast that follows.
   // The stalled player is usually the active one, so they wait longest.
