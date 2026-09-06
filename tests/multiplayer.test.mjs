@@ -22,6 +22,11 @@ test('Only the Queen holder sees the inspected pair, and declining spends the Qu
  assert.equal(look.room.state.phase,'swapConfirm');
  // Opponents learn that a decision is open, never which cards it involves.
  const watcher=packet(look.room,1,look.events);assert.deepEqual(watcher.state.pending,{target:0,i:0});assert.ok(watcher.state.players.every(p=>p.slots.every(c=>!c||!c.rank)));
+ // The chooser keeps both faces for as long as the choice is open; the next packet
+ // must not undo the reveal they were already shown in the inspect event.
+ const chooser=packet(look.room,0,look.events);
+ assert.ok(chooser.state.players[0].slots[0].rank);assert.ok(chooser.state.players[1].slots[0].rank);
+ assert.equal(chooser.state.players[1].slots[1].rank,undefined);assert.ok(chooser.state.players[2].slots.every(c=>!c||!c.rank));
  assert.throws(()=>applyIntent(look.room,'b',{command:'action',action:{type:'swap'}}));
  const before=look.room.state.players.map(p=>p.slots.map(c=>c.id));
  const kept=applyIntent(look.room,'a',{command:'action',action:{type:'skip'}});

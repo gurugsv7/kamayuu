@@ -87,7 +87,7 @@ export function applyIntent(before,userId,input,now=Date.now()) {
     // could inherit an almost-expired timer. Any `buzz` now unconditionally resets it.
     if(r.state.turn!==s.turn||r.state.active!==s.active||r.state.phase!==s.phase||a.type==='buzz')room.deadline=now+TURN_MS;
   }else throw Error('Unknown request.');
-  if(room.state?.phase==='lastCall')room.deadline=now+12_000;
+  if(room.state?.phase==='lastCall')room.deadline=now+5_000;
   if(room.state?.phase==='finished')room.deadline=null;
   return {room,events};
 }
@@ -102,7 +102,10 @@ export function playerPacket(record,userId,events=[],recover=false) {
   const state={phase:s.phase,active:rotate(s.active),turn:s.turn,round:s.round,caller:rotate(s.caller),remaining:s.remaining.map(rotate),source:s.source,
     pending:s.pending?{target:rotate(s.pending.target),i:s.pending.i}:null,
     held:s.held?(showHeld?s.held:{id:'held'}):null,deckCount:s.deck.length,discard:s.discard.slice(-2),discardOwners:top?{[top.id]:rotate(s.discardOwners[top.id])}:{},
-    players:order.map(q=>({...s.players[q],name:q===seat?'You':room.members[q].name,slots:s.players[q].slots.map((c,i)=>!c?null:s.phase==='finished'||s.phase==='memory'&&q===seat&&i>=2?c:{id:`slot-${q}-${i}`})})),
+    // The Queen's chooser already saw both faces in the inspect event, so keep that
+    // pair unmasked for them until they trade or keep — otherwise the reveal is
+    // undone by the next packet. Nobody else sees it, and only while pending.
+    players:order.map(q=>({...s.players[q],name:q===seat?'You':room.members[q].name,slots:s.players[q].slots.map((c,i)=>!c?null:s.phase==='finished'||s.phase==='memory'&&q===seat&&i>=2||s.phase==='swapConfirm'&&s.active===seat&&s.pending?.i===i&&(q===seat||q===s.pending.target)?c:{id:`slot-${q}-${i}`})})),
     totals:order.map(q=>s.totals[q]),winners:s.winners.map(rotate),remote:true,canTakeDiscard:canTakeDiscard(s,seat)};
   const visible=events.map(e=>{
     const out={...e};
