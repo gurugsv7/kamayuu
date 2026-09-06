@@ -258,10 +258,15 @@ export default function Home(){
  }
  async function sendCommand(command:string,extra:any={}){try{await remote.current?.command(command,extra);}catch(err:any){setJoinError(err?.message||'That did not reach the table.');}}
  async function leaveOnline(){
-  try{await remote.current?.leave();}catch{}
-  try{await remote.current?.close();}catch{}
+  // Tear the table down before telling the server. The notify is a network call
+  // that can hang on a bad connection, and awaiting it first left the button
+  // looking dead at the one moment a player is already trying to get out.
+  const service=remote.current;
   remote.current=null;cancel();memorized.current=false;
   game.current=null;setS(null);setLobby(null);lobbyRef.current=null;setOnline(null);setPresence([]);setConnection('');setClock(null);setMenu(true);
+  // Still release the seat, and the membership behind it, in the background.
+  try{await service?.leave();}catch{}
+  try{await service?.close();}catch{}
  }
  const act=useCallback(async(action:any,ai=false)=>{
  const before=game.current;if(locked.current||!before||['finished','memory'].includes(before.phase)||paused.current||(!ai&&before.players[0].eliminated)||(!ai&&!['match','buzz'].includes(action.type)&&before.active!==0)||(!ai&&action.type==='finish'))return false;
@@ -369,7 +374,7 @@ export default function Home(){
  <button className="text-action" onClick={leaveOnline}>Leave table</button>
  <small>{connection||'Connected'}</small></div></div>}
  {online==='connecting'&&<div className="welcome"><div className="welcome-card"><Lotus/><p className="eyebrow">{connection||'CONNECTING…'}</p></div></div>}
- {online==='room'&&s&&<div className="online-hud"><i className={'seat-dot'+(connection==='Connected'?' on':'')}/><span>{lobby?.code}</span>{clock!==null&&<b>{clock}s</b>}<button className="text-action" onClick={leaveOnline}>Leave</button></div>}
+ {online==='room'&&s&&<div className="online-hud"><i className={'seat-dot'+(connection==='Connected'?' on':'')}/><span>{lobby?.code}</span>{clock!==null&&<b>{clock}s</b>}<button className="text-action" onClick={()=>leaveOnline()}>Leave</button></div>}
  {gate==='ready'&&menu&&(
     <HomeScreen
       playerName={profile?.display_name || playerName || 'Guru'}
@@ -401,7 +406,7 @@ export default function Home(){
       backgroundImageUrl="/onboarding-identity-bg.webp"
     />
   )}
- {result&&s&&<div className="results"><p className="eyebrow">{s.winners.length>1?'SHARED VICTORY':'THE WINNER'}</p><h2>{s.winners.map((p:number)=>seatName(p,s)).join(' & ')}</h2><span className="winning-score">{s.totals[s.winners[0]]} <small>points</small></span><div className="result-scores">{s.players.map((p:any,i:number)=><span key={i}><b>{p.name}</b><strong>{p.eliminated?'OUT':s.totals[i]}</strong><small>{p.slots.filter(Boolean).length} cards{p.penalty?` · +${p.penalty}`:''}</small></span>)}</div><div className="result-actions">{online==='room'?<>{isHost?<button className="primary" onClick={()=>sendCommand('rematch')}>Rematch</button>:<small>Waiting for the host to start a rematch.</small>}<button className="text-action" onClick={leaveOnline}>Leave the table</button></>:<><button className="primary" onClick={()=>start()}>Play again</button><button className="text-action" onClick={()=>{cancel();setMenu(true);}}>Main menu</button></>}<button className="text-action" onClick={()=>setResult(false)}>View table</button></div></div>}
+ {result&&s&&<div className="results"><p className="eyebrow">{s.winners.length>1?'SHARED VICTORY':'THE WINNER'}</p><h2>{s.winners.map((p:number)=>seatName(p,s)).join(' & ')}</h2><span className="winning-score">{s.totals[s.winners[0]]} <small>points</small></span><div className="result-scores">{s.players.map((p:any,i:number)=><span key={i}><b>{p.name}</b><strong>{p.eliminated?'OUT':s.totals[i]}</strong><small>{p.slots.filter(Boolean).length} cards{p.penalty?` · +${p.penalty}`:''}</small></span>)}</div><div className="result-actions">{online==='room'?<>{isHost?<button className="primary" onClick={()=>sendCommand('rematch')}>Rematch</button>:<small>Waiting for the host to start a rematch.</small>}<button className="text-action" onClick={()=>leaveOnline()}>Leave the table</button></>:<><button className="primary" onClick={()=>start()}>Play again</button><button className="text-action" onClick={()=>{cancel();setMenu(true);}}>Main menu</button></>}<button className="text-action" onClick={()=>setResult(false)}>View table</button></div></div>}
  {s?.phase==='finished'&&!result&&!menu&&<button className="show-results primary" onClick={()=>setResult(true)}>View results</button>}
  </section><Dialog open={!!panel} onOpenChange={(open)=>{if(!open)setPanel(null);}}><DialogContent className="game-dialog"><DialogTitle>{panel==='soon'?'Quick Match is coming soon':panel==='rules'?'The rules of the table':panel==='online'?'Play with friends':panel==='leaderboard'?'Leaderboard & Honor':'Your table'}</DialogTitle><DialogDescription>{panel==='soon'?'Matchmaking opens once the tables fill.':panel==='rules'?'Lowest total wins. Memory makes the difference.':panel==='online'?'Create a table and share the code, or join one.':panel==='leaderboard'?'Season 1 · Lantern Ascendance Rankings':'These preferences stay on this device.'}</DialogDescription>{panel==='soon'?<div className="rules-content"><div className="rule"><b>✦</b><p><strong>Not live yet.</strong> Quick Match pairs you with strangers, so it needs a pool of players to draw from. Once enough people are playing Kamayuu, casual and ranked matchmaking will open right here.</p></div><p className="rules-foot">Until then: invite friends to a Private Table with a six-character code, or sharpen up against the AI in Practice.</p><button className="primary" onClick={()=>{setJoinError('');setPanel('online');}}>Open a private table</button></div>:panel==='online'?<div className="online-content">
  <label className="name-field"><span>Your name</span><input value={playerName} onChange={e=>{setPlayerName(e.target.value);try{localStorage.setItem('lotus-name',e.target.value);}catch{}}} maxLength={16} placeholder="Guest" autoComplete="nickname"/></label>
