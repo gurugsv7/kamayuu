@@ -87,3 +87,25 @@ test('A reaction match during the Queen decision cancels the trade safely',()=>{
  // Empty the target slot behind the pending trade, then confirm anyway.
  s.players[1].slots[0]=null;s.knowledge.forEach(m=>m[1][0]=null);s.discard.push(taken);
  const r=transition(s,{type:'swap'});assert.ok(r.events.some(e=>e.type==='swapEnd'));assert.equal(r.state.players[1].slots[0],null);assert.equal(r.state.discard.at(-1).id,'Q♥');assertState(r.state);});
+
+test('A penalty cannot be thrown back onto the card it just uncovered',()=>{
+ // Two sixes on the discard: the miss takes the top one, uncovering its twin.
+ let s=ready();
+ s.discard.push(s.deck.pop());
+ put(s,'6♦',s.discard,s.discard.length-1);
+ put(s,'6♣',s.discard,s.discard.length-2);
+ put(s,'5♥',s.players[0].slots,3);
+ const taken=s.discard.at(-1).id;
+ s=step(s,{type:'match',player:0,i:3});
+ const slot=s.players[0].slots.findIndex(c=>c?.id===taken);
+ assert.ok(slot>=0,'the top discard became a penalty card');
+ assert.equal(s.discard.at(-1).rank,'6','its twin is now uncovered');
+ // Throwing it straight back would undo the penalty, so it is refused.
+ assert.throws(()=>transition(s,{type:'match',player:0,i:slot}),/cannot go straight back/);
+ // Anything discarded on top buries that twin, and the penalty is ordinary again.
+ let n=step(s,{type:'draw'});
+ n=n.phase==='decision'?step(n,{type:'discard'}):step(n,{type:'skip'});
+ assert.notEqual(n.discard.at(-1).id,s.discard.at(-1).id,'a new card covers the twin');
+ assert.doesNotThrow(()=>transition(n,{type:'match',player:0,i:slot}));
+ assertState(n);
+});

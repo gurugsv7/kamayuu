@@ -288,6 +288,10 @@ export default function Home(){
   setMessage(slot===null?'Pick one of your own four cards.':opponent===null?`Your ${positionName(slot)} is set — now pick an opponent.`:`${seatName(opponent,cur)} has nothing in ${positionName(slot)}. Pick another position.`);
  }
  function requestMatch(i:number){const current=game.current;if(!current||current.players[0].eliminated||['memory','finished'].includes(current.phase)||(current.active===0&&current.held)||!current.players[0].slots[i]||!observedDiscard.current||paused.current||motionTarget.current?.phase==='finished')return;
+ // The engine refuses a penalty thrown back onto the card it just uncovered. Say so
+ // here rather than letting the tap look like it did nothing.
+ const lock=current.players[0].locked;
+ if(lock&&lock.card===current.players[0].slots[i]?.id&&lock.against===current.discard.at(-1)?.id){setMessage('That penalty cannot go straight back. Wait for a new discard.');return;}
  const loc=`p0-${i}`;if(movingSlots.current.has(loc)||content(loc).style.visibility==='hidden')return;
  const action={type:'match',player:0,i,expectedDiscard:observedDiscard.current,expectedCard:current.players[0].slots[i].id};
  if(locked.current){if(!queuedMatch.current){queuedMatch.current=action;setQueued(true);}}else act(action);
