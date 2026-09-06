@@ -4,13 +4,16 @@ import {auth, currentSession, signInAsGuest, supabaseConfigured} from './account
 const URL=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
 const KEY=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||'';
 export class MultiplayerService {
- client:SupabaseClient; room:any=null; channels:RealtimeChannel[]=[]; closed=false; version=-1; deadline:any; reconnecting=false; myTurn=false; holding=false; lastRecover=0;
+ client:SupabaseClient; room:any=null; channels:RealtimeChannel[]=[]; closed=false; version=-1; deadline:any; reconnecting=false; myTurn=false; holding=false; lastInput=0; lastRecover=0;
  onPacket:(packet:any)=>void; onConnection:(status:string)=>void; onPresence:(ids:string[])=>void;
  constructor(onPacket:(packet:any)=>void,onConnection:(status:string)=>void,onPresence:(ids:string[])=>void){
   if(!supabaseConfigured())throw Error('Online play is not configured yet.');
   this.client=auth();
   this.onPacket=onPacket;this.onConnection=onConnection;this.onPresence=onPresence;
   window.addEventListener('online',this.resume);document.addEventListener('visibilitychange',this.visibility);
+  // Presence means the player actually did something, not merely that a tab is
+  // open on a table nobody is sitting at.
+  document.addEventListener('pointerdown',this.interact,{passive:true});document.addEventListener('keydown',this.interact);
  }
  async authenticate(){
   // A Google or guest session already exists by the time online play is reachable;
@@ -41,17 +44,23 @@ export class MultiplayerService {
   this.version=packet.room.version;this.room=packet.room;this.myTurn=packet.state?.active===0;
   this.onPacket(packet);this.scheduleDeadline();
  }
+ unclaimed(){return !!this.room?.deadline&&this.room.deadline-this.room.serverTime<=8000;}
+ claim(){
+  if(this.holding||this.closed||typeof document==='undefined'||document.visibilityState!=='visible')return;
+  this.holding=true;
+  this.request('hold').then((packet:any)=>this.receive(packet)).catch(()=>{}).finally(()=>{this.holding=false;});
+ }
+ // A tap that is really a move must reach the server first: the move carries a
+ // version and would lose a race with the claim. Waiting a beat lets the move
+ // land, and the claim then buys thinking time for whatever it opened.
+ interact=()=>{this.lastInput=Date.now();if(this.myTurn&&this.unclaimed())setTimeout(()=>{if(this.myTurn&&this.unclaimed())this.claim();},450);};
  scheduleDeadline(){
   clearTimeout(this.deadline);if(!this.room?.deadline||this.closed)return;
-  // A turn opens on a short unclaimed window. If it is ours and we are actually
-  // looking at the table, claim it once to buy the full turn; a shut tab or a
-  // locked phone never claims, so the table skips us instead of stalling. The
-  // claim lengthens the deadline, so this cannot re-enter on its own response.
-  const unclaimed=this.room.deadline-this.room.serverTime<=8000;
-  if(this.myTurn&&unclaimed&&!this.holding&&typeof document!=='undefined'&&document.visibilityState==='visible'){
-   this.holding=true;
-   this.request('hold').then((packet:any)=>this.receive(packet)).catch(()=>{}).finally(()=>{this.holding=false;});
-  }
+  // A turn opens on a short unclaimed window. Touching anything claims it and buys
+  // the full turn to think; doing nothing at all lets it lapse, so the table moves
+  // on instead of waiting out a player who is not there. Claiming lengthens the
+  // deadline, so this cannot re-enter on its own response.
+  if(this.myTurn&&this.unclaimed()&&Date.now()-this.lastInput<3000)this.claim();
   // Every client watches the same deadline, so stagger the nudge: whoever fires
   // first advances the room and the rest cancel on the broadcast that follows.
   // The stalled player is usually the active one, so they wait longest.
@@ -102,5 +111,5 @@ export class MultiplayerService {
   return this.command('action',{action:intent,version:version??this.room.version});
  }
  async leave(){await this.request('leave');localStorage.removeItem('lotus-room');await this.close();}
- async close(){this.closed=true;clearTimeout(this.deadline);window.removeEventListener('online',this.resume);document.removeEventListener('visibilitychange',this.visibility);await Promise.all(this.channels.map(c=>this.client.removeChannel(c)));this.channels=[];}
+ async close(){this.closed=true;clearTimeout(this.deadline);window.removeEventListener('online',this.resume);document.removeEventListener('visibilitychange',this.visibility);document.removeEventListener('pointerdown',this.interact);document.removeEventListener('keydown',this.interact);await Promise.all(this.channels.map(c=>this.client.removeChannel(c)));this.channels=[];}
 }
