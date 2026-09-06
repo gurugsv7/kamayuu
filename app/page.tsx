@@ -11,6 +11,8 @@ import {googleConfigured} from '@/lib/google-auth';
 import OnboardingScreen from '@/components/onboarding-screen';
 import PlayerIdentityScreen, { type PlayerIdentityData } from '@/components/player-identity-screen';
 import HomeScreen from '@/components/home-screen';
+import LoadingScreen,{KAMAYUU_CYCLE_MS} from '@/components/loading-screen';
+const PRELOAD_IMAGES=['/onboarding-bg.webp','/onboarding-identity-bg.webp','/card-art-quickmatch.png','/card-art-privatetable.png','/card-art-practice.png'];
 const LOTUS='<svg viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M40 49C22 39 27 21 40 9c13 12 18 30 0 40Z"/><path d="M40 49C18 50 9 33 9 23c19 0 28 10 31 26ZM40 49c22 1 31-16 31-26-19 0-28 10-31 26Z"/><path d="M40 49C23 60 9 49 3 39c14-5 25-1 37 10Zm0 0c17 11 31 0 37-10-14-5-25-1-37 10Z"/><path d="M40 19v23M24 57h32"/></svg>';
 function Lotus(){return <span className="lotus" dangerouslySetInnerHTML={{__html:LOTUS}}/>}
 const SUIT_FILE:Record<string,string>={'♠':'S','♥':'H','♣':'C','♦':'D'};
@@ -26,10 +28,36 @@ export default function Home(){
  const [settings,setSettings]=useState(defaults),[stats,setStats]=useState({played:0,won:0}),[hydrated,setHydrated]=useState(false),[menu,setMenu]=useState(true),[panel,setPanel]=useState<string|null>(null);
  const [lobby,setLobby]=useState<any>(null),[connection,setConnection]=useState(''),[presence,setPresence]=useState<string[]>([]),[joinCode,setJoinCode]=useState(''),[playerName,setPlayerName]=useState(''),[online,setOnline]=useState<string|null>(null),[clock,setClock]=useState<number|null>(null),[joinError,setJoinError]=useState('');
  const [gate,setGate]=useState<'loading'|'signin'|'onboarding'|'ready'>('loading'),[profile,setProfile]=useState<Profile|null>(null),[guest,setGuest]=useState(false);
+ const [assetProgress,setAssetProgress]=useState(0),[assetsDone,setAssetsDone]=useState(false),[minTimeElapsed,setMinTimeElapsed]=useState(false);
  const [authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(''),[draftName,setDraftName]=useState(''),[draftAvatar,setDraftAvatar]=useState('lotus'),[identityFrom,setIdentityFrom]=useState<'signin'|'ready'>('signin');
  const [s,setS]=useState<any>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('Less in your hand. More on your mind.'),[caption,setCaption]=useState('A GAME OF MEMORY & NERVE'),[revision,setRevision]=useState(0),[target,setTarget]=useState<number|null>(null),[swapSlot,setSwapSlot]=useState<number|null>(null),[memory,setMemory]=useState(false),[result,setResult]=useState(false),[countdown,setCountdown]=useState<number|null>(null),[queued,setQueued]=useState(false),[wake,setWake]=useState(0);
  const remote=useRef<any>(null),queue=useRef<Promise<void>>(Promise.resolve()),lobbyRef=useRef<any>(null),game=useRef<any>(null),locked=useRef(false),epoch=useRef(0),config=useRef(settings),audio=useRef<any>(null),table=useRef<HTMLElement|null>(null),animations=useRef<Set<Animation>>(new Set()),activeAbort=useRef(new AbortController()),mounted=useRef(true),paused=useRef(false),qaHold=useRef(false),memorized=useRef(false),packetHandler=useRef<(p:any)=>void>(()=>{}),queuedMatch=useRef<any>(null),observedDiscard=useRef<string|null>(null),movingSlots=useRef(new Set<string>()),motionTarget=useRef<any>(null);
  useEffect(()=>{mounted.current=true;if(activeAbort.current.signal.aborted)activeAbort.current=new AbortController();audio.current=new TableAudio();for(const r of RANK_FILE)for(const u of ['S','H','C','D'])new Image().src=`/cards/${r}${u}.svg`;new Image().src='/cards/back.png';try{const stored=JSON.parse(localStorage.getItem('lotus-settings')||'null');if(stored)setSettings({...defaults,...stored});const st=JSON.parse(localStorage.getItem('lotus-stats')||'null');if(st)setStats(st);setPlayerName(localStorage.getItem('lotus-name')||'');}catch{}setHydrated(true);return()=>{mounted.current=false;activeAbort.current.abort();animations.current.forEach(a=>a.cancel());audio.current?.ctx?.close();};},[]);
+ // Preloads every image the onboarding/identity/home screens paint, so the
+ // loading screen's progress bar reflects real work — not a fake timer. A
+ // 404 on any one image still counts as settled, and an 8s hard timeout
+ // guarantees the loader can never hang forever on a slow or dead asset.
+ useEffect(()=>{let settled=false,done=0;const total=PRELOAD_IMAGES.length;
+  const finish=()=>{if(settled)return;settled=true;setAssetProgress(100);setAssetsDone(true);};
+  const bump=()=>{done++;setAssetProgress(Math.round(done/total*100));if(done>=total)finish();};
+  for(const src of PRELOAD_IMAGES){const img=new Image();img.onload=bump;img.onerror=bump;img.src=src;}
+  const hardTimeout=setTimeout(finish,8000);
+  return()=>clearTimeout(hardTimeout);
+ },[]);
+ // Keeps the loader up for one full lotus draw-in even when assets settle
+ // almost instantly, so the animation never gets cut mid-petal — this is a
+ // floor, not a ceiling, so a slow load is never held up any further than the
+ // asset/auth gates already require. prefers-reduced-motion bypasses the
+ // floor outright (that user asked for less motion, not a longer wait), and
+ // the duration scales with settings.motion exactly like the CSS does via
+ // --motion-scale, so a short-motion session isn't stuck waiting on a
+ // full-length animation that isn't actually playing.
+ useEffect(()=>{
+  const reduced=typeof window!=='undefined'&&window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if(reduced){setMinTimeElapsed(true);return;}
+  const t=setTimeout(()=>setMinTimeElapsed(true),KAMAYUU_CYCLE_MS*(settings.motion?0.65:1));
+  return()=>clearTimeout(t);
+ },[settings.motion]);
  // Decide up front whether we need the sign-in screen, onboarding, or neither.
  useEffect(()=>{let live=true;
   (async()=>{
@@ -298,7 +326,7 @@ export default function Home(){
  <div className="piles"><div><button data-loc="deck" className={'pile deck '+(ready?'available':'')} disabled={!ready} onClick={()=>act({type:'draw'})} aria-label="Draw from deck"><Card rev={revision}/></button><span>DECK <i>{deckSize(s)}</i></span></div><div><button data-loc="discard" className={'pile discard '+(ready&&takeable(s)?'available':'')} disabled={!(ready&&takeable(s))} onClick={()=>act({type:'take'})} aria-label={'Take discard '+(s?.discard.length?label(s.discard.at(-1)):s?'empty':'King of hearts')}><Card rev={revision} empty={s&&!s.discard.length} card={s?s.discard.at(-1):{rank:'K',suit:'♥'}}/></button><span>DISCARD</span></div></div>
  <div className="status" role="status" aria-live="polite"><span>{caption}</span><p>{message}</p>{memory&&countdown!==null&&<div className="memory-timer"><i style={{width:`${countdown/7*100}%`}}/><b>{countdown}</b></div>}</div>
  {can&&s.phase==='decision'&&s.source==='deck'&&<button className="text-action hand-action" onClick={()=>act({type:'discard'})}>Discard draw</button>}{can&&['swap','peek'].includes(s.phase)&&<button className="text-action hand-action" onClick={()=>act({type:'skip'})}>Pass power</button>}{can&&s.phase==='swapConfirm'&&<div className="swap-confirm"><button className="primary" onClick={()=>act({type:'swap'})}>Trade cards</button><button className="text-action" onClick={()=>act({type:'skip'})}>Keep mine</button></div>}<div className="buzzer-area"><button className={'buzzer '+(ready&&s.caller===null?'tempting':'')} disabled={!(ready&&s.caller===null)} onClick={()=>act({type:'buzz'})} aria-label="Buzz — start the final round"><span>♛</span></button><b>{s?.caller!==null&&s?'FINAL ROUND':'BUZZER'}</b></div><div className="bottom-note">LOWEST<br/><em>TOTAL WINS</em></div><button className="settings-button" onClick={()=>setPanel('settings')} aria-label="Settings"><Settings size={21}/><span>Settings</span></button><footer className="table-footer"><span>{queued?'MATCH QUEUED · WAITING FOR THE CARD TO LAND':busy?'FOLLOW THE CARDS':'REMEMBER. OBSERVE. OUTTHINK.'}</span></footer>
- {gate==='loading'&&<div className="welcome"><div className="welcome-card"><Lotus/><p className="eyebrow">THE LANTERN TABLE</p></div></div>}
+ <LoadingScreen visible={gate==='loading'||!assetsDone||!minTimeElapsed} progress={assetProgress} motionShort={settings.motion}/>
  {gate==='signin'&&(
    <OnboardingScreen
     onContinueWithGoogle={handleGoogleClick}

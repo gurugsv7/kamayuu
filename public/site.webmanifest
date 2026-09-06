@@ -1,0 +1,20 @@
+{
+  "name": "Kamayuu — A Game of Memory & Nerve",
+  "short_name": "Kamayuu",
+  "description": "Remember the card. Follow the position. Know when to buzz. Play Kamayuu solo vs AI, in quick matches, or at a private table with friends.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0e14",
+  "theme_color": "#0b0e14",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

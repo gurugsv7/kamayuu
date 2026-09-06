@@ -1,0 +1,53 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="tableGlow" cx="50%" cy="38%" r="75%">
+      <stop offset="0%" stop-color="#2a1f3a" />
+      <stop offset="45%" stop-color="#171223" />
+      <stop offset="100%" stop-color="#0a0812" />
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c99a4a" />
+      <stop offset="50%" stop-color="#f3d68a" />
+      <stop offset="100%" stop-color="#c99a4a" />
+    </linearGradient>
+    <linearGradient id="petal" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e7b8c9" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#a8577b" stop-opacity="0.55" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#tableGlow)" />
+
+  <!-- Ornate frame -->
+  <rect x="28" y="28" width="1144" height="574" fill="none" stroke="url(#gold)" stroke-width="2" opacity="0.55" />
+  <rect x="40" y="40" width="1120" height="550" fill="none" stroke="url(#gold)" stroke-width="1" opacity="0.35" />
+
+  <!-- Lotus motif, centered above the wordmark -->
+  <g transform="translate(600,190)" opacity="0.92">
+    <g transform="rotate(0)"><path d="M0,-6 C40,-70 40,-140 0,-170 C-40,-140 -40,-70 0,-6 Z" fill="url(#petal)" /></g>
+    <g transform="rotate(45)"><path d="M0,-6 C34,-60 34,-120 0,-146 C-34,-120 -34,-60 0,-6 Z" fill="url(#petal)" opacity="0.85"/></g>
+    <g transform="rotate(-45)"><path d="M0,-6 C34,-60 34,-120 0,-146 C-34,-120 -34,-60 0,-6 Z" fill="url(#petal)" opacity="0.85"/></g>
+    <g transform="rotate(90)"><path d="M0,-6 C26,-46 26,-96 0,-118 C-26,-96 -26,-46 0,-6 Z" fill="url(#petal)" opacity="0.7"/></g>
+    <g transform="rotate(-90)"><path d="M0,-6 C26,-46 26,-96 0,-118 C-26,-96 -26,-46 0,-6 Z" fill="url(#petal)" opacity="0.7"/></g>
+    <circle cx="0" cy="0" r="10" fill="url(#gold)" />
+  </g>
+
+  <!-- Wordmark -->
+  <text x="600" y="360" text-anchor="middle" font-family="Cinzel, Georgia, 'Times New Roman', serif" font-size="108" font-weight="700" letter-spacing="14" fill="url(#gold)">KAMAYUU</text>
+
+  <!-- Divider -->
+  <g transform="translate(600,404)" opacity="0.8">
+    <line x1="-160" y1="0" x2="-24" y2="0" stroke="url(#gold)" stroke-width="1.5" />
+    <circle cx="0" cy="0" r="4" fill="url(#gold)" />
+    <line x1="24" y1="0" x2="160" y2="0" stroke="url(#gold)" stroke-width="1.5" />
+  </g>
+
+  <!-- Tagline -->
+  <text x="600" y="452" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="34" font-style="italic" fill="#e8d9c5">A Game of Memory &amp; Nerve</text>
+
+  <!-- Subline -->
+  <text x="600" y="500" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="22" letter-spacing="1" fill="#b7a68c">Remember the card. Follow the position. Know when to buzz.</text>
+
+  <!-- Footer -->
+  <text x="600" y="588" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="18" letter-spacing="3" fill="#8a7c68">KAMAYUU.BUILTBYGSV.IN</text>
+</svg>

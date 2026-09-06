@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kamayuu.builtbygsv.in/sitemap.xml
