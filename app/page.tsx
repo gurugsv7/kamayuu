@@ -18,7 +18,12 @@ function Lotus(){return <span className="lotus" dangerouslySetInnerHTML={{__html
 const SUIT_FILE:Record<string,string>={'♠':'S','♥':'H','♣':'C','♦':'D'};
 const RANK_FILE=['A','2','3','4','5','6','7','8','9','T','J','Q','K'];
 const cardSrc=(c:any)=>`/cards/${c.rank==='10'?'T':c.rank}${SUIT_FILE[c.suit]}.svg`;
-function cardHTML(c:any=null){return c&&c.rank?`<div class="playing-card face ${['♥','♦'].includes(c.suit)?'red':''}"><img class="card-art" src="${cardSrc(c)}" alt="" draggable="false">${value(c)===0?'<em class="zero">ZERO</em>':''}</div>`:`<div class="playing-card back"></div>`;}
+// A flaky connection (mobile data, a dropped wifi handoff) can fail this fetch with
+// nothing else ever retrying it, leaving a permanently blank white card for the rest
+// of the match. The inline onerror retries with backoff since this markup is injected
+// via dangerouslySetInnerHTML, so a React onError handler never gets attached.
+const CARD_RETRY="var n=+(this.dataset.n||0);if(n<6){this.dataset.n=n+1;var s=this.getAttribute('src').split('?')[0];var self=this;setTimeout(function(){self.src=s+'?r='+Date.now();},500*(n+1));}";
+function cardHTML(c:any=null){return c&&c.rank?`<div class="playing-card face ${['♥','♦'].includes(c.suit)?'red':''}"><img class="card-art" src="${cardSrc(c)}" alt="" draggable="false" onerror="${CARD_RETRY}">${value(c)===0?'<em class="zero">ZERO</em>':''}</div>`:`<div class="playing-card back"></div>`;}
 const Card=memo(function Card({card=null,empty=false,rev=0}:any){return <div key={rev} className="card-content" dangerouslySetInnerHTML={{__html:empty?'':cardHTML(card)}}/>});
 const seatName=(p:number,st:any)=>st?.players?.[p]?.name||NAMES[p];
 const deckSize=(st:any)=>st?(st.remote?st.deckCount??0:st.deck.length):35;
