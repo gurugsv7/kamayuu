@@ -32,6 +32,22 @@ test('Deadlines cannot be accelerated; a missed turn is passed and a second remo
  assert.ok(x.room.departed.includes('a'));assert.equal(x.room.deadline,null);
 });
 
+test('lastCall\'s countdown only refreshes on a real match attempt, not an emote or a stray hold claim',()=>{
+ let r=ready(3);
+ function relocate(id,slots,i){for(const player of r.state.players){const j=player.slots.findIndex(c=>c?.id===id);if(j>=0){[player.slots[j],slots[i]]=[slots[i],player.slots[j]];return;}}for(const pile of [r.state.deck,r.state.discard]){const j=pile.findIndex(c=>c?.id===id);if(j>=0){[pile[j],slots[i]]=[slots[i],pile[j]];return;}}}
+ // Give player b (seat 1) a 5, and put a 5 on top of the discard, so their match at i:0 is guaranteed to hit.
+ relocate('5♠',r.state.players[1].slots,0);
+ relocate('5♥',r.state.discard,r.state.discard.length-1);
+ r.state.phase='lastCall';r.state.caller=0;r.state.remaining=[];r.state.active=2;
+ const base=1_000_000;r.deadline=base;
+ let x=applyIntent(r,'a',{command:'emote',name:'haha'},base+50);
+ assert.equal(x.room.deadline,base);
+ x=applyIntent(r,'a',{command:'hold'},base+50);
+ assert.equal(x.room.deadline,base);
+ x=applyIntent(r,'b',{command:'action',action:{type:'match',i:0,expectedDiscard:'5♥'}},base+50);
+ assert.ok(x.room.deadline>base);
+});
+
 test('Only the Queen holder sees the inspected pair, and declining spends the Queen',()=>{let r=ready();const row=[r.state.deck,r.state.discard,...r.state.players.map(p=>p.slots)].find(a=>a.some(c=>c?.rank==='Q'&&c.suit==='♦'));const j=row.findIndex(c=>c?.rank==='Q'&&c.suit==='♦');[row[j],r.state.deck[r.state.deck.length-1]]=[r.state.deck.at(-1),row[j]];r.state.knowledge=r.state.knowledge.map(()=>r.state.players.map(()=>[null,null,null,null]));
  r=applyIntent(r,'a',{command:'action',action:{type:'draw'}}).room;
  const look=applyIntent(r,'a',{command:'action',action:{type:'inspect',target:1,i:0}});

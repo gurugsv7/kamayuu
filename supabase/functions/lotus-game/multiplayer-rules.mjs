@@ -72,7 +72,10 @@ export function applyIntent(before,userId,input,now=Date.now()) {
   }else if(input.command==='hold'){
     // Claiming only ever extends the caller's own turn, so it cannot be used to
     // stall anyone else, and clears the strikes of a player who is clearly back.
-    if(!s||s.phase==='finished'||s.phase==='memory'||p!==s.active)return {room,events};
+    // lastCall has no real "turn" left to claim — excluding it here keeps the
+    // trailing 5s reset below (which only fires for `action`) the sole thing
+    // that can extend that window, instead of a hold ballooning it to TURN_MS.
+    if(!s||s.phase==='finished'||s.phase==='memory'||s.phase==='lastCall'||p!==s.active)return {room,events};
     room.deadline=now+TURN_MS;
     if(room.strikes?.[userId]){const cleared={...room.strikes};delete cleared[userId];room.strikes=cleared;}
   }else if(input.command==='timeout'){
@@ -122,7 +125,11 @@ export function applyIntent(before,userId,input,now=Date.now()) {
     // Playing is proof enough of presence; the next player still has to claim.
     if(room.strikes?.[userId]){const cleared={...room.strikes};delete cleared[userId];room.strikes=cleared;}
   }else throw Error('Unknown request.');
-  if(room.state?.phase==='lastCall')room.deadline=now+5_000;
+  // Only an actual match attempt (the one legal move left during lastCall) refills
+  // this window — every other command (an emote, a stray hold claim, etc.) used to
+  // fall through here unconditionally and reset it too, letting the final countdown
+  // be stalled indefinitely by anything that touched the room, not just a real match.
+  if(['action','timeout'].includes(input.command)&&room.state?.phase==='lastCall')room.deadline=now+5_000;
   if(room.state?.phase==='finished')room.deadline=null;
   return {room,events};
 }
