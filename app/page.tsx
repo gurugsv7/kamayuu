@@ -18,10 +18,10 @@ const PRELOAD_IMAGES=['/onboarding-bg.webp','/onboarding-identity-bg.webp','/car
 // pipeline (see the emote-creator skill) — flip `ready` once an emote's assets land.
 const EMOTE_LIST=[
  {key:'haha',label:'HAHA',icon:'/emotes-icon.png',ready:true},
- {key:'angry',label:'ANGRY',icon:'/emotes-icon.png',ready:false},
- {key:'iremember',label:'I REMEMBER',icon:'/emotes-icon.png',ready:false},
- {key:'sad',label:'SAD',icon:'/emotes-icon.png',ready:false},
- {key:'cool',label:'COOL',icon:'/emotes-icon.png',ready:false},
+ {key:'angry',label:'ANGRY',icon:'/angry-icon.png',ready:true},
+ {key:'noooo',label:'NOOO',icon:'/noooo-icon.png',ready:true},
+ {key:'crying',label:'CRYING',icon:'/emotes-icon.png',ready:false},
+ {key:'cool',label:'COOL',icon:'/cool-icon.png',ready:true},
 ];
 const LOTUS='<svg viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M40 49C22 39 27 21 40 9c13 12 18 30 0 40Z"/><path d="M40 49C18 50 9 33 9 23c19 0 28 10 31 26ZM40 49c22 1 31-16 31-26-19 0-28 10-31 26Z"/><path d="M40 49C23 60 9 49 3 39c14-5 25-1 37 10Zm0 0c17 11 31 0 37-10-14-5-25-1-37 10Z"/><path d="M40 19v23M24 57h32"/></svg>';
 function Lotus(){return <span className="lotus" dangerouslySetInnerHTML={{__html:LOTUS}}/>}
@@ -58,7 +58,7 @@ export default function Home(){
  const [emote,setEmote]=useState<{player:number;name:string;token:number}|null>(null);
  const [emotePicker,setEmotePicker]=useState(false);
  const remote=useRef<any>(null),queue=useRef<Promise<void>>(Promise.resolve()),lobbyRef=useRef<any>(null),game=useRef<any>(null),locked=useRef(false),epoch=useRef(0),config=useRef(settings),audio=useRef<any>(null),table=useRef<HTMLElement|null>(null),animations=useRef<Set<Animation>>(new Set()),activeAbort=useRef(new AbortController()),mounted=useRef(true),paused=useRef(false),qaHold=useRef(false),memorized=useRef(false),packetHandler=useRef<(p:any)=>void>(()=>{}),queuedMatch=useRef<any>(null),observedDiscard=useRef<string|null>(null),movingSlots=useRef(new Set<string>()),motionTarget=useRef<any>(null),announceTimer=useRef<any>(null),emoteTimer=useRef<any>(null),emoteToken=useRef(0);
- useEffect(()=>{mounted.current=true;if(activeAbort.current.signal.aborted)activeAbort.current=new AbortController();audio.current=new TableAudio();(async()=>{const codes:string[]=[];for(const r of RANK_FILE)for(const u of ['S','H','C','D'])codes.push(r+u);await Promise.all(codes.map(async code=>{if(cardArtCache.has(code))return;try{const res=await fetch(`/cards/${code}.svg`);if(res.ok)cardArtCache.set(code,await res.text());}catch{}}));})();new Image().src='/cards/back.png';new Image().src='/haha-emote-sprite.png';new Image().src='/emotes-icon.png';try{const stored=JSON.parse(localStorage.getItem('lotus-settings')||'null');if(stored)setSettings({...defaults,...stored});const st=JSON.parse(localStorage.getItem('lotus-stats')||'null');if(st)setStats(st);setPlayerName(localStorage.getItem('lotus-name')||'');}catch{}setHydrated(true);return()=>{mounted.current=false;clearTimeout(announceTimer.current);clearTimeout(emoteTimer.current);activeAbort.current.abort();animations.current.forEach(a=>a.cancel());audio.current?.ctx?.close();};},[]);
+ useEffect(()=>{mounted.current=true;if(activeAbort.current.signal.aborted)activeAbort.current=new AbortController();audio.current=new TableAudio();(async()=>{const codes:string[]=[];for(const r of RANK_FILE)for(const u of ['S','H','C','D'])codes.push(r+u);await Promise.all(codes.map(async code=>{if(cardArtCache.has(code))return;try{const res=await fetch(`/cards/${code}.svg`);if(res.ok)cardArtCache.set(code,await res.text());}catch{}}));})();new Image().src='/cards/back.png';new Image().src='/emotes-icon.png';for(const e of EMOTE_LIST)if(e.ready){new Image().src=`/${e.key}-emote-sprite.png`;new Image().src=e.icon;}try{const stored=JSON.parse(localStorage.getItem('lotus-settings')||'null');if(stored)setSettings({...defaults,...stored});const st=JSON.parse(localStorage.getItem('lotus-stats')||'null');if(st)setStats(st);setPlayerName(localStorage.getItem('lotus-name')||'');}catch{}setHydrated(true);return()=>{mounted.current=false;clearTimeout(announceTimer.current);clearTimeout(emoteTimer.current);activeAbort.current.abort();animations.current.forEach(a=>a.cancel());audio.current?.ctx?.close();};},[]);
  // Preloads every image the onboarding/identity/home screens paint, so the
  // loading screen's progress bar reflects real work — not a fake timer. A
  // 404 on any one image still counts as settled, and an 8s hard timeout

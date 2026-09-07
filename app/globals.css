@@ -1907,6 +1907,12 @@ html,body,#root { background: #090f15; }
 .emote-overlay{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:6}
 .emote-sprite{width:145%;max-width:220px;aspect-ratio:240/135;background-repeat:no-repeat;background-size:3800% 100%;background-position:0 0;filter:drop-shadow(0 8px 14px #000c)}
 .emote-sprite-haha{background-image:url('/haha-emote-sprite.png');animation:emoteHahaPlay 3s steps(37,end) 1 forwards}
+.emote-sprite-angry{background-image:url('/angry-emote-sprite.png');background-size:3700% 100%;animation:angryEmotePlay 3s steps(36,end) 1 forwards}
+@keyframes angryEmotePlay{to{background-position:100% 0}}
+.emote-sprite-noooo{background-image:url('/noooo-emote-sprite.png');background-size:3700% 100%;animation:noooooEmotePlay 3s steps(36,end) 1 forwards}
+@keyframes noooooEmotePlay{to{background-position:100% 0}}
+.emote-sprite-cool{background-image:url('/cool-emote-sprite.png');background-size:3700% 100%;animation:coolEmotePlay 3s steps(36,end) 1 forwards}
+@keyframes coolEmotePlay{to{background-position:100% 0}}
 .emote-picker{position:absolute;bottom:calc(6.5% + 76px);left:12px;width:238px;z-index:21;background:linear-gradient(150deg,#1a2630f7,#0d1720fa);border:1px solid #ad895755;border-radius:14px;padding:14px 12px 12px;box-shadow:0 20px 60px #000c;animation:emotePickerIn .16s ease-out}
 .emote-picker:after{content:'';position:absolute;bottom:-8px;left:26px;width:14px;height:14px;background:#111c26;border-right:1px solid #ad895755;border-bottom:1px solid #ad895755;transform:rotate(45deg)}
 .emote-picker>p{margin:0 0 12px;text-align:center;font:10px Arial;letter-spacing:3px;color:#c9ad7d;text-transform:uppercase}
