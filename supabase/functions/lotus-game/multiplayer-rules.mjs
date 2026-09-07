@@ -65,6 +65,10 @@ export function applyIntent(before,userId,input,now=Date.now()) {
     room.members=room.members.filter(m=>!(room.departed||[]).includes(m.id));
     room.departed=[];room.strikes={};room.members.forEach(m=>{m.ready=false;});
     if(!room.members.some(m=>m.id===room.host))room.host=room.members[0]?.id||null;
+  }else if(input.command==='emote'){
+    // Purely decorative: no state to mutate, just an event for everyone else's client to play.
+    if(!s)return {room,events};
+    events=[{type:'emote',p}];
   }else if(input.command==='hold'){
     // Claiming only ever extends the caller's own turn, so it cannot be used to
     // stall anyone else, and clears the strikes of a player who is clearly back.

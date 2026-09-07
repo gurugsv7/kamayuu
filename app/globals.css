@@ -1897,3 +1897,12 @@ html,body,#root { background: #090f15; }
   opacity: 0;
   animation: kamayuuFadeUp calc(.6s * var(--motion-scale, 1)) ease-out calc(1.4s * var(--motion-scale, 1)) forwards;
 }
+.emotes-button{position:absolute;bottom:6.5%;left:24px;display:flex;align-items:center;flex-direction:column;gap:6px;color:#d4b782;font:10px Georgia;letter-spacing:2px;min-width:46px;min-height:44px}
+.emotes-button:disabled{opacity:.45}
+.emotes-avatar{width:44px;height:44px;border-radius:50%;overflow:hidden;background:#0c1118;border:2px solid #d1a366;box-shadow:0 0 10px #ffd18d4d,inset 0 0 6px #0008;transition:transform .15s}
+.emotes-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.emotes-button:active:not(:disabled) .emotes-avatar{transform:scale(.92)}
+@media(min-width:700px){.emotes-button{left:43px}}
+.emote-overlay{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:6}
+.emote-sprite{width:145%;max-width:220px;aspect-ratio:240/135;background-image:url('/haha-emote-sprite.png');background-repeat:no-repeat;background-size:3800% 100%;background-position:0 0;filter:drop-shadow(0 8px 14px #000c);animation:emoteHahaPlay 3s steps(37,end) 1 forwards}
+@keyframes emoteHahaPlay{to{background-position:100% 0}}
