@@ -1902,7 +1902,21 @@ html,body,#root { background: #090f15; }
 .emotes-avatar{width:44px;height:44px;border-radius:50%;overflow:hidden;background:#0c1118;border:2px solid #d1a366;box-shadow:0 0 10px #ffd18d4d,inset 0 0 6px #0008;transition:transform .15s}
 .emotes-avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .emotes-button:active:not(:disabled) .emotes-avatar{transform:scale(.92)}
+.emotes-button.open .emotes-avatar{border-color:#ffe0a1;box-shadow:0 0 14px #ffd18d88,inset 0 0 6px #0008}
 @media(min-width:700px){.emotes-button{left:43px}}
 .emote-overlay{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:6}
-.emote-sprite{width:145%;max-width:220px;aspect-ratio:240/135;background-image:url('/haha-emote-sprite.png');background-repeat:no-repeat;background-size:3800% 100%;background-position:0 0;filter:drop-shadow(0 8px 14px #000c);animation:emoteHahaPlay 3s steps(37,end) 1 forwards}
+.emote-sprite{width:145%;max-width:220px;aspect-ratio:240/135;background-repeat:no-repeat;background-size:3800% 100%;background-position:0 0;filter:drop-shadow(0 8px 14px #000c)}
+.emote-sprite-haha{background-image:url('/haha-emote-sprite.png');animation:emoteHahaPlay 3s steps(37,end) 1 forwards}
+.emote-picker{position:absolute;bottom:calc(6.5% + 76px);left:12px;width:238px;z-index:21;background:linear-gradient(150deg,#1a2630f7,#0d1720fa);border:1px solid #ad895755;border-radius:14px;padding:14px 12px 12px;box-shadow:0 20px 60px #000c;animation:emotePickerIn .16s ease-out}
+.emote-picker:after{content:'';position:absolute;bottom:-8px;left:26px;width:14px;height:14px;background:#111c26;border-right:1px solid #ad895755;border-bottom:1px solid #ad895755;transform:rotate(45deg)}
+.emote-picker>p{margin:0 0 12px;text-align:center;font:10px Arial;letter-spacing:3px;color:#c9ad7d;text-transform:uppercase}
+.emote-picker-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 8px}
+.emote-option{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;color:#d4b782;font:9px Georgia;letter-spacing:1.2px;min-height:0}
+.emote-option-icon{width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden;border:2px solid #d1a366;box-shadow:0 0 8px #ffd18d33;transition:transform .12s}
+.emote-option-icon img{width:100%;height:100%;object-fit:cover;display:block}
+.emote-option:active:not(:disabled) .emote-option-icon{transform:scale(.93)}
+.emote-option:disabled{cursor:default}
+.emote-option.soon .emote-option-icon{filter:grayscale(1);opacity:.4;border-color:#6b5a3f}
+.emote-option.soon span{opacity:.5}
+@keyframes emotePickerIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 @keyframes emoteHahaPlay{to{background-position:100% 0}}
