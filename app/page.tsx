@@ -18,12 +18,21 @@ function Lotus(){return <span className="lotus" dangerouslySetInnerHTML={{__html
 const SUIT_FILE:Record<string,string>={'♠':'S','♥':'H','♣':'C','♦':'D'};
 const RANK_FILE=['A','2','3','4','5','6','7','8','9','T','J','Q','K'];
 const cardSrc=(c:any)=>`/cards/${c.rank==='10'?'T':c.rank}${SUIT_FILE[c.suit]}.svg`;
-// A flaky connection (mobile data, a dropped wifi handoff) can fail this fetch with
-// nothing else ever retrying it, leaving a permanently blank white card for the rest
-// of the match. The inline onerror retries with backoff since this markup is injected
-// via dangerouslySetInnerHTML, so a React onError handler never gets attached.
+// Every card's real SVG markup, fetched once at mount and kept in memory (see the
+// preload effect below) — rendering a card becomes a pure string lookup with zero
+// network involved, so a mid-match connection drop can never blank a card that
+// already made it into this cache. Only a card whose fetch is still outstanding
+// (a slow initial load) falls back to a live <img src>, which carries its own
+// bounded retry-with-backoff since a flaky connection could still fail it, and
+// this markup is injected via dangerouslySetInnerHTML so React's onError never attaches.
+const cardArtCache=new Map<string,string>();
 const CARD_RETRY="var n=+(this.dataset.n||0);if(n<6){this.dataset.n=n+1;var s=this.getAttribute('src').split('?')[0];var self=this;setTimeout(function(){self.src=s+'?r='+Date.now();},500*(n+1));}";
-function cardHTML(c:any=null){return c&&c.rank?`<div class="playing-card face ${['♥','♦'].includes(c.suit)?'red':''}"><img class="card-art" src="${cardSrc(c)}" alt="" draggable="false" onerror="${CARD_RETRY}">${value(c)===0?'<em class="zero">ZERO</em>':''}</div>`:`<div class="playing-card back"></div>`;}
+function cardHTML(c:any=null){
+ if(!c||!c.rank)return `<div class="playing-card back"></div>`;
+ const code=(c.rank==='10'?'T':c.rank)+SUIT_FILE[c.suit],cached=cardArtCache.get(code);
+ const art=cached?`<span class="card-art card-art-inline">${cached}</span>`:`<img class="card-art" src="${cardSrc(c)}" alt="" draggable="false" onerror="${CARD_RETRY}">`;
+ return `<div class="playing-card face ${['♥','♦'].includes(c.suit)?'red':''}">${art}${value(c)===0?'<em class="zero">ZERO</em>':''}</div>`;
+}
 const Card=memo(function Card({card=null,empty=false,rev=0}:any){return <div key={rev} className="card-content" dangerouslySetInnerHTML={{__html:empty?'':cardHTML(card)}}/>});
 const seatName=(p:number,st:any)=>st?.players?.[p]?.name||NAMES[p];
 const deckSize=(st:any)=>st?(st.remote?st.deckCount??0:st.deck.length):35;
@@ -38,7 +47,7 @@ export default function Home(){
  const [s,setS]=useState<any>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('Less in your hand. More on your mind.'),[caption,setCaption]=useState('A GAME OF MEMORY & NERVE'),[revision,setRevision]=useState(0),[target,setTarget]=useState<number|null>(null),[swapSlot,setSwapSlot]=useState<number|null>(null),[memory,setMemory]=useState(false),[result,setResult]=useState(false),[countdown,setCountdown]=useState<number|null>(null),[queued,setQueued]=useState(false),[wake,setWake]=useState(0),[announce,setAnnounce]=useState<string|null>(null);
  const [emote,setEmote]=useState<{player:number;token:number}|null>(null);
  const remote=useRef<any>(null),queue=useRef<Promise<void>>(Promise.resolve()),lobbyRef=useRef<any>(null),game=useRef<any>(null),locked=useRef(false),epoch=useRef(0),config=useRef(settings),audio=useRef<any>(null),table=useRef<HTMLElement|null>(null),animations=useRef<Set<Animation>>(new Set()),activeAbort=useRef(new AbortController()),mounted=useRef(true),paused=useRef(false),qaHold=useRef(false),memorized=useRef(false),packetHandler=useRef<(p:any)=>void>(()=>{}),queuedMatch=useRef<any>(null),observedDiscard=useRef<string|null>(null),movingSlots=useRef(new Set<string>()),motionTarget=useRef<any>(null),announceTimer=useRef<any>(null),emoteTimer=useRef<any>(null),emoteToken=useRef(0);
- useEffect(()=>{mounted.current=true;if(activeAbort.current.signal.aborted)activeAbort.current=new AbortController();audio.current=new TableAudio();for(const r of RANK_FILE)for(const u of ['S','H','C','D'])new Image().src=`/cards/${r}${u}.svg`;new Image().src='/cards/back.png';new Image().src='/haha-emote-sprite.png';new Image().src='/emotes-icon.png';try{const stored=JSON.parse(localStorage.getItem('lotus-settings')||'null');if(stored)setSettings({...defaults,...stored});const st=JSON.parse(localStorage.getItem('lotus-stats')||'null');if(st)setStats(st);setPlayerName(localStorage.getItem('lotus-name')||'');}catch{}setHydrated(true);return()=>{mounted.current=false;clearTimeout(announceTimer.current);clearTimeout(emoteTimer.current);activeAbort.current.abort();animations.current.forEach(a=>a.cancel());audio.current?.ctx?.close();};},[]);
+ useEffect(()=>{mounted.current=true;if(activeAbort.current.signal.aborted)activeAbort.current=new AbortController();audio.current=new TableAudio();(async()=>{const codes:string[]=[];for(const r of RANK_FILE)for(const u of ['S','H','C','D'])codes.push(r+u);await Promise.all(codes.map(async code=>{if(cardArtCache.has(code))return;try{const res=await fetch(`/cards/${code}.svg`);if(res.ok)cardArtCache.set(code,await res.text());}catch{}}));})();new Image().src='/cards/back.png';new Image().src='/haha-emote-sprite.png';new Image().src='/emotes-icon.png';try{const stored=JSON.parse(localStorage.getItem('lotus-settings')||'null');if(stored)setSettings({...defaults,...stored});const st=JSON.parse(localStorage.getItem('lotus-stats')||'null');if(st)setStats(st);setPlayerName(localStorage.getItem('lotus-name')||'');}catch{}setHydrated(true);return()=>{mounted.current=false;clearTimeout(announceTimer.current);clearTimeout(emoteTimer.current);activeAbort.current.abort();animations.current.forEach(a=>a.cancel());audio.current?.ctx?.close();};},[]);
  // Preloads every image the onboarding/identity/home screens paint, so the
  // loading screen's progress bar reflects real work — not a fake timer. A
  // 404 on any one image still counts as settled, and an 8s hard timeout
