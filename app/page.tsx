@@ -2,7 +2,7 @@
 import {useState,useRef,useEffect,useCallback,memo} from 'react';
 import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
 import {Switch} from '@/components/ui/switch';
-import {Settings,BookOpen,Volume2,VolumeX,RotateCcw} from 'lucide-react';
+import {Settings,BookOpen,Volume2,VolumeX,RotateCcw,Copy,Share2,Check} from 'lucide-react';
 import {createGame,transition,chooseAction,chooseReaction,aiView,canTakeDiscard,positionName,NAMES,value,label} from '@/lib/engine.mjs';
 import {TableAudio} from '@/lib/audio.mjs';
 import {MultiplayerService} from '@/lib/multiplayer';
@@ -51,7 +51,7 @@ const takeable=(st:any)=>st?(st.remote?!!st.canTakeDiscard:canTakeDiscard(st,0))
 const defaults={players:4,difficulty:'medium',sound:true,haptics:true,motion:false};
 export default function Home(){
  const [settings,setSettings]=useState(defaults),[stats,setStats]=useState({played:0,won:0}),[hydrated,setHydrated]=useState(false),[menu,setMenu]=useState(true),[panel,setPanel]=useState<string|null>(null);
- const [lobby,setLobby]=useState<any>(null),[connection,setConnection]=useState(''),[presence,setPresence]=useState<string[]>([]),[joinCode,setJoinCode]=useState(''),[playerName,setPlayerName]=useState(''),[online,setOnline]=useState<string|null>(null),[clock,setClock]=useState<number|null>(null),[joinError,setJoinError]=useState('');
+ const [lobby,setLobby]=useState<any>(null),[connection,setConnection]=useState(''),[presence,setPresence]=useState<string[]>([]),[joinCode,setJoinCode]=useState(''),[playerName,setPlayerName]=useState(''),[online,setOnline]=useState<string|null>(null),[clock,setClock]=useState<number|null>(null),[joinError,setJoinError]=useState(''),[codeCopied,setCodeCopied]=useState(false);
  const [gate,setGate]=useState<'loading'|'signin'|'onboarding'|'ready'>('loading'),[profile,setProfile]=useState<Profile|null>(null),[guest,setGuest]=useState(false);
  const [assetProgress,setAssetProgress]=useState(0),[assetsDone,setAssetsDone]=useState(false),[minTimeElapsed,setMinTimeElapsed]=useState(false);
  const [authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(''),[draftName,setDraftName]=useState(''),[draftAvatar,setDraftAvatar]=useState('lotus'),[identityFrom,setIdentityFrom]=useState<'signin'|'ready'>('signin');
@@ -59,8 +59,8 @@ export default function Home(){
  // Keyed by player so two people can emote at the same time without one closing the other's.
  const [emotes,setEmotes]=useState<Record<number,{name:string;token:number}>>({});
  const [emotePicker,setEmotePicker]=useState(false);
- const remote=useRef<any>(null),queue=useRef<Promise<void>>(Promise.resolve()),lobbyRef=useRef<any>(null),game=useRef<any>(null),locked=useRef(false),epoch=useRef(0),config=useRef(settings),audio=useRef<any>(null),table=useRef<HTMLElement|null>(null),animations=useRef<Set<Animation>>(new Set()),activeAbort=useRef(new AbortController()),mounted=useRef(true),paused=useRef(false),qaHold=useRef(false),memorized=useRef(false),packetHandler=useRef<(p:any)=>void>(()=>{}),queuedMatch=useRef<any>(null),observedDiscard=useRef<string|null>(null),movingSlots=useRef(new Set<string>()),motionTarget=useRef<any>(null),announceTimer=useRef<any>(null),emoteTimers=useRef<Record<number,any>>({}),emoteTokens=useRef<Record<number,number>>({});
- useEffect(()=>{mounted.current=true;if(activeAbort.current.signal.aborted)activeAbort.current=new AbortController();audio.current=new TableAudio();(async()=>{const codes:string[]=[];for(const r of RANK_FILE)for(const u of ['S','H','C','D'])codes.push(r+u);await Promise.all(codes.map(async code=>{if(cardArtCache.has(code))return;try{const res=await fetch(`/cards/${code}.svg`);if(res.ok)cardArtCache.set(code,await res.text());}catch{}}));})();new Image().src='/cards/back.png';new Image().src='/emotes-icon.png';for(const e of EMOTE_LIST)if(e.ready){new Image().src=`/${e.key}-emote-sprite.png`;new Image().src=e.icon;}try{const stored=JSON.parse(localStorage.getItem('lotus-settings')||'null');if(stored)setSettings({...defaults,...stored});const st=JSON.parse(localStorage.getItem('lotus-stats')||'null');if(st)setStats(st);setPlayerName(localStorage.getItem('lotus-name')||'');}catch{}setHydrated(true);return()=>{mounted.current=false;clearTimeout(announceTimer.current);Object.values(emoteTimers.current).forEach(clearTimeout);activeAbort.current.abort();animations.current.forEach(a=>a.cancel());audio.current?.ctx?.close();};},[]);
+ const remote=useRef<any>(null),queue=useRef<Promise<void>>(Promise.resolve()),lobbyRef=useRef<any>(null),game=useRef<any>(null),locked=useRef(false),epoch=useRef(0),config=useRef(settings),audio=useRef<any>(null),table=useRef<HTMLElement|null>(null),animations=useRef<Set<Animation>>(new Set()),activeAbort=useRef(new AbortController()),mounted=useRef(true),paused=useRef(false),qaHold=useRef(false),memorized=useRef(false),packetHandler=useRef<(p:any)=>void>(()=>{}),queuedMatch=useRef<any>(null),observedDiscard=useRef<string|null>(null),movingSlots=useRef(new Set<string>()),motionTarget=useRef<any>(null),announceTimer=useRef<any>(null),emoteTimers=useRef<Record<number,any>>({}),emoteTokens=useRef<Record<number,number>>({}),codeCopyTimer=useRef<any>(null);
+ useEffect(()=>{mounted.current=true;if(activeAbort.current.signal.aborted)activeAbort.current=new AbortController();audio.current=new TableAudio();(async()=>{const codes:string[]=[];for(const r of RANK_FILE)for(const u of ['S','H','C','D'])codes.push(r+u);await Promise.all(codes.map(async code=>{if(cardArtCache.has(code))return;try{const res=await fetch(`/cards/${code}.svg`);if(res.ok)cardArtCache.set(code,await res.text());}catch{}}));})();new Image().src='/cards/back.png';new Image().src='/emotes-icon.png';for(const e of EMOTE_LIST)if(e.ready){new Image().src=`/${e.key}-emote-sprite.png`;new Image().src=e.icon;}try{const stored=JSON.parse(localStorage.getItem('lotus-settings')||'null');if(stored)setSettings({...defaults,...stored});const st=JSON.parse(localStorage.getItem('lotus-stats')||'null');if(st)setStats(st);setPlayerName(localStorage.getItem('lotus-name')||'');}catch{}setHydrated(true);return()=>{mounted.current=false;clearTimeout(announceTimer.current);clearTimeout(codeCopyTimer.current);Object.values(emoteTimers.current).forEach(clearTimeout);activeAbort.current.abort();animations.current.forEach(a=>a.cancel());audio.current?.ctx?.close();};},[]);
  // Preloads every image the onboarding/identity/home screens paint, so the
  // loading screen's progress bar reflects real work — not a fake timer. A
  // 404 on any one image still counts as settled, and an 8s hard timeout
@@ -302,6 +302,24 @@ export default function Home(){
   }
  }
  async function sendCommand(command:string,extra:any={}){try{await remote.current?.command(command,extra);}catch(err:any){setJoinError(err?.message||'That did not reach the table.');}}
+ async function copyRoomCode(code:string){
+  try{await navigator.clipboard.writeText(code);}
+  catch{
+   // Clipboard API can be unavailable (an insecure context, an older WebView) —
+   // an offscreen textarea + execCommand is the long-standing fallback for that.
+   const el=document.createElement('textarea');el.value=code;el.style.position='fixed';el.style.opacity='0';document.body.appendChild(el);el.select();
+   try{document.execCommand('copy');}catch{}
+   document.body.removeChild(el);
+  }
+  setCodeCopied(true);clearTimeout(codeCopyTimer.current);codeCopyTimer.current=setTimeout(()=>setCodeCopied(false),1800);
+ }
+ function shareRoomCode(code:string){
+  const text=`Join my Kamayuu table — code ${code}`,url=typeof window!=='undefined'?window.location.origin:'';
+  if(typeof navigator!=='undefined'&&(navigator as any).share){(navigator as any).share({title:'Kamayuu',text,url}).catch(()=>{});return;}
+  // No native share sheet (most desktop browsers) — WhatsApp Web link is the
+  // closest thing to a universal "share" fallback for a table code.
+  window.open(`https://wa.me/?text=${encodeURIComponent(text+' '+url)}`,'_blank','noopener,noreferrer');
+ }
  async function leaveOnline(){
   // Tear the table down before telling the server. The notify is a network call
   // that can hang on a bad connection, and awaiting it first left the button
@@ -416,6 +434,10 @@ export default function Home(){
     />
   )}
  {online==='room'&&!s&&lobby&&<div className="welcome"><div className="welcome-card lobby-card"><Lotus/><p className="eyebrow">TABLE CODE</p><h1 className="room-code">{lobby.code}</h1>
+ <div className="code-actions">
+  <button className="code-action" onClick={()=>copyRoomCode(lobby.code)} aria-label="Copy table code">{codeCopied?<Check size={15}/>:<Copy size={15}/>}<span>{codeCopied?'Copied':'Copy code'}</span></button>
+  <button className="code-action" onClick={()=>shareRoomCode(lobby.code)} aria-label="Share table code"><Share2 size={15}/><span>Share</span></button>
+ </div>
  <ul className="lobby-members">{lobby.members.map((m:any)=><li key={m.id}><i className={'seat-dot'+(presence.includes(m.id)?' on':'')}/><span>{m.name}</span>{m.id===lobby.host&&<b>HOST</b>}{m.ready&&<em>READY</em>}</li>)}</ul>
  <button className="primary" onClick={()=>sendCommand('ready',{ready:!myReady})}>{myReady?'Not ready'
  :'I’m ready'}</button>

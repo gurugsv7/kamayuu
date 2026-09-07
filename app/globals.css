@@ -61,7 +61,10 @@
 .join-row input{flex:1;letter-spacing:4px;text-transform:uppercase;text-align:center;font-size:17px}
 .join-row .primary{width:auto;flex:0 0 auto;padding:10px 18px}
 .form-error{color:#f0a294!important;font-size:12px!important;margin:0!important}
-.lobby-card .room-code{font:44px Georgia;letter-spacing:7px;margin:12px 0 18px;color:#ffe2a2}
+.lobby-card .room-code{font:44px Georgia;letter-spacing:7px;margin:12px 0 4px;color:#ffe2a2}
+.code-actions{display:flex;justify-content:center;gap:10px;margin:0 0 18px}
+.code-action{display:flex;align-items:center;gap:6px;font:11px Arial;letter-spacing:1px;color:#e1c18e;background:#111b2499;border:1px solid #b58c4855;border-radius:20px;padding:7px 14px;min-height:32px;transition:filter .15s}
+.code-action:active{filter:brightness(1.25)}
 .lobby-members{list-style:none;margin:0 0 18px;padding:0;display:flex;flex-direction:column;gap:9px}
 .lobby-members li{display:flex;align-items:center;gap:9px;font:14px Georgia;color:#e7d7b6;border-bottom:1px solid #a17b4033;padding-bottom:8px}
 .lobby-members li span{flex:1;text-align:left}
