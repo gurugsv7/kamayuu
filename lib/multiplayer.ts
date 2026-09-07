@@ -1,5 +1,6 @@
 import {type SupabaseClient, type RealtimeChannel} from '@supabase/supabase-js';
 import {auth, currentSession, signInAsGuest, supabaseConfigured} from './account';
+import {getSessionId} from './analytics';
 
 const URL=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
 const KEY=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||'';
@@ -24,7 +25,10 @@ export class MultiplayerService {
  }
  async request(command:string,extra:any={},retry=true):Promise<any>{
   const session=await this.authenticate();
-  const body={command,roomId:this.room?.id,actionId:crypto.randomUUID(),...extra};
+  // `session` links a server-fired analytics event (room join, game start, a
+  // rematch...) back to this tab's engagement session, so "games per session"
+  // isn't limited to solo play, which is the only mode the client tracks directly.
+  const body={command,roomId:this.room?.id,actionId:crypto.randomUUID(),session:getSessionId(),...extra};
   const call=async()=>{
    const response=await fetch(`${URL}/functions/v1/lotus-game`,{method:'POST',headers:{apikey:KEY,Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
    const data: any=await response.json();if(data.packet)this.receive(data.packet);
