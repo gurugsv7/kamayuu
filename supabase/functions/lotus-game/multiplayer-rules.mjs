@@ -69,6 +69,11 @@ export function applyIntent(before,userId,input,now=Date.now()) {
     // Purely decorative: no state to mutate, just an event for everyone else's client to play.
     if(!s)return {room,events};
     events=[{type:'emote',p,name:String(input.name||'haha').slice(0,24)}];
+  }else if(input.command==='message'){
+    // Also purely decorative — a preset quick-chat line, capped short since it
+    // rides the same untrusted client-text path as an emote name.
+    if(!s)return {room,events};
+    events=[{type:'message',p,text:String(input.text||'').slice(0,40)}];
   }else if(input.command==='hold'){
     // Claiming only ever extends the caller's own turn, so it cannot be used to
     // stall anyone else, and clears the strikes of a player who is clearly back.

@@ -38,6 +38,10 @@ test('lastCall\'s countdown only refreshes on a real match attempt, not an emote
  // Give player b (seat 1) a 5, and put a 5 on top of the discard, so their match at i:0 is guaranteed to hit.
  relocate('5♠',r.state.players[1].slots,0);
  relocate('5♥',r.state.discard,r.state.discard.length-1);
+ // Relocating cards directly (rather than through a real deal/action) can leave
+ // a player's own bottom-two knowledge pointing at a card that's no longer
+ // there — clear it, since this test only cares about deadline behavior.
+ r.state.knowledge=r.state.knowledge.map(()=>r.state.players.map(()=>[null,null,null,null]));
  r.state.phase='lastCall';r.state.caller=0;r.state.remaining=[];r.state.active=2;
  const base=1_000_000;r.deadline=base;
  let x=applyIntent(r,'a',{command:'emote',name:'haha'},base+50);

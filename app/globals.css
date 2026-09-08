@@ -1931,3 +1931,16 @@ html,body,#root { background: #090f15; }
 .emote-option.soon span{opacity:.5}
 @keyframes emotePickerIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 @keyframes emoteHahaPlay{to{background-position:100% 0}}
+.message-button{position:absolute;bottom:calc(6.5% + 78px);right:24px;display:flex;align-items:center;flex-direction:column;gap:6px;color:#d4b782;font:10px Georgia;letter-spacing:1.5px;min-width:46px;min-height:44px}
+.message-button:disabled{opacity:.45}
+.message-avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#111b2499;border:2px solid #b58c4855;transition:transform .15s,border-color .15s}
+.message-button.open .message-avatar,.message-button:active:not(:disabled) .message-avatar{border-color:#ffe0a1;transform:scale(.94)}
+@media(min-width:700px){.message-button{right:43px}}
+.message-picker{position:absolute;bottom:calc(6.5% + 128px);right:12px;width:210px;z-index:21;background:linear-gradient(150deg,#1a2630f7,#0d1720fa);border:1px solid #ad895755;border-radius:14px;padding:12px 10px;box-shadow:0 20px 60px #000c;animation:emotePickerIn .16s ease-out}
+.message-picker:after{content:'';position:absolute;bottom:-8px;right:26px;width:14px;height:14px;background:#111c26;border-right:1px solid #ad895755;border-bottom:1px solid #ad895755;transform:rotate(45deg)}
+.message-picker>p{margin:0 0 10px;text-align:center;font:10px Arial;letter-spacing:3px;color:#c9ad7d;text-transform:uppercase}
+.message-picker-list{display:flex;flex-direction:column;gap:6px}
+.message-option{display:flex;align-items:center;gap:9px;background:#0d172080;border:1px solid #a1794022;border-radius:20px;padding:7px 12px;color:#e7d7b6;font:12px Georgia;text-align:left;transition:filter .12s}
+.message-option:active{filter:brightness(1.2)}
+.message-option-icon{font-size:15px;line-height:1}
+.chat-bubble{max-width:92%;background:linear-gradient(150deg,#1a2630f7,#0d1720fa);border:1px solid #ad895766;border-radius:12px;padding:8px 12px;font:12px Georgia;color:#f3e3c9;text-align:center;white-space:normal;box-shadow:0 8px 20px #000a;animation:emotePickerIn .16s ease-out}
