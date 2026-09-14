@@ -11,7 +11,6 @@ import CreditsPage from '../app/credits/page';
 // index.html, so the page to render is picked here from the real URL.
 const path = window.location.pathname.replace(/\/+$/, '') || '/';
 const Page = path === '/credits' ? CreditsPage : Home;
-if (path === '/credits') document.title = 'Credits | Kamayuu';
 
 const container = document.getElementById('root')!;
 createRoot(container).render(
