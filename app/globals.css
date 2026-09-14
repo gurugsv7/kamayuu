@@ -1946,4 +1946,25 @@ html,body,#root { background: #090f15; }
 .chat-bubble{max-width:92%;background:linear-gradient(150deg,#1a2630f7,#0d1720fa);border:1px solid #ad895766;border-radius:12px;padding:8px 12px;font:12px Georgia;color:#f3e3c9;text-align:center;white-space:normal;box-shadow:0 8px 20px #000a;animation:emotePickerIn .16s ease-out}
 .credits-content a{color:#e9c98a;text-decoration:underline;text-underline-offset:3px}
 .credits-content a:hover{color:#f6e0ab}
+/* Learn hub: the three-level "how to play" picker (Learn to Play / Quick Rules / Full Rules). */
+.learn-hub{display:flex;flex-direction:column;gap:10px}
+.learn-option{display:flex;flex-direction:column;gap:3px;text-align:left;background:#0d172080;border:1px solid #a1794033;border-radius:8px;padding:12px 14px;min-height:44px}
+.learn-option:active{filter:brightness(1.18)}
+.learn-option b{font:16px Georgia;color:#f1d9af;font-weight:500}
+.learn-option span{font:11px Arial;color:#b4a78b}
+/* Interactive tutorial: reuses the real table's classes for the board itself,
+   plus a small set of tutorial-only affordances below. */
+.tutorial-skip{opacity:.85}
+@keyframes tutorialPulse{0%,100%{box-shadow:0 0 0 3px #ffda8655,0 0 16px #f8af5566}50%{box-shadow:0 0 0 6px #ffda86aa,0 0 32px #f8af55cc}}
+.tutorial-target{animation:tutorialPulse 1.1s ease-in-out infinite}
+@keyframes tutorialShake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-5px)}40%,60%{transform:translateX(5px)}}
+.tutorial-shake{animation:tutorialShake .28s}
+.tutorial-hint{position:absolute;left:50%;top:61%;transform:translateX(-50%);background:#0d1720ee;border:1px solid #ad895755;border-radius:20px;padding:6px 14px;font:11px Arial;color:#f2ce8d;letter-spacing:.3px;white-space:nowrap;z-index:6;pointer-events:none}
+.tutorial-quiz{position:absolute;top:30%;left:15px;right:15px;z-index:22;background:linear-gradient(135deg,#17242afc,#0c171ffc);border:1px solid #bc9655;border-radius:4px;padding:16px 15px 17px;text-align:center;box-shadow:0 15px 50px #000a}
+.tutorial-quiz-q{font:14px Georgia;color:#f1d9af;margin:0 0 12px}
+.tutorial-quiz-choices{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.tutorial-quiz-choices button{border:1px solid #a1794055;border-radius:20px;padding:9px 18px;font:13px Georgia;min-height:42px}
+.tutorial-quiz-feedback{font:13px Georgia;color:#e1d1b5;margin:0}
+.tutorial-final .tutorial-recap{font:12px Georgia;letter-spacing:1px;color:#d9b06c;margin:10px 0}
+@media(prefers-reduced-motion:reduce){.tutorial-target,.tutorial-shake{animation:none}}
 .onboarding-footer-tagline a{pointer-events:auto;color:inherit;text-decoration:none;border-bottom:1px solid #9a887066}
