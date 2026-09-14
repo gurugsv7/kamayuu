@@ -220,6 +220,10 @@ export default function OnboardingScreen({
             </button>
           </div>
         </div>
+
+        <p className="onboarding-footer-tagline">
+          Built by <a href="https://www.builtbygsv.com" target="_blank" rel="noopener noreferrer">builtbygsv</a>
+        </p>
       </div>
     </div>
   );

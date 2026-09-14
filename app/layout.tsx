@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   description:
     'Kamayuu is a card game of memory, tracking, and nerve. Play solo vs AI, quick match, or a private table with friends — free to play, no download needed.',
   alternates: { canonical: 'https://kamayuu.builtbygsv.in/' },
+  authors: [{ name: 'builtbygsv', url: 'https://www.builtbygsv.com' }],
+  creator: 'builtbygsv',
+  publisher: 'builtbygsv',
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large' } },
   manifest: '/site.webmanifest',
   keywords: [
