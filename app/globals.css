@@ -1959,7 +1959,38 @@ html,body,#root { background: #090f15; }
 .tutorial-target{animation:tutorialPulse 1.1s ease-in-out infinite}
 @keyframes tutorialShake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-5px)}40%,60%{transform:translateX(5px)}}
 .tutorial-shake{animation:tutorialShake .28s}
-.tutorial-hint{position:absolute;left:50%;top:61%;transform:translateX(-50%);background:#0d1720ee;border:1px solid #ad895755;border-radius:20px;padding:6px 14px;font:11px Arial;color:#f2ce8d;letter-spacing:.3px;white-space:nowrap;z-index:6;pointer-events:none}
+/* Tutorial progress, in the round-label's corner: step count, step name, seven pips. */
+.tutorial-progress{max-width:120px;line-height:1.5}
+.tutorial-progress span{display:block;font:600 9px 'Cinzel',Georgia,serif;letter-spacing:2px;color:#c6b494}
+.tutorial-progress b{display:block;font:italic 600 15px 'Cormorant Garamond',Georgia,serif;letter-spacing:0;color:#f1d9af;margin-top:1px}
+.tutorial-progress i{display:flex;gap:4px;margin-top:6px}
+.tutorial-progress em{width:9px;height:3px;background:#a17b4055;border-radius:2px}
+.tutorial-progress em.on{background:linear-gradient(90deg,#c9a35a,#f1d59b);box-shadow:0 0 6px #e0a94a66}
+/* Coach toast: the one thing to do next, pinned in the empty band between the
+   piles and your hand. Brass = do this; lacquer = what the opponent is doing. */
+.coach-toast{position:absolute;left:50%;top:52.4%;transform:translate(-50%,-50%);z-index:12;max-width:min(92%,380px);padding:11px 22px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;pointer-events:none;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% calc(100% - 9px),calc(100% - 9px) 100%,9px 100%,0 calc(100% - 9px),0 9px);animation:coachIn .28s cubic-bezier(.2,.8,.25,1) both}
+.coach-toast b{font:600 12.5px 'Cinzel',Georgia,serif;letter-spacing:2.2px;text-transform:uppercase;text-wrap:balance}
+.coach-toast span{font:italic 500 15.5px/1.3 'Cormorant Garamond',Georgia,serif;text-wrap:pretty}
+.coach-toast.brass{background:linear-gradient(180deg,#f1d59b,#c9a35a 45%,#a07a3a);color:#1e150a;border:1px solid #6a4f26;box-shadow:inset 0 1px 0 #fff3cc,inset 0 -2px 0 #5a412088;filter:drop-shadow(0 10px 18px #000b) drop-shadow(0 0 16px #e0a94a44)}
+.coach-toast.brass span{color:#3a2a12}
+.coach-toast.lacquer{background:linear-gradient(180deg,#1a222a,#0a0e13);color:#e1b56b;border:1px solid #c9a35a77;box-shadow:inset 0 1px 0 #ffe7b422;filter:drop-shadow(0 10px 18px #000b)}
+.coach-toast.lacquer span{color:#d8c8a8}
+@keyframes coachIn{from{opacity:0;transform:translate(-50%,-50%) translateY(8px) scale(.96)}to{opacity:1;transform:translate(-50%,-50%)}}
+/* Lesson card: a parchment note the player reads at their own pace. Sits over
+   the table on a dark scrim so the type can be generous. */
+.lesson-card{position:absolute;inset:0;z-index:26;display:grid;place-items:center;padding:16px;background:radial-gradient(ellipse at 50% 45%,#0b141b99 0%,#02060acc 100%);animation:lessonScrim .3s ease-out both}
+.lesson-sheet{width:min(352px,100%);padding:24px 22px 22px;color:var(--ink);background:radial-gradient(120% 70% at 50% 0%,var(--parch-hi) 0%,transparent 60%),radial-gradient(60% 40% at 12% 88%,#d6bf9666 0%,transparent 70%),radial-gradient(45% 32% at 90% 18%,#d2ba8c55 0%,transparent 70%),linear-gradient(180deg,#f3e6cc,#e6d3ae);border-top:9px solid #a07a3a;border-image:linear-gradient(180deg,#f1d59b,#a07a3a 55%,#cfa75c 80%,#7c5a2a) 1;box-shadow:inset 0 0 0 1px #b39a6d,inset 0 0 0 7px #f1e4c8,inset 0 0 0 8px #a58a5a88,0 30px 70px #000d;animation:ledgerLay .45s cubic-bezier(.2,.8,.25,1) both;text-wrap:pretty}
+.lesson-eyebrow{margin:0 0 6px;font:600 10px 'Cinzel',Georgia,serif;letter-spacing:4px;text-transform:uppercase;color:var(--ink-3)}
+.lesson-title{margin:0 0 10px;font:italic 600 clamp(24px,6.6vw,28px)/1.12 'Cormorant Garamond',Georgia,serif;color:#17100a;letter-spacing:-.2px}
+.lesson-body{margin:0 0 18px;font:500 17px/1.45 'Cormorant Garamond',Georgia,serif;color:var(--ink-2)}
+.lesson-cards{display:flex;justify-content:center;gap:12px;margin:6px 0 16px}
+.lesson-cards figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.lesson-mini{width:48px;height:67px;border-radius:4px;box-shadow:0 3px 6px #0006}
+.lesson-mini .playing-card{box-shadow:none}
+.lesson-cards figcaption{font:600 9.5px 'Cinzel',Georgia,serif;letter-spacing:1px;color:var(--ink-2);white-space:nowrap}
+.lesson-sheet .ink-btn{width:100%}
+@keyframes lessonScrim{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.coach-toast,.lesson-card,.lesson-sheet{animation:none!important}}
 .tutorial-quiz{position:absolute;top:30%;left:15px;right:15px;z-index:22;background:linear-gradient(135deg,#17242afc,#0c171ffc);border:1px solid #bc9655;border-radius:4px;padding:16px 15px 17px;text-align:center;box-shadow:0 15px 50px #000a}
 .tutorial-quiz-q{font:14px Georgia;color:#f1d9af;margin:0 0 12px}
 .tutorial-quiz-choices{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}

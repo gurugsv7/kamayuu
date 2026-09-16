@@ -10,6 +10,13 @@
 // state, never opens a Supabase room, and never writes match results or
 // normal stats. Exiting or refreshing mid-tutorial cannot corrupt a real game.
 //
+// Teaching surfaces (see the Ledger & Lacquer section of globals.css):
+//  - lesson(): a parchment card the player dismisses — used whenever a rule
+//    needs a sentence or two, so a first-time player is never left guessing.
+//  - waitForTap(): a brass coach toast in the table's centre band naming the
+//    one thing to tap next; the target itself pulses. Non-blocking.
+//  - narrate(): the lacquer variant of that toast for the opponent's moves.
+//
 // Animation discipline mirrors app/page.tsx: a transition() is planned, every
 // visual step plays out using the pre-transition ("before") and planned
 // ("after") snapshots, and only once everything has visually settled does
@@ -35,6 +42,8 @@ const DEALT_YOU = ['KD', 'KS', '10S', '8C']; // top-left, top-right, bottom-left
 const DEALT_KAI = ['8D', '5H', '9C', '7S'];
 const INITIAL_DISCARD = '9H';
 const SCRIPTED_DRAWS = ['2D', '4S', '6H', '5D', '3D', '3C', 'JH', '4H', 'QD', '4D', '6S'];
+
+const STEPS = ['Win', 'Remember', 'Draw', 'Risk', 'Throw', 'Powers', 'Call'];
 
 function buildInitialState() {
   const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -68,8 +77,10 @@ function buildInitialState() {
   return state;
 }
 
-type Expect = {kind: 'deck'} | {kind: 'slot'; p: number; i: number} | {kind: 'buzzer'} | {kind: 'swap-confirm'} | null;
+type Expect = {kind: 'deck'} | {kind: 'slot'; p: number; i: number} | {kind: 'buzzer'} | {kind: 'swap-confirm'} | {kind: 'continue'} | null;
 type Quiz = {question: string; choices: {label: string; correct: boolean}[]} | null;
+type Lesson = {eyebrow: string; title: string; body: string; cta: string; cards?: {card: any; label: string}[]} | null;
+type Coach = {title: string; body?: string; tone: 'brass' | 'lacquer'} | null;
 
 class Stopped extends Error {}
 
@@ -84,16 +95,15 @@ export interface KamayuuTutorialProps {
 export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, haptics = true, motion = false}: KamayuuTutorialProps) {
   const [engine, setEngine] = useState<any>(() => buildInitialState());
   const [rev, setRev] = useState(0);
-  const [caption, setCaption] = useState('LEARN TO PLAY');
-  const [message, setMessage] = useState('A tiny, real hand of Kamayuu.');
   const [expect, setExpect] = useState<Expect>(null);
-  const [hint, setHint] = useState('');
+  const [lesson, setLesson] = useState<Lesson>(null);
+  const [coach, setCoach] = useState<Coach>(null);
   const [memoryCountdown, setMemoryCountdown] = useState<number | null>(null);
-  const [memorizing, setMemorizing] = useState(false);
   const [inspectPair, setInspectPair] = useState<{p: number; i: number}[] | null>(null);
   const [quiz, setQuiz] = useState<Quiz>(null);
   const [quizFeedback, setQuizFeedback] = useState('');
   const [done, setDone] = useState(false);
+  const [step, setStep] = useState(1);
   const [stepLabel, setStepLabel] = useState('intro');
 
   const engineRef = useRef(engine);
@@ -225,11 +235,6 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
       node.remove();
     }
   }
-  function say(cap: string, msg: string, step?: string) {
-    setCaption(cap);
-    setMessage(msg);
-    if (step) setStepLabel(step);
-  }
   /** Computes the next state WITHOUT publishing it — the caller animates using
    *  the still-current `engineRef.current` ("before") and this plan's `state`
    *  ("after"), then calls commitState() once everything has settled. */
@@ -241,36 +246,67 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
     setEngine(state);
     setRev((v) => v + 1);
   }
-  function waitForTap(target: Expect, hintText: string, epoch: number) {
+  function stage(n: number, id: string) {
+    setStep(n);
+    setStepLabel(id);
+  }
+  /** Opponent narration: a lacquer toast in the centre band. Non-blocking;
+   *  replaced by whatever surface the next beat shows. */
+  function narrate(title: string, body?: string) {
+    setCoach({title, body, tone: 'lacquer'});
+  }
+  /** A parchment lesson card the player reads at their own pace. */
+  function teach(card: NonNullable<Lesson>, epoch: number) {
+    guard(epoch);
+    setCoach(null);
+    setLesson(card);
+    return new Promise<void>((resolve) => {
+      setExpect({kind: 'continue'});
+      resolverRef.current = () => {
+        setLesson(null);
+        setExpect(null);
+        resolverRef.current = null;
+        resolve();
+      };
+    });
+  }
+  /** A brass coach toast naming the one thing to tap; the target pulses. */
+  function waitForTap(target: Expect, title: string, body: string | undefined, epoch: number) {
     guard(epoch);
     setExpect(target);
-    setHint(hintText);
+    setCoach({title, body, tone: 'brass'});
     return new Promise<void>((resolve) => {
       resolverRef.current = () => {
         setExpect(null);
-        setHint('');
+        setCoach(null);
         resolverRef.current = null;
         resolve();
       };
     });
   }
   function tapSlot(p: number, i: number) {
-    if (quiz) return;
+    if (quiz || lesson) return;
     if (expect?.kind === 'slot' && expect.p === p && expect.i === i) resolverRef.current?.();
     else if (expect) nudge();
   }
   function tapDeck() {
-    if (quiz) return;
+    if (quiz || lesson) return;
     if (expect?.kind === 'deck') resolverRef.current?.();
     else if (expect) nudge();
   }
   function tapBuzzer() {
-    if (quiz) return;
+    if (quiz || lesson) return;
     if (expect?.kind === 'buzzer') resolverRef.current?.();
     else if (expect) nudge();
   }
   function tapSwapConfirm() {
     if (expect?.kind === 'swap-confirm') resolverRef.current?.();
+  }
+  function tapContinue() {
+    if (expect?.kind === 'continue') {
+      sfx('flip');
+      resolverRef.current?.();
+    }
   }
   function nudge() {
     sfx('fail');
@@ -360,127 +396,186 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
     await fly('held0', 'discard', heldCard, epoch, 340);
     commitState(plan.state);
   }
+  /** Kai draws and throws the draw straight away — a filler turn. */
+  async function kaiFiller(epoch: number) {
+    guard(epoch);
+    narrate("Kai's turn", 'Kai draws a card and throws it on the discard pile.');
+    await drawBeat(1, epoch);
+    await discardBeat(1, epoch);
+    await wait(500, epoch);
+  }
 
   async function runScript(epoch: number) {
     await paint();
     guard(epoch);
 
-    // ---- Step 1: the objective + memory ----
-    say('GET THE LOWEST TOTAL', 'That is the whole game. Lowest score wins.', 'intro');
-    await wait(1900, epoch);
-    guard(epoch);
-    say('YOU ONLY SEE THESE CARDS NOW', 'Remember them.', 'initial_memory');
-    setMemorizing(true);
+    // ---- Step 1: how to win ----
+    stage(1, 'intro');
+    await teach({
+      eyebrow: 'How to win',
+      title: 'Lowest total wins.',
+      body: 'Every card is worth points — its number, or 11 for a Jack, 12 for a Queen, 13 for a King. Two exceptions: Aces are 1, and red Kings are worth nothing at all. When the hand ends, everyone adds up their cards. The smallest total wins.',
+      cta: 'Deal me in',
+      cards: [
+        {card: mkCard('AS'), label: '1 point'},
+        {card: mkCard('7H'), label: '7 points'},
+        {card: mkCard('QC'), label: '12 points'},
+        {card: mkCard('KD'), label: '0 points'},
+      ],
+    }, epoch);
+
+    // ---- Step 2: the memory mechanic ----
+    stage(2, 'initial_memory');
+    await teach({
+      eyebrow: 'Your hand',
+      title: 'Four cards. You only ever see two.',
+      body: 'Your cards stay face-down in four fixed positions all hand long. Right now you may look at your bottom two — for a few seconds. After that they turn back over, and nothing will remind you what they were. Fix them in your memory.',
+      cta: 'Show me my two',
+    }, epoch);
+    setCoach({title: 'Remember these two', body: 'They flip back over in 6', tone: 'brass'});
     await Promise.all([flip('p0-2', engineRef.current.players[0].slots[2], epoch), flip('p0-3', engineRef.current.players[0].slots[3], epoch)]);
-    for (let n = 5; n > 0; n--) {
+    for (let n = 6; n > 0; n--) {
       guard(epoch);
       setMemoryCountdown(n);
+      setCoach({title: 'Remember these two', body: `They flip back over in ${n}`, tone: 'brass'});
       await wait(1000, epoch);
     }
     setMemoryCountdown(null);
+    setCoach(null);
     await Promise.all([flip('p0-2', null, epoch), flip('p0-3', null, epoch)]);
-    setMemorizing(false);
     commitState(planFor({type: 'remember'}).state);
 
-    // ---- Step 2: first safe move ----
-    guard(epoch);
-    say('YOUR TURN', 'Draw a card.', 'draw');
-    await waitForTap({kind: 'deck'}, 'Tap the deck.', epoch);
+    // ---- Step 3: draw and replace ----
+    stage(3, 'draw');
+    await teach({
+      eyebrow: 'Your turn',
+      title: 'Every turn starts with a draw.',
+      body: 'Take the top card from the deck. Then you choose: swap it in for one of your four cards, or throw it straight onto the discard pile. Whatever you take out of your hand goes face-up on that pile, for everyone to see.',
+      cta: 'Draw',
+    }, epoch);
+    await waitForTap({kind: 'deck'}, 'Tap the deck', 'Take a card.', epoch);
     await drawBeat(0, epoch);
-    say('YOU REMEMBER A HIGHER CARD HERE', 'Replace it.', 'safe_replace');
-    await waitForTap({kind: 'slot', p: 0, i: 2}, 'Tap your remembered card (bottom-left).', epoch);
-    await replaceBeat(0, 2, epoch);
-    say('NICE', 'You lowered a card you knew.', 'safe_replace');
-    await wait(1100, epoch);
+    {
+      const drawn = engineRef.current.held;
+      const known = engineRef.current.players[0].slots[2];
+      await teach({
+        eyebrow: 'Your draw',
+        title: `You drew a ${drawn.rank} — a great card.`,
+        body: `Your bottom-left card is the ${known.rank} you memorised. A ${drawn.rank} is worth far less, so swap it in: the ${known.rank} leaves your hand for the discard pile, and the ${drawn.rank} takes its exact position.`,
+        cta: 'Show me',
+      }, epoch);
+    }
+    await waitForTap({kind: 'slot', p: 0, i: 2}, 'Tap your bottom-left card', 'Swap the 2 in for the 10.', epoch);
+    {
+      const {oldCard, heldCard} = await replaceBeat(0, 2, epoch);
+      await teach({
+        eyebrow: 'Nice',
+        title: `Your total just dropped by ${value(oldCard) - value(heldCard)}.`,
+        body: `The ${oldCard.rank} is gone, the ${heldCard.rank} sits where it was. Improving a card you know is the safest move in the game — you can see exactly how much it helps.`,
+        cta: 'Continue',
+      }, epoch);
+    }
 
-    // ---- Kai's quick filler turn ----
-    guard(epoch);
-    say("KAI'S TURN", 'A quick move.', 'draw');
-    await drawBeat(1, epoch);
-    await discardBeat(1, epoch);
+    await kaiFiller(epoch);
 
-    // ---- Step 3: hidden cards and risk (bad risk) ----
-    guard(epoch);
-    say('YOUR TURN AGAIN', 'Draw a card.', 'risk_intro');
-    await waitForTap({kind: 'deck'}, 'Tap the deck.', epoch);
+    // ---- Step 4: hidden cards and risk ----
+    stage(4, 'risk_intro');
+    await waitForTap({kind: 'deck'}, 'Tap the deck', 'Your turn again.', epoch);
     await drawBeat(0, epoch);
-    say('YOU KNOW ONE CARD IS HIGH', 'But these two are mysteries. Unknown does not mean bad — it means a gamble.', 'risk_intro');
-    await wait(2200, epoch);
-    guard(epoch);
-    say('TRY THE RISK', 'Replace a card you have never seen.', 'bad_risk');
-    await waitForTap({kind: 'slot', p: 0, i: 0}, 'Tap a mystery card (top-left).', epoch);
+    await teach({
+      eyebrow: 'The gamble',
+      title: 'Your top two cards are a mystery.',
+      body: `You have never seen them — and you are still allowed to swap one out for this ${engineRef.current.held.rank}. The catch: you only learn what you threw away once it is gone. It might be terrible. It might be the best card in the game. Try it.`,
+      cta: "I'll risk it",
+    }, epoch);
+    stage(4, 'bad_risk');
+    await waitForTap({kind: 'slot', p: 0, i: 0}, 'Tap your top-left card', 'Swap the 6 in — blind.', epoch);
     {
       const {oldCard} = await replaceBeat(0, 0, epoch);
-      say('OUCH', `That hidden card was ${label(oldCard)} — worth ${value(oldCard)} points. You never know what a hidden card is until you risk it.`, 'bad_risk');
-      await wait(2400, epoch);
+      await teach({
+        eyebrow: 'Ouch',
+        title: `That was a red King — worth ${value(oldCard)}.`,
+        body: 'The best card in the whole deck, and you traded it away for a 6. That is the risk: a hidden card can be gold, and you never know until it is gone.',
+        cta: 'Noted',
+      }, epoch);
     }
 
-    // ---- Kai's quick filler turn ----
-    guard(epoch);
-    say("KAI'S TURN", 'A quick move.', 'bad_risk');
-    await drawBeat(1, epoch);
-    await discardBeat(1, epoch);
+    await kaiFiller(epoch);
 
-    // ---- Step 3b: good risk ----
-    guard(epoch);
-    say('ONE MORE MYSTERY', 'Draw again.', 'good_risk');
-    await waitForTap({kind: 'deck'}, 'Tap the deck.', epoch);
+    stage(4, 'good_risk');
+    await waitForTap({kind: 'deck'}, 'Tap the deck', 'One more mystery to go.', epoch);
     await drawBeat(0, epoch);
-    say('RISK IT AGAIN', 'Replace your last unknown card.', 'good_risk');
-    await waitForTap({kind: 'slot', p: 0, i: 1}, 'Tap your other mystery card (top-right).', epoch);
+    await teach({
+      eyebrow: 'One more mystery',
+      title: 'Try the other hidden card.',
+      body: `Same gamble, other position. Swap the ${engineRef.current.held.rank} in for whatever is hiding top-right.`,
+      cta: 'Risk it',
+    }, epoch);
+    await waitForTap({kind: 'slot', p: 0, i: 1}, 'Tap your top-right card', 'Swap the 3 in — blind.', epoch);
     {
       const {oldCard} = await replaceBeat(0, 1, epoch);
-      say('GREAT RISK', `You dumped a ${label(oldCard)} — worth ${value(oldCard)} points. That gamble paid off.`, 'good_risk');
-      await wait(2000, epoch);
+      await teach({
+        eyebrow: 'Great risk',
+        title: `That was a black King — worth ${value(oldCard)}.`,
+        body: 'The worst card in the deck, gone. Now you know all four of your cards. Hidden does not mean bad, and it does not mean good. Hidden means a gamble.',
+        cta: 'Got it',
+      }, epoch);
     }
-    guard(epoch);
-    say('UNKNOWN MEANS A GAMBLE', 'Not good. Not bad. A gamble.', 'good_risk');
-    await wait(1700, epoch);
 
-    // ---- Step 4: memory check (pure UI, no engine transition) ----
-    guard(epoch);
+    // ---- Memory check (pure UI, no engine transition) ----
     await runQuiz(epoch);
 
-    // ---- Kai sets up the match ----
+    // ---- Step 5: match / throw ----
+    stage(5, 'throw');
     guard(epoch);
-    say("KAI'S TURN", 'Watch the discard.', 'throw');
+    narrate("Kai's turn", 'Kai swaps a card. Watch what lands on the discard pile.');
     await drawBeat(1, epoch);
     await replaceBeat(1, 0, epoch);
-
-    // ---- Step 5: match / throw ----
-    guard(epoch);
-    say('MATCH!', 'You have the same card. Throw it.', 'throw');
-    await waitForTap({kind: 'slot', p: 0, i: 3}, 'Tap your matching card (bottom-right).', epoch);
+    await wait(400, epoch);
+    await teach({
+      eyebrow: 'A match',
+      title: 'Kai just threw away an 8. You have an 8.',
+      body: 'Your bottom-right card — the other one you memorised. Whenever the top of the discard pile shows the same number as one of your cards, you may throw yours onto it, at any moment, even during someone else\'s turn. It leaves your hand for good: fewer cards, fewer points.',
+      cta: 'Throw it',
+    }, epoch);
+    await waitForTap({kind: 'slot', p: 0, i: 3}, 'Tap your bottom-right card', "Throw your 8 onto Kai's 8.", epoch);
     await matchBeat(3, epoch);
-    say('PERFECT', 'Matching the discard removes one of your cards.', 'throw');
-    await wait(1500, epoch);
+    await teach({
+      eyebrow: 'Perfect',
+      title: 'One card gone. Three left.',
+      body: 'Matching costs nothing and does not use up your turn. Throw a card that does not match, though, and it is shown to everyone and you pick up the discard as a penalty — so only throw when you are sure.',
+      cta: 'Continue',
+    }, epoch);
 
     // ---- Step 6a: Jack — peek (continues the same turn) ----
-    guard(epoch);
-    say('YOUR TURN CONTINUES', 'Draw again.', 'peek');
-    await waitForTap({kind: 'deck'}, 'Tap the deck.', epoch);
+    stage(6, 'peek');
+    await waitForTap({kind: 'deck'}, 'Tap the deck', 'It is still your turn — you still get to draw.', epoch);
     await drawBeat(0, epoch);
-    say('JACK — PEEK', 'Look at one of your cards.', 'peek');
-    await waitForTap({kind: 'slot', p: 0, i: 2}, 'Tap one of your cards to peek.', epoch);
+    await teach({
+      eyebrow: 'A power card',
+      title: 'A red Jack lets you peek.',
+      body: 'Some cards do something when you draw them from the deck. A red Jack lets you secretly look at one of your own cards. Then the Jack is thrown away — it never joins your hand.',
+      cta: 'Peek',
+    }, epoch);
+    await waitForTap({kind: 'slot', p: 0, i: 2}, 'Tap one of your cards', 'Only you will see it.', epoch);
     await peekBeat(2, epoch);
-    say('ONLY YOU SAW THAT', 'A red Jack always lets you check a card.', 'peek');
-    await wait(1700, epoch);
+    narrate('Only you saw that', 'The Jack goes to the discard pile.');
+    await wait(1600, epoch);
 
-    // ---- Kai filler ----
-    guard(epoch);
-    say("KAI'S TURN", 'A quick move.', 'peek');
-    await drawBeat(1, epoch);
-    await discardBeat(1, epoch);
+    await kaiFiller(epoch);
 
     // ---- Step 6b: Red Queen — swap ----
-    guard(epoch);
-    say('YOUR TURN', 'Draw again.', 'swap');
-    await waitForTap({kind: 'deck'}, 'Tap the deck.', epoch);
+    stage(6, 'swap');
+    await waitForTap({kind: 'deck'}, 'Tap the deck', 'Your turn.', epoch);
     await drawBeat(0, epoch);
-    say('RED QUEEN — SWAP', 'Pick one of your cards, then an opponent.', 'swap');
-    await waitForTap({kind: 'slot', p: 0, i: 0}, 'Tap one of your cards.', epoch);
-    say('NOW PICK KAI', 'Same position, their board.', 'swap');
-    await waitForTap({kind: 'slot', p: 1, i: 0}, "Tap Kai's matching card.", epoch);
+    await teach({
+      eyebrow: 'A power card',
+      title: 'A red Queen lets you trade.',
+      body: "Pick one of your cards, then the same position on Kai's board. You get to see both faces — then decide whether to swap them or keep yours. Take whichever is lower.",
+      cta: 'Trade',
+    }, epoch);
+    await waitForTap({kind: 'slot', p: 0, i: 0}, 'Tap your top-left card', 'The card you might trade away.', epoch);
+    await waitForTap({kind: 'slot', p: 1, i: 0}, "Now tap Kai's top-left card", 'Same position, their board.', epoch);
     {
       const mine = engineRef.current.players[0].slots[0];
       const theirs = engineRef.current.players[1].slots[0];
@@ -490,11 +585,7 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
       setInspectPair([{p: 0, i: 0}, {p: 1, i: 0}]);
       await Promise.all([flip('p0-0', mine, epoch), flip('p1-0', theirs, epoch)]);
       commitState(plan.state);
-      say('TRADE OR KEEP', `Yours is ${label(mine)}. Theirs is ${label(theirs)}. Take the better one.`, 'swap');
-      await wait(1900, epoch);
-      guard(epoch);
-      say('TAKE THEIRS', 'It is the lower card.', 'swap');
-      await waitForTap({kind: 'swap-confirm'}, 'Tap "Trade cards".', epoch);
+      await waitForTap({kind: 'swap-confirm'}, 'Tap “Trade cards”', `Yours is a ${mine.rank}, theirs is a ${theirs.rank}. A ${theirs.rank} beats a ${mine.rank} — take it.`, epoch);
       const swapPlan = planFor({type: 'swap'});
       await Promise.all([fly('p0-0', 'p1-0', mine, epoch, 950, 46), fly('p1-0', 'p0-0', theirs, epoch, 950, -46)]);
       await wait(400, epoch);
@@ -503,18 +594,29 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
       el('p1-0').classList.remove('destination');
       setInspectPair(null);
       commitState(swapPlan.state);
+      await teach({
+        eyebrow: 'Traded',
+        title: `The ${mine.rank} is Kai's problem now.`,
+        body: `Your total dropped by ${value(mine) - value(theirs)}. One more thing worth knowing: powers only work on cards drawn from the deck. A Jack or Queen picked up from the discard pile is just points.`,
+        cta: 'Continue',
+      }, epoch);
     }
 
-    // ---- Kai filler ----
-    guard(epoch);
-    say("KAI'S TURN", 'A quick move.', 'swap');
-    await drawBeat(1, epoch);
-    await discardBeat(1, epoch);
+    await kaiFiller(epoch);
 
     // ---- Step 7: call Kamayuu ----
-    guard(epoch);
-    say('THINK YOU ARE THE LOWEST?', 'Call Kamayuu.', 'kamayuu_call');
-    await waitForTap({kind: 'buzzer'}, 'Tap the buzzer.', epoch);
+    stage(7, 'kamayuu_call');
+    {
+      const mine = engineRef.current.players[0].slots.filter(Boolean);
+      const sum = mine.reduce((n: number, c: any) => n + value(c), 0);
+      await teach({
+        eyebrow: 'Calling Kamayuu',
+        title: `You know your whole hand: ${mine.map((c: any) => value(c)).join(' + ')} = ${sum}.`,
+        body: 'When you believe your total is the lowest at the table, press the buzzer. Everyone else gets one final turn, then every card is turned face-up. Call too early and someone lower beats you — it is always a judgment call. Right now, yours is a good one.',
+        cta: 'Press it',
+      }, epoch);
+    }
+    await waitForTap({kind: 'buzzer'}, 'Press the buzzer', 'Call Kamayuu.', epoch);
     {
       const plan = planFor({type: 'buzz'});
       sfx('buzz');
@@ -522,22 +624,22 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
       if (buz) await animate(buz, [{transform: 'translateY(0)'}, {transform: 'translateY(8px)', offset: 0.2}, {transform: 'translateY(-2px)', offset: 0.6}, {transform: 'translateY(0)'}], 460, epoch);
       commitState(plan.state);
     }
-    say('EVERYONE ELSE GETS ONE FINAL TURN', 'Your hand is set — passing the rest of your turn.', 'kamayuu_call');
-    await wait(1700, epoch);
+    narrate('Kamayuu!', 'Everyone else gets one last turn. Your hand is set, so the rest of yours is passed.');
+    await wait(2200, epoch);
     guard(epoch);
     commitState(planFor({type: 'pass'}).state);
 
-    say("KAI'S FINAL TURN", 'One last move.', 'kamayuu_call');
+    narrate("Kai's final turn", 'One last move.');
     await drawBeat(1, epoch);
     await discardBeat(1, epoch);
 
     guard(epoch);
-    say('LAST CALL', 'Every hand is locked in. Revealing now.', 'final_reveal');
-    await wait(1300, epoch);
+    narrate('Last call', 'Every card is about to be turned face-up.');
+    await wait(1500, epoch);
 
     // ---- Final reveal (flip everything using the planned end state, THEN commit) ----
     const finalPlan = planFor({type: 'finish'});
-    say('THE FINAL REVEAL', 'The table tells the truth.', 'final_reveal');
+    narrate('The final reveal', 'The table tells the truth.');
     for (let p = 0; p < finalPlan.state.players.length; p++) {
       for (let i = 0; i < finalPlan.state.players[p].slots.length; i++) {
         const c = finalPlan.state.players[p].slots[i];
@@ -551,6 +653,7 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
     }
     sfx(finalPlan.state.winners.includes(0) ? 'win' : 'lose');
     await wait(450, epoch);
+    setCoach(null);
     commitState(finalPlan.state);
     track('tutorial_completed');
     setDone(true);
@@ -562,7 +665,8 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
       {label: 'Q♣', correct: false},
       {label: '7♦', correct: false},
     ];
-    setQuiz({question: 'What was in your bottom-left position at the very start?', choices});
+    setCoach(null);
+    setQuiz({question: 'Memory check — what was your bottom-left card when the hand began?', choices});
     await new Promise<void>((resolve) => {
       resolverRef.current = () => resolve();
     });
@@ -573,8 +677,8 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
   function answerQuiz(correct: boolean) {
     if (!quiz) return;
     sfx(correct ? 'success' : 'fail');
-    setQuizFeedback(correct ? 'Exactly. Memory matters.' : 'Not quite — it was 10♠. The game tracks every card; only you track what you have seen.');
-    const t = setTimeout(() => resolverRef.current?.(), correct ? 1200 : 2000);
+    setQuizFeedback(correct ? 'Exactly. Memory matters.' : 'It was the 10♠. The game never reminds you — only you keep track.');
+    const t = setTimeout(() => resolverRef.current?.(), correct ? 1300 : 2200);
     timers.current.add(t);
   }
 
@@ -591,7 +695,7 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
         key={i}
         data-position={['TL', 'TR', 'BL', 'BR'][i]}
         data-loc={`p${p}-${i}`}
-        className={'slot' + (isExpected ? ' eligible tutorial-target' : '') + (!card ? ' empty' : '')}
+        className={'slot' + (isExpected ? ' eligible tutorial-target' : '') + (!card ? ' empty' : '') + (memoryCountdown !== null && p === 0 && i >= 2 ? ' memorizing' : '')}
         disabled={!isExpected}
         onClick={() => tapSlot(p, i)}
         aria-label={`${p === 0 ? 'Your' : 'Kai’s'} ${positionName(i)}${!card ? ' empty' : showFace ? ' ' + label(card) : ' face down'}`}
@@ -608,7 +712,11 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
           <div className="brand"><span>KAMAYUU · LEARN TO PLAY</span></div>
           <button className="text-action tutorial-skip" onClick={skip}>Skip tutorial</button>
         </header>
-        <div className="round-label">LEARN TO PLAY</div>
+        <div className="round-label tutorial-progress" aria-label={`Step ${step} of ${STEPS.length}: ${STEPS[step - 1]}`}>
+          <span>STEP {step} OF {STEPS.length}</span>
+          <b>{STEPS[step - 1]}</b>
+          <i aria-hidden="true">{STEPS.map((_, n) => <em key={n} className={n < step ? 'on' : ''} />)}</i>
+        </div>
 
         <section className={'player player-2' + (engine.active === 1 ? ' active' : '')} aria-label="Kai's board">
           <div className="player-label"><span className="avatar avatar-1">K</span><span className="player-name">Kai</span><i>{p1.slots.filter(Boolean).length}</i></div>
@@ -634,13 +742,12 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
           </div>
         </div>
 
-        <div className="status" role="status" aria-live="polite">
-          <span>{caption}</span>
-          <p>{message}</p>
-          {memorizing && memoryCountdown !== null && (
-            <div className="memory-timer"><i style={{width: `${(memoryCountdown / 5) * 100}%`}} /><b>{memoryCountdown}</b></div>
-          )}
-        </div>
+        {coach && (
+          <div className={'coach-toast ' + coach.tone} role="status" aria-live="polite">
+            <b>{coach.title}</b>
+            {coach.body && <span>{coach.body}</span>}
+          </div>
+        )}
 
         {expect?.kind === 'swap-confirm' && (
           <div className="swap-confirm"><button className="primary" onClick={tapSwapConfirm}>Trade cards</button></div>
@@ -662,8 +769,6 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
           <b>{engine.caller !== null ? 'FINAL ROUND' : 'KAMAYUU'}</b>
         </div>
 
-        {hint && <div className="tutorial-hint" role="status">{hint}</div>}
-
         {quiz && (
           <div className="tutorial-quiz" role="dialog" aria-label="Memory check">
             <p className="tutorial-quiz-q">{quiz.question}</p>
@@ -676,6 +781,27 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
             ) : (
               <p className="tutorial-quiz-feedback">{quizFeedback}</p>
             )}
+          </div>
+        )}
+
+        {lesson && (
+          <div className="lesson-card" role="dialog" aria-labelledby="lesson-title">
+            <div className="lesson-sheet">
+              <p className="lesson-eyebrow">{lesson.eyebrow}</p>
+              <h3 id="lesson-title" className="lesson-title">{lesson.title}</h3>
+              {lesson.cards && (
+                <div className="lesson-cards" aria-hidden="true">
+                  {lesson.cards.map((c, n) => (
+                    <figure key={n}>
+                      <div className="lesson-mini" dangerouslySetInnerHTML={{__html: cardHTML(c.card)}} />
+                      <figcaption>{c.label}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              )}
+              <p className="lesson-body">{lesson.body}</p>
+              <button className="ink-btn" onClick={tapContinue}>{lesson.cta}</button>
+            </div>
           </div>
         )}
 
