@@ -2040,7 +2040,7 @@ html,body,#root { background: #090f15; }
    leaves ~20–30px above the caption at every breakpoint. */
 .piles>div{gap:6px}
 .table .piles{top:32.5%}
-@media(min-width:700px){.table .piles{top:32%}}
+@media(min-width:700px){.table .piles{top:32.7%}.table .status{bottom:calc(100% - var(--hand-top) + 9px);gap:4px}}
 .table .memory-timer{margin:4px auto 0;height:5px}
 .table .memory-timer i{height:5px}
 .table .memory-timer b{width:24px;height:24px;top:-10px;font-size:11px}
