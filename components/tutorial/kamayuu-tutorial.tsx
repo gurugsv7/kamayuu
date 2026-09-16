@@ -20,6 +20,7 @@ import {transition, value, isPower, positionName, label} from '@/lib/engine.mjs'
 import {TableAudio} from '@/lib/audio.mjs';
 import {Card, cardHTML, preloadCardArt} from '@/lib/card-render';
 import {track} from '@/lib/analytics';
+import ScoreLedger from '@/components/score-ledger';
 
 const SUIT: Record<string, string> = {S: '♠', H: '♥', C: '♣', D: '♦'};
 const mkCard = (code: string) => {
@@ -679,21 +680,23 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
         )}
 
         {done && (
-          <div className="results tutorial-final">
-            <p className="eyebrow">{engine.winners.includes(0) ? 'YOU WIN' : 'THE TABLE REVEALS'}</p>
-            <h2>{engine.winners.map((p: number) => (p === 0 ? 'You' : 'Kai')).join(' & ')}</h2>
-            <span className="winning-score">{engine.totals[engine.winners[0]]} <small>points</small></span>
-            <div className="result-scores">
-              {engine.players.map((pl: any, i: number) => (
-                <span key={i}><b>{pl.name}</b><strong>{engine.totals[i]}</strong></span>
-              ))}
-            </div>
-            <p className="tutorial-recap">Remember. Replace. Risk. Throw. Call.</p>
-            <div className="result-actions">
-              <button className="primary" onClick={onPlayFirstGame}>Play your first game</button>
-              <button className="text-action" onClick={onExit}>Back to menu</button>
-            </div>
-          </div>
+          <ScoreLedger
+            winnerNames={engine.winners.map((p: number) => engine.players[p].name)}
+            winningTotal={engine.totals[engine.winners[0]]}
+            note="Remember. Replace. Risk. Throw. Call."
+            players={engine.players.map((pl: any, i: number) => ({
+              name: pl.name,
+              total: engine.totals[i],
+              cards: pl.slots.filter(Boolean).length,
+              penalty: pl.penalty,
+              eliminated: !!pl.eliminated,
+              winner: engine.winners.includes(i),
+              you: i === 0,
+            }))}
+          >
+            <button className="primary" onClick={onPlayFirstGame}>Play your first game</button>
+            <button className="text-action" onClick={onExit}>Back to menu</button>
+          </ScoreLedger>
         )}
       </section>
     </main>

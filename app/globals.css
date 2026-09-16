@@ -14,7 +14,7 @@
 /* Table-wide announcement: a buzz used to be sound-only, which silent players missed. */
 .announce{position:absolute;left:50%;top:50.6%;transform:translateX(-50%);z-index:30;pointer-events:none;padding:9px 18px;border-radius:999px;white-space:nowrap;background:linear-gradient(150deg,#1e2b37f5,#0d1620f8);border:1px solid #d9aa6366;box-shadow:0 12px 34px #000b,0 0 26px #e0a94a2b;color:#f7e8cc;font:14px/1 Georgia,serif;letter-spacing:1.5px;text-transform:uppercase;animation:announceIn .3s ease-out}
 @keyframes announceIn{from{opacity:0;transform:translateX(-50%) translateY(8px) scale(.94)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
-.final-round{box-shadow:inset 0 0 70px #b85d1222,0 0 100px #000}.available{filter:drop-shadow(0 0 7px #e2a34224)}.text-action{min-height:26px;font:12px Arial;color:#f2ce8d;letter-spacing:.2px;text-decoration:underline;text-underline-offset:4px;padding:2px 8px}.memory-timer{height:2px;width:86px;background:#9d815b55;margin:10px auto;position:relative}.memory-timer i{display:block;height:2px;background:#f4cb88;transition:width 1s linear}.memory-timer b{position:absolute;left:100%;top:-6px;font:11px Arial;margin-left:7px;color:#f4cb88}.bottom-note{position:absolute;bottom:8%;left:23px;font:10px/1.7 Georgia;letter-spacing:1px;color:#d1b58e;transform:rotate(-8deg)}.bottom-note em{font-size:9px}.settings-button{position:absolute;bottom:6.5%;right:24px;display:flex;align-items:center;flex-direction:column;gap:6px;color:#d4b782;font:10px Georgia;min-width:46px;min-height:44px}.welcome-card{width:310px;padding:25px 24px 21px}.welcome-card h1{margin:20px 0}.welcome-card>p{margin:18px 0}.welcome-card .primary{margin-top:18px}.welcome-card>small{margin-top:9px;font-size:10px}.game-dialog{background:#15202a!important;color:#f3e3c9!important;border:1px solid #a28151!important;border-radius:5px!important;max-height:85svh!important;overflow-y:auto!important;max-width:min(440px,calc(100% - 26px))!important;padding:25px!important;box-shadow:0 20px 100px #000b}.game-dialog [data-slot=dialog-title]{font:27px Georgia;margin-right:20px}.game-dialog [data-slot=dialog-description]{font-size:13px;color:#c3b69d}.game-dialog p{font-size:13px;line-height:1.55;color:#d2c7b1}.rules-content{display:flex;flex-direction:column;gap:15px}.rule{display:flex;gap:13px}.rule>b{font:14px Georgia;color:#c99e5d;line-height:1.6}.rule p{margin:0}.rule strong{color:#f1d9af;font-weight:500}.power-rules{padding:8px 12px;border-block:1px solid #a17b4044}.power-rules p{display:flex;gap:14px;margin:11px 0;font-size:12px}.power-rules b{font:22px Georgia;white-space:nowrap;min-width:47px;color:#e9dcc3}.power-rules .red-text{color:#ef8a7d}.rules-foot{font-size:11px!important;color:#b4a88e!important}.settings-content{display:flex;flex-direction:column;gap:20px}.settings-content label{display:flex;align-items:center;justify-content:space-between;font-size:14px;color:#e1d1b5}.settings-content small{display:block;font-size:10px;color:#b4a78b;margin-top:4px}.settings-content .primary{display:flex;align-items:center;justify-content:center;gap:10px}.results{position:absolute;top:33%;left:15px;right:15px;z-index:20;background:linear-gradient(135deg,#17242afc,#0c171ffc);border:1px solid #bc9655;padding:16px 15px 17px;text-align:center;box-shadow:0 15px 50px #000a}.results .eyebrow{margin:0 0 7px!important;font-size:9px!important}.results h2{font:36px Georgia;color:#ffe2a2;margin:0}.winning-score{font:27px Georgia;color:#dfbc80}.winning-score small{font:12px Arial;color:#b9ac91}.result-scores{display:flex;justify-content:space-around;margin:15px 0;border-block:1px solid #c49a5233;padding:12px 0}.result-scores>span{display:flex;flex-direction:column;gap:5px}.result-scores b{font:12px Georgia}.result-scores strong{font:23px Georgia;color:#f4cd85}.result-scores small{font-size:9px;color:#bfad8c}.result-actions{display:flex;justify-content:center;align-items:center;gap:3px;flex-wrap:wrap}.result-actions .primary{font-size:12px;min-height:36px;padding:5px 18px}.result-actions .text-action{font-size:11px}.show-results{position:absolute;top:51%;left:50%;transform:translateX(-50%);z-index:10;font-size:12px;min-height:34px;white-space:nowrap}.memorizing{filter:drop-shadow(0 0 13px #ddad3d66)}
+.final-round{box-shadow:inset 0 0 70px #b85d1222,0 0 100px #000}.available{filter:drop-shadow(0 0 7px #e2a34224)}.text-action{min-height:26px;font:12px Arial;color:#f2ce8d;letter-spacing:.2px;text-decoration:underline;text-underline-offset:4px;padding:2px 8px}.memory-timer{height:2px;width:86px;background:#9d815b55;margin:10px auto;position:relative}.memory-timer i{display:block;height:2px;background:#f4cb88;transition:width 1s linear}.memory-timer b{position:absolute;left:100%;top:-6px;font:11px Arial;margin-left:7px;color:#f4cb88}.bottom-note{position:absolute;bottom:8%;left:23px;font:10px/1.7 Georgia;letter-spacing:1px;color:#d1b58e;transform:rotate(-8deg)}.bottom-note em{font-size:9px}.settings-button{position:absolute;bottom:6.5%;right:24px;display:flex;align-items:center;flex-direction:column;gap:6px;color:#d4b782;font:10px Georgia;min-width:46px;min-height:44px}.welcome-card{width:310px;padding:25px 24px 21px}.welcome-card h1{margin:20px 0}.welcome-card>p{margin:18px 0}.welcome-card .primary{margin-top:18px}.welcome-card>small{margin-top:9px;font-size:10px}.game-dialog{background:#15202a!important;color:#f3e3c9!important;border:1px solid #a28151!important;border-radius:5px!important;max-height:85svh!important;overflow-y:auto!important;max-width:min(440px,calc(100% - 26px))!important;padding:25px!important;box-shadow:0 20px 100px #000b}.game-dialog [data-slot=dialog-title]{font:27px Georgia;margin-right:20px}.game-dialog [data-slot=dialog-description]{font-size:13px;color:#c3b69d}.game-dialog p{font-size:13px;line-height:1.55;color:#d2c7b1}.rules-content{display:flex;flex-direction:column;gap:15px}.rule{display:flex;gap:13px}.rule>b{font:14px Georgia;color:#c99e5d;line-height:1.6}.rule p{margin:0}.rule strong{color:#f1d9af;font-weight:500}.power-rules{padding:8px 12px;border-block:1px solid #a17b4044}.power-rules p{display:flex;gap:14px;margin:11px 0;font-size:12px}.power-rules b{font:22px Georgia;white-space:nowrap;min-width:47px;color:#e9dcc3}.power-rules .red-text{color:#ef8a7d}.rules-foot{font-size:11px!important;color:#b4a88e!important}.settings-content{display:flex;flex-direction:column;gap:20px}.settings-content label{display:flex;align-items:center;justify-content:space-between;font-size:14px;color:#e1d1b5}.settings-content small{display:block;font-size:10px;color:#b4a78b;margin-top:4px}.settings-content .primary{display:flex;align-items:center;justify-content:center;gap:10px}.results{position:absolute;top:33%;left:15px;right:15px;z-index:20;background:linear-gradient(135deg,#17242afc,#0c171ffc);border:1px solid #bc9655;padding:16px 15px 17px;text-align:center;box-shadow:0 15px 50px #000a}.show-results{position:absolute;top:51%;left:50%;transform:translateX(-50%);z-index:10;font-size:12px;min-height:34px;white-space:nowrap}.memorizing{filter:drop-shadow(0 0 13px #ddad3d66)}
 @media(min-width:700px){.player-0{--cw:80px;--ch:108px;top:56%}.player-1{left:29px}.player-3{right:29px}.piles{gap:37px;top:36.5%}.pile{width:70px;height:94px}.status{top:50.5%}.buzzer{width:98px;height:81px}.buzzer-area{top:85.3%}.round-label{left:35px;top:83px}.table-footer{bottom:10px}.bottom-note{left:43px}.settings-button{right:43px}.table{min-height:840px}}
 @media(max-height:810px) and (max-width:600px){.player-0{--cw:69px;--ch:91px;top:56.5%}.buzzer{width:84px;height:69px}.buzzer-area{top:86%}.player-1,.player-3{top:18.5%}.player-2{top:8%}.player{--cw:43px;--ch:59px}.player-0{--cw:69px;--ch:91px}.piles{top:36%}.status{top:50.8%}.status p{font-size:13px}.table{min-height:760px}}
 @media(min-height:890px) and (max-width:600px){.player-0{--cw:82px;--ch:111px}.player{--cw:48px;--ch:66px}.player-0{--cw:82px;--ch:111px}.pile{width:69px;height:95px}.buzzer{width:96px;height:80px}.player-0 .decision-slot{width:55px;height:76px;left:calc(100% + 10px)}.player-0 .reveal-slot{width:55px;height:76px;left:-65px}}
@@ -1965,6 +1965,145 @@ html,body,#root { background: #090f15; }
 .tutorial-quiz-choices{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
 .tutorial-quiz-choices button{border:1px solid #a1794055;border-radius:20px;padding:9px 18px;font:13px Georgia;min-height:42px}
 .tutorial-quiz-feedback{font:13px Georgia;color:#e1d1b5;margin:0}
-.tutorial-final .tutorial-recap{font:12px Georgia;letter-spacing:1px;color:#d9b06c;margin:10px 0}
 @media(prefers-reduced-motion:reduce){.tutorial-target,.tutorial-shake{animation:none}}
+
+/* =============================================================================
+   LEDGER & LACQUER — the overlay layer.
+   Two materials only. Anything the table *records* (the tally, the rules, the
+   lobby invitation) is aged parchment written in ink; anything that *controls*
+   the table (the pause drawer) is black lacquer trimmed in brass. Both reuse
+   the chamfered corners, engraved hairlines and Cinzel/Cormorant already
+   established by the onboarding and home screens.
+   ========================================================================== */
+:root{--parch:#efe0c2;--parch-hi:#fff6e2;--parch-lo:#e2ceaa;--ink:#2b2116;--ink-2:#5a4931;--ink-3:#8a7454;--brass:#a58a5a;--brass-hi:#e6c17a;--brass-lo:#7c5a2a;--wax:#a3232b;--lacquer:#131a20;--lacquer-lo:#04070a}
+/* Shared parchment surface: warm base, a light pool at the top, two faint
+   stains, and a double engraved hairline painted as inset shadows so it never
+   scrolls away inside scrollable sheets. */
+.parchment-surface{color:var(--ink);background:radial-gradient(120% 70% at 50% 0%,var(--parch-hi) 0%,transparent 60%),radial-gradient(60% 40% at 12% 88%,#d6bf9666 0%,transparent 70%),radial-gradient(45% 32% at 90% 18%,#d2ba8c55 0%,transparent 70%),linear-gradient(180deg,#f3e6cc,#e6d3ae);box-shadow:inset 0 0 0 1px #b39a6d,inset 0 0 0 7px #f1e4c8,inset 0 0 0 8px #a58a5a88}
+/* Ink-lacquer action on parchment: the strongest thing on a light sheet is
+   something black. Chamfered like the onboarding buttons; the shadow lives in
+   a filter so the clip-path can't cut it off. */
+.ink-btn,.results.ledger .primary,.game-dialog.parchment .primary,.welcome-card .primary{background:linear-gradient(180deg,#3a2c1d 0%,#1a120c 55%,#0d0805 100%)!important;color:#f3e3c9!important;border:1px solid #7a5f38!important;box-shadow:inset 0 1px 0 #ffffff22,inset 0 -2px 0 #00000066!important;font:600 12px 'Cinzel',Georgia,serif!important;letter-spacing:1.8px;text-transform:uppercase;min-height:46px;padding:10px 24px;border-radius:0!important;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px);filter:drop-shadow(0 4px 6px #0008);transition:transform .15s cubic-bezier(.2,.8,.25,1),filter .2s}
+.ink-btn:hover,.results.ledger .primary:hover,.game-dialog.parchment .primary:hover,.welcome-card .primary:hover{transform:translateY(-1px);filter:drop-shadow(0 6px 12px #000a) drop-shadow(0 0 10px #c9a35a44)}
+.ink-btn:active,.results.ledger .primary:active,.game-dialog.parchment .primary:active,.welcome-card .primary:active{transform:translateY(1px);filter:drop-shadow(0 2px 3px #0008)}
+.results.ledger .primary:disabled,.game-dialog.parchment .primary:disabled,.welcome-card .primary:disabled{opacity:.5;transform:none;filter:none}
+.results.ledger .text-action,.game-dialog.parchment .text-action,.welcome-card .text-action,.tutorial-quiz .text-action{color:var(--ink-2);font:600 14px 'Cormorant Garamond',Georgia,serif;text-decoration-color:#a58a5aaa;text-underline-offset:4px}
+.results.ledger .text-action:hover,.game-dialog.parchment .text-action:hover,.welcome-card .text-action:hover{color:var(--ink)}
+
+/* ---- The tally: a scorekeeper's sheet laid on the table ------------------ */
+.results.ledger{top:50%;left:12px;right:12px;transform:translateY(-50%);background:none;border:0;padding:0;box-shadow:none;text-align:left;z-index:24;filter:drop-shadow(0 22px 26px #000b)}
+.ledger-wrap{position:relative;margin:0 auto;max-width:352px}
+.ledger-sheet{position:relative;padding:30px 24px 20px;color:var(--ink);background:radial-gradient(120% 70% at 50% 0%,var(--parch-hi) 0%,transparent 60%),radial-gradient(60% 40% at 12% 88%,#d6bf9666 0%,transparent 70%),radial-gradient(45% 32% at 90% 18%,#d2ba8c55 0%,transparent 70%),linear-gradient(180deg,#f3e6cc,#e6d3ae);box-shadow:inset 0 0 0 1px #b39a6d,inset 0 0 0 7px #f1e4c8,inset 0 0 0 8px #a58a5a88;clip-path:polygon(0 0,100% 0,100% calc(100% - 7px),96% 100%,91% calc(100% - 4px),85% 100%,79% calc(100% - 6px),72% 100%,65% calc(100% - 3px),58% 100%,50% calc(100% - 6px),43% 100%,36% calc(100% - 4px),29% 100%,22% calc(100% - 6px),15% 100%,9% calc(100% - 3px),4% 100%,0 calc(100% - 7px));animation:ledgerLay .55s cubic-bezier(.2,.8,.25,1) both}
+/* Brass rod along the top, riveted at both ends. */
+.ledger-sheet:before{content:'';position:absolute;top:0;left:0;right:0;height:10px;background:radial-gradient(circle at 16px 50%,#fff2c4 0 1.6px,#5d4320 2.2px 3.4px,transparent 4px),radial-gradient(circle at calc(100% - 16px) 50%,#fff2c4 0 1.6px,#5d4320 2.2px 3.4px,transparent 4px),linear-gradient(180deg,#f1d59b,#a07a3a 55%,#cfa75c 80%,#7c5a2a);box-shadow:0 1px 0 #5a4120,0 3px 6px #0006}
+.ledger-seal{position:absolute;top:-14px;right:16px;z-index:2;width:60px;height:60px;display:grid;place-items:center;color:#f7d9b0;font:28px/1 Georgia,serif;border-radius:46% 54% 52% 48%/52% 46% 54% 48%;background:radial-gradient(circle at 35% 30%,#d9464f,#8d1a22 55%,#5b0d13);box-shadow:inset 0 0 0 4px #7a151d,inset 0 0 0 5px #c33b44aa,inset 0 -5px 9px #40070c,inset 0 4px 6px #ff8a8f33,0 8px 14px #0009;transform:rotate(-12deg);animation:sealStamp .5s cubic-bezier(.3,1.5,.4,1) .38s both}
+.ledger-seal span{text-shadow:0 1px 0 #3d070c,0 -1px 0 #ff9a9f55}
+.ledger-eyebrow{margin:0;font:600 10px 'Cinzel',Georgia,serif;letter-spacing:4px;text-transform:uppercase;color:var(--ink-3)}
+.results.ledger h2.ledger-headline{margin:6px 44px 2px 0;font:400 clamp(30px,8.4vw,38px)/1.02 'Cormorant Garamond',Georgia,serif;color:var(--ink);letter-spacing:-.2px;text-wrap:pretty}
+.ledger-headline em{font-style:italic;font-weight:600;color:#17100a}
+.ledger-sub{margin:0 0 14px;font:italic 15px 'Cormorant Garamond',Georgia,serif;color:var(--ink-2)}
+.ledger-rows{list-style:none;margin:0;padding:12px 0 4px;border-top:1px solid #a58a5a99;display:flex;flex-direction:column;gap:10px}
+.ledger-row{display:flex;align-items:baseline;gap:8px}
+.ledger-name{display:flex;align-items:baseline;gap:7px;font:600 17px 'Cormorant Garamond',Georgia,serif;color:var(--ink);white-space:nowrap;padding:0 3px}
+.ledger-name i{font:500 8.5px 'Cinzel',Georgia,serif;font-style:normal;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-3)}
+.ledger-name small{font:italic 11.5px Georgia,serif;color:var(--ink-3)}
+.ledger-leader{flex:1;min-width:14px;border-bottom:2px dotted #a58a5a99;transform:translateY(-4px)}
+.ledger-total{font:700 21px 'Cinzel',Georgia,serif;color:var(--ink);min-width:2.2ch;text-align:right;font-variant-numeric:tabular-nums}
+/* The winner's line gets a hand-drawn highlighter stroke and a crimson total. */
+.ledger-row.is-winner .ledger-name{background:linear-gradient(transparent 55%,#c9a35a66 55%,#c9a35a66 92%,transparent 92%)}
+.ledger-row.is-winner .ledger-total{color:#7d1a21}
+.ledger-row.is-out{opacity:.55}.ledger-row.is-out .ledger-total{font-size:11px;letter-spacing:2.5px}
+.ledger-note{margin:12px 0 0;text-align:center;font:italic 14px 'Cormorant Garamond',Georgia,serif;color:var(--ink-2)}
+.ledger-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 16px;margin-top:14px;padding-top:14px;border-top:1px solid #a58a5a99}
+.ledger-actions:empty{display:none}
+@keyframes ledgerLay{from{opacity:0;transform:translateY(-30px) rotate(-1.6deg) scale(1.03)}55%{opacity:1}to{opacity:1;transform:none}}
+@keyframes sealStamp{from{opacity:0;transform:rotate(-12deg) scale(2)}65%{opacity:1;transform:rotate(-12deg) scale(.93)}to{opacity:1;transform:rotate(-12deg) scale(1)}}
+/* The tab that brings the tally back after "View table". */
+.show-results.primary{background:linear-gradient(180deg,#f3e6cc,#e2cfa9);color:var(--ink);border:1px solid #a58a5a;border-radius:0;box-shadow:inset 0 0 0 3px #f1e4c8,inset 0 0 0 4px #a58a5a66,0 3px 0 #a58a5a,0 10px 20px #0009;font:600 11px 'Cinzel',Georgia,serif;letter-spacing:2.5px;text-transform:uppercase;padding:9px 20px}
+
+/* ---- The dialog shell: parchment for anything recorded -------------------- */
+[data-slot=dialog-overlay]{background:radial-gradient(ellipse at 50% 42%,#0b141bb3 0%,#02060ae0 100%)!important;backdrop-filter:none!important}
+/* Tailwind v4 centers the popup with the standalone `translate` property; the
+   sheets below center with `transform` instead, so that one must be cleared or
+   the two offsets stack and the sheet lands off-screen. */
+.game-dialog.parchment,.game-dialog.lacquer{translate:none!important}
+.game-dialog.parchment{transform:translate(-50%,-50%)!important;color:var(--ink)!important;background:radial-gradient(120% 70% at 50% 0%,var(--parch-hi) 0%,transparent 60%),radial-gradient(60% 40% at 12% 88%,#d6bf9666 0%,transparent 70%),radial-gradient(45% 32% at 90% 18%,#d2ba8c55 0%,transparent 70%),linear-gradient(180deg,#f3e6cc,#e6d3ae)!important;border:0!important;border-top:9px solid #a07a3a!important;border-image:linear-gradient(180deg,#f1d59b,#a07a3a 55%,#cfa75c 80%,#7c5a2a) 1!important;border-radius:0!important;padding:26px 24px 24px!important;box-shadow:inset 0 0 0 1px #b39a6d,inset 0 0 0 7px #f1e4c8,inset 0 0 0 8px #a58a5a88,0 30px 70px #000d!important;animation:sheetIn .42s cubic-bezier(.2,.8,.25,1) both!important}
+.game-dialog.parchment[data-closed]{animation:sheetOut .2s ease-in both!important}
+@keyframes sheetIn{from{opacity:0;transform:translate(-50%,-50%) translateY(-26px) rotate(-1.2deg)}to{opacity:1;transform:translate(-50%,-50%)}}
+@keyframes sheetOut{from{opacity:1;transform:translate(-50%,-50%)}to{opacity:0;transform:translate(-50%,-50%) translateY(10px)}}
+.game-dialog.parchment [data-slot=dialog-title]{font:italic 400 31px/1.05 'Cormorant Garamond',Georgia,serif;color:#17100a;margin-right:40px;letter-spacing:-.2px;text-wrap:pretty}
+.game-dialog.parchment [data-slot=dialog-description]{font:600 10px 'Cinzel',Georgia,serif;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink-3);margin-top:-6px;padding-bottom:12px;border-bottom:1px solid #a58a5a99}
+.game-dialog.parchment p{color:var(--ink-2)}
+.game-dialog.parchment .rule>b{color:#8a6533;font:600 13px 'Cinzel',Georgia,serif;line-height:1.7}
+.game-dialog.parchment .rule strong{color:var(--ink)}
+.game-dialog.parchment .power-rules{border-color:#a58a5a66}
+.game-dialog.parchment .power-rules b{color:var(--ink)}
+.game-dialog.parchment .power-rules .red-text{color:var(--wax)}
+.game-dialog.parchment .rules-foot{color:var(--ink-3)!important}
+.game-dialog.parchment .learn-option{background:#fff9ee73;border:1px solid #a58a5a88;border-radius:0;box-shadow:inset 0 0 0 3px #f6ecd8}
+.game-dialog.parchment .learn-option:hover{border-color:#7c5a2a;background:#fff9eeb3}
+.game-dialog.parchment .learn-option b{color:var(--ink);font:600 15px 'Cinzel',Georgia,serif;letter-spacing:.5px}
+.game-dialog.parchment .learn-option span{color:var(--ink-2);font:italic 13px 'Cormorant Garamond',Georgia,serif}
+.game-dialog.parchment .name-field{color:var(--ink-2);font:600 12px 'Cinzel',Georgia,serif;letter-spacing:1.5px;text-transform:uppercase}
+.game-dialog.parchment .name-field input,.game-dialog.parchment .join-row input{background:#fbf3e3;border:1px solid #a58a5a;border-radius:0;color:var(--ink);box-shadow:inset 0 2px 4px #a58a5a33}
+.game-dialog.parchment .name-field input:focus-visible,.game-dialog.parchment .join-row input:focus-visible{outline-color:#7c5a2a}
+.game-dialog.parchment .form-error{color:var(--wax)!important}
+.game-dialog.parchment .leaderboard-content .rule p{color:var(--ink-2)}
+.game-dialog.parchment [data-slot=dialog-close]{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f3d9a3,#b88a48 60%,#8a6533);color:#2b2116;border:1px solid #6a4f26;box-shadow:0 2px 0 #5a4120,0 4px 10px #0006}
+.game-dialog.parchment [data-slot=dialog-close]:hover{filter:brightness(1.08)}
+
+/* ---- The pause drawer: black lacquer, brass fittings ---------------------- */
+.game-dialog.lacquer{top:auto!important;bottom:0!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:100%!important;max-width:min(470px,100%)!important;max-height:88svh!important;border:0!important;border-top:1px solid #c9a35a99!important;border-radius:22px 22px 0 0!important;padding:34px 24px calc(22px + env(safe-area-inset-bottom))!important;color:#f3e3c9!important;background:radial-gradient(90% 40% at 50% 0%,#2a3038 0%,transparent 70%),linear-gradient(180deg,var(--lacquer),#080b0f 45%,var(--lacquer-lo))!important;box-shadow:inset 0 1px 0 #ffe7b444,inset 0 0 0 1px #a17b4033,0 -30px 80px #000d!important;animation:drawerUp .42s cubic-bezier(.2,.85,.25,1) both!important}
+.game-dialog.lacquer[data-closed]{animation:drawerDown .24s ease-in both!important}
+@keyframes drawerUp{from{opacity:0;transform:translateX(-50%) translateY(100%)}to{opacity:1;transform:translateX(-50%)}}
+@keyframes drawerDown{from{opacity:1;transform:translateX(-50%)}to{opacity:0;transform:translateX(-50%) translateY(100%)}}
+/* The brass pull. */
+.game-dialog.lacquer:before{content:'';position:absolute;top:11px;left:50%;width:46px;height:5px;margin-left:-23px;border-radius:3px;background:linear-gradient(90deg,#8a6533,#f1d59b,#8a6533);box-shadow:0 1px 0 #000,0 0 8px #e0a94a44}
+.game-dialog.lacquer [data-slot=dialog-title]{font:600 13px 'Cinzel',Georgia,serif;letter-spacing:4px;text-transform:uppercase;color:#e1b56b;margin-right:40px}
+.game-dialog.lacquer [data-slot=dialog-description]{font:italic 15px 'Cormorant Garamond',Georgia,serif;color:#b4a78b;margin-top:-8px}
+.game-dialog.lacquer .settings-content{gap:0}
+.game-dialog.lacquer .settings-content label{padding:15px 0;border-bottom:1px solid #a17b4026;font:600 17px 'Cormorant Garamond',Georgia,serif;color:#efe0c2}
+.game-dialog.lacquer .settings-content small{font:italic 12px 'Cormorant Garamond',Georgia,serif;color:#9c8c6e;margin-top:2px}
+.game-dialog.lacquer .settings-content>p{margin:14px 0 6px;font:italic 14px 'Cormorant Garamond',Georgia,serif;color:#b4a78b;text-align:center}
+.game-dialog.lacquer .settings-content>small{text-align:center;color:#b4a78b}
+.game-dialog.lacquer .primary{width:100%;min-height:50px;margin-top:6px;font:600 13px 'Cinzel',Georgia,serif;letter-spacing:2px;text-transform:uppercase}
+.game-dialog.lacquer .text-action{font:600 14px 'Cormorant Garamond',Georgia,serif;color:#e1c18e;align-self:center}
+.game-dialog.lacquer .account-block{margin-top:10px;padding-top:16px;border-top:1px solid #a17b4044}
+.game-dialog.lacquer .account-block .text-action{align-self:flex-start;font-size:14px}
+.game-dialog.lacquer [data-slot=dialog-close]{position:absolute;top:18px;right:16px;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#243244,#0d141d);color:#e1c18e;border:1px solid #c39b5f73;box-shadow:0 3px 8px #000c}
+.game-dialog.lacquer [data-slot=dialog-close]:hover{border-color:#ffd88a;color:#fff6e8}
+/* Lacquer toggles: an inset black track, a brass thumb when lit. */
+.game-dialog.lacquer [data-slot=switch]{width:46px!important;height:26px!important;border-radius:13px!important;background:#0a0f14!important;border:1px solid #6a5232!important;box-shadow:inset 0 2px 6px #000d!important;transition:border-color .2s,box-shadow .2s!important}
+.game-dialog.lacquer [data-slot=switch][data-checked]{border-color:#c9a35a!important;box-shadow:inset 0 2px 6px #000d,0 0 12px #e0a94a33!important}
+.game-dialog.lacquer [data-slot=switch-thumb]{width:20px!important;height:20px!important;margin:0 2px!important;border-radius:50%!important;background:radial-gradient(circle at 35% 30%,#6f6f6f,#2f2f2f)!important;box-shadow:0 1px 2px #000,inset 0 1px 0 #ffffff22!important;transform:translateX(0)!important;transition:transform .2s cubic-bezier(.2,.8,.25,1),background .2s!important}
+.game-dialog.lacquer [data-slot=switch][data-checked] [data-slot=switch-thumb]{background:radial-gradient(circle at 35% 30%,#f7dfa8,#c9a35a 55%,#8a6533)!important;transform:translateX(20px)!important}
+
+/* ---- The lobby: a parchment invitation ----------------------------------- */
+.welcome{background:radial-gradient(ellipse at 50% 42%,#0b141bb3 0%,#02060ae0 100%);backdrop-filter:blur(2px)}
+.welcome-card{width:min(332px,calc(100% - 28px));padding:32px 24px 22px;color:var(--ink);background:radial-gradient(120% 70% at 50% 0%,var(--parch-hi) 0%,transparent 60%),radial-gradient(60% 40% at 12% 88%,#d6bf9666 0%,transparent 70%),radial-gradient(45% 32% at 90% 18%,#d2ba8c55 0%,transparent 70%),linear-gradient(180deg,#f3e6cc,#e6d3ae);border:0;border-top:9px solid #a07a3a;border-image:linear-gradient(180deg,#f1d59b,#a07a3a 55%,#cfa75c 80%,#7c5a2a) 1;box-shadow:inset 0 0 0 1px #b39a6d,inset 0 0 0 7px #f1e4c8,inset 0 0 0 8px #a58a5a88,0 30px 70px #000d;animation:ledgerLay .5s cubic-bezier(.2,.8,.25,1) both}
+.welcome-card:before{display:none}
+.welcome-card>.lotus{color:#8a6533}
+.welcome-card .eyebrow{color:var(--ink-3);font:600 10px 'Cinzel',Georgia,serif!important;letter-spacing:4px}
+.lobby-card .room-code{font:700 44px 'Cinzel',Georgia,serif;letter-spacing:9px;margin:8px 0 8px 9px;color:#17100a}
+.code-action{color:var(--ink-2);background:#fff9ee80;border:1px solid #a58a5a88;border-radius:0;font:600 11px 'Cinzel',Georgia,serif;letter-spacing:1px}
+.code-action:hover{background:#fff9eec0;border-color:#7c5a2a}
+.lobby-members li{color:var(--ink);border-bottom:2px dotted #a58a5a99;font:600 16px 'Cormorant Garamond',Georgia,serif}
+.lobby-members b{background:#2b2116;color:#efe0c2;font:600 8.5px 'Cinzel',Georgia,serif}
+.lobby-members em{color:#3f7a45;font:600 9px 'Cinzel',Georgia,serif}
+.seat-dot{background:#b8a682}.seat-dot.on{background:#3f9a4c;box-shadow:0 0 7px #3f9a4c88}
+.welcome-card>small{color:var(--ink-3);font:italic 12px 'Cormorant Garamond',Georgia,serif}
+.welcome-card .primary{width:100%}
+.welcome-card .form-error{color:var(--wax)!important}
+
+/* ---- The announcement: a brass proclamation ------------------------------- */
+.announce{padding:11px 24px;border-radius:0;background:linear-gradient(180deg,#f1d59b,#c9a35a 45%,#a07a3a);color:#1e150a;border:1px solid #6a4f26;box-shadow:inset 0 1px 0 #fff3cc,inset 0 -2px 0 #5a412088;font:600 12px 'Cinzel',Georgia,serif;letter-spacing:2.5px;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% calc(100% - 9px),calc(100% - 9px) 100%,9px 100%,0 calc(100% - 9px),0 9px);filter:drop-shadow(0 10px 18px #000b) drop-shadow(0 0 16px #e0a94a44)}
+.online-hud{background:linear-gradient(180deg,#131a20,#080b0f);border:1px solid #c9a35a66;box-shadow:inset 0 1px 0 #ffe7b422,0 6px 14px #0009;font:600 11px 'Cinzel',Georgia,serif;letter-spacing:2px;color:#e1b56b}
+
+/* ---- The tutorial's memory check: a note on the same parchment ------------ */
+.tutorial-quiz{border:0;border-top:7px solid #a07a3a;border-image:linear-gradient(180deg,#f1d59b,#a07a3a 55%,#cfa75c 80%,#7c5a2a) 1;border-radius:0;color:var(--ink);background:radial-gradient(120% 70% at 50% 0%,var(--parch-hi) 0%,transparent 60%),linear-gradient(180deg,#f3e6cc,#e6d3ae);box-shadow:inset 0 0 0 1px #b39a6d,inset 0 0 0 6px #f1e4c8,inset 0 0 0 7px #a58a5a88,0 24px 50px #000c;animation:ledgerLay .45s cubic-bezier(.2,.8,.25,1) both}
+.tutorial-quiz-q{font:italic 600 19px 'Cormorant Garamond',Georgia,serif;color:#17100a}
+.tutorial-quiz-choices button{border:1px solid #a58a5a;border-radius:0;background:#fff9ee80;font:700 15px 'Cinzel',Georgia,serif;color:var(--ink);text-decoration:none;box-shadow:inset 0 0 0 3px #f6ecd8}
+.tutorial-quiz-choices button:hover{background:#fff9eec0;border-color:#7c5a2a}
+.tutorial-quiz-feedback{font:italic 15px 'Cormorant Garamond',Georgia,serif;color:var(--ink-2)}
+@media(prefers-reduced-motion:reduce){.ledger-sheet,.ledger-seal,.welcome-card,.tutorial-quiz,.game-dialog.parchment,.game-dialog.lacquer{animation:none!important}}
 .onboarding-footer-tagline a{pointer-events:auto;color:inherit;text-decoration:none;border-bottom:1px solid #9a887066}
