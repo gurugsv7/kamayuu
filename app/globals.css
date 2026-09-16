@@ -1991,6 +1991,59 @@ html,body,#root { background: #090f15; }
 .lesson-sheet .ink-btn{width:100%}
 @keyframes lessonScrim{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.coach-toast,.lesson-card,.lesson-sheet{animation:none!important}}
+
+/* ---- Multiplayer turn clock: a brass ring that drains, crimson at the end -- */
+.online-hud{padding:4px 12px 4px 6px;gap:10px}
+.turn-clock{position:relative;width:34px;height:34px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;background:conic-gradient(#e1b56b calc(var(--p,1)*360deg),#2a2118 0);box-shadow:0 0 0 1px #c9a35a66,inset 0 0 0 1px #00000088;transition:background .4s linear}
+.turn-clock:before{content:'';position:absolute;inset:4px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#1a222a,#080b0f)}
+.turn-clock b{position:relative;font:700 11px 'Cinzel',Georgia,serif;color:#f1d59b;font-variant-numeric:tabular-nums}
+.turn-clock.urgent{background:conic-gradient(#e0555d calc(var(--p,1)*360deg),#3a1518 0);box-shadow:0 0 0 1px #e0555d88,0 0 14px #d9464f66;animation:clockPulse .8s ease-in-out infinite}
+.turn-clock.urgent b{color:#ffb3b7}
+@keyframes clockPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+/* The memorise countdown, as a brass gauge instead of a hairline. */
+.memory-timer{height:7px;width:132px;margin:12px auto 4px;border-radius:4px;background:linear-gradient(180deg,#05080b,#141a20);box-shadow:inset 0 1px 3px #000c,0 0 0 1px #a17b4055}
+.memory-timer i{height:7px;border-radius:4px;background:linear-gradient(90deg,#a07a3a,#f1d59b);box-shadow:0 0 8px #e0a94a66}
+.memory-timer b{top:-11px;left:100%;margin-left:12px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:700 12px 'Cinzel',Georgia,serif;color:#1e150a;background:radial-gradient(circle at 35% 30%,#f7dfa8,#c9a35a 60%,#8a6533);box-shadow:0 2px 0 #5a4120,0 4px 8px #0008}
+
+/* ---- Desktop gate: the table is played in the hand ------------------------ */
+.desktop-gate{position:fixed;inset:0;z-index:60;display:grid;grid-template-rows:1fr auto;overflow:auto;background:#05080b;color:#f3e3c9;font-family:Georgia,serif}
+.gate-wall{position:absolute;inset:-6%;background:url('/onboarding-bg.webp') center 32%/cover no-repeat;filter:blur(18px) saturate(.85) brightness(.42);transform:scale(1.04);pointer-events:none}
+.gate-wall:after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 42%,#0b141b44 0%,#03070bd6 68%,#03070b 100%)}
+.gate-stage{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:clamp(40px,7vw,110px);padding:56px 40px 24px;flex-wrap:wrap}
+.gate-sheet{position:relative;width:min(470px,100%);padding:38px 36px 30px;color:var(--ink);background:radial-gradient(120% 70% at 50% 0%,var(--parch-hi) 0%,transparent 60%),radial-gradient(60% 40% at 12% 88%,#d6bf9666 0%,transparent 70%),radial-gradient(45% 32% at 90% 18%,#d2ba8c55 0%,transparent 70%),linear-gradient(180deg,#f3e6cc,#e6d3ae);border-top:10px solid #a07a3a;border-image:linear-gradient(180deg,#f1d59b,#a07a3a 55%,#cfa75c 80%,#7c5a2a) 1;box-shadow:inset 0 0 0 1px #b39a6d,inset 0 0 0 7px #f1e4c8,inset 0 0 0 8px #a58a5a88,0 40px 90px #000d;transform:rotate(-1.4deg);animation:gateLay .6s cubic-bezier(.2,.8,.25,1) both;text-wrap:pretty}
+@keyframes gateLay{from{opacity:0;transform:translateY(-30px) rotate(-3.5deg)}to{opacity:1;transform:rotate(-1.4deg)}}
+.gate-title{margin:0 0 12px;font:italic 600 clamp(34px,3.4vw,44px)/1.05 'Cormorant Garamond',Georgia,serif;color:#17100a;letter-spacing:-.3px}
+.gate-body{margin:0 0 22px;font:500 18px/1.5 'Cormorant Garamond',Georgia,serif;color:var(--ink-2)}
+.gate-scan{display:flex;align-items:center;gap:24px;padding:18px 0;border-top:1px solid #a58a5a99;border-bottom:1px solid #a58a5a99}
+.gate-qr{width:132px;height:132px;padding:9px;flex:0 0 auto;background:#fbf3e3;border:1px solid #a58a5a;box-shadow:inset 0 0 0 3px #f6ecd8}
+.gate-address{display:flex;flex-direction:column;gap:8px;min-width:0}
+.gate-address span{font:600 10px 'Cinzel',Georgia,serif;letter-spacing:3px;text-transform:uppercase;color:var(--ink-3)}
+.gate-address b{font:700 clamp(17px,1.5vw,20px) 'Cinzel',Georgia,serif;letter-spacing:.5px;color:#17100a;word-break:break-all}
+.gate-address .ink-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;align-self:flex-start;min-height:42px;padding:8px 18px;margin-top:4px}
+.gate-foot{margin:16px 0 0;font:italic 14px 'Cormorant Garamond',Georgia,serif;color:var(--ink-3)}
+.gate-phone{position:relative;margin:0;width:292px;height:600px;flex:0 0 auto;border-radius:44px;padding:11px;background:linear-gradient(160deg,#2a3038,#0b0f14 40%,#05080b);box-shadow:inset 0 0 0 1px #c9a35a66,inset 0 0 0 3px #05080b,0 50px 100px #000e,0 0 60px #e0a94a22;animation:phoneFloat 6s ease-in-out infinite}
+.gate-phone-screen{width:100%;height:100%;border-radius:34px;overflow:hidden;background:#0b0e14;box-shadow:inset 0 0 0 1px #ffffff12}
+.gate-phone-screen img{width:100%;height:100%;object-fit:cover;display:block}
+.gate-phone:after{content:'';position:absolute;top:22px;left:50%;width:84px;height:6px;margin-left:-42px;border-radius:3px;background:#05080b;box-shadow:inset 0 0 0 1px #ffffff10}
+@keyframes phoneFloat{0%,100%{transform:rotate(2.2deg) translateY(0)}50%{transform:rotate(2.2deg) translateY(-8px)}}
+.gate-footer{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:26px;padding:18px 24px 26px;font:600 10px 'Cinzel',Georgia,serif;letter-spacing:3px;text-transform:uppercase;color:#c3a985;flex-wrap:wrap}
+.gate-footer a{color:#e1b56b;text-decoration:none;border-bottom:1px solid #e1b56b55}
+.gate-footer .text-action{font:italic 13px 'Cormorant Garamond',Georgia,serif;letter-spacing:0;text-transform:none;color:#9c8c6e}
+@media(max-width:1100px){.gate-phone{width:240px;height:494px;border-radius:38px}.gate-phone-screen{border-radius:30px}}
+@media(prefers-reduced-motion:reduce){.gate-phone,.gate-sheet,.turn-clock.urgent{animation:none!important}}
+
+/* ---- Breathing room in the centre band ---------------------------------- */
+/* The status is anchored 12px above the hand and grows upward, so the pile
+   labels sat only 7–11px above the caption on short phones and desktop, and
+   the memorise gauge closed that to nothing. The piles move up ~2.5% (there is
+   spare room under the opponent's board) and the gauge stays compact, which
+   leaves ~20–30px above the caption at every breakpoint. */
+.piles>div{gap:6px}
+.table .piles{top:32.5%}
+@media(min-width:700px){.table .piles{top:32%}}
+.table .memory-timer{margin:4px auto 0;height:5px}
+.table .memory-timer i{height:5px}
+.table .memory-timer b{width:24px;height:24px;top:-10px;font-size:11px}
 .tutorial-quiz{position:absolute;top:30%;left:15px;right:15px;z-index:22;background:linear-gradient(135deg,#17242afc,#0c171ffc);border:1px solid #bc9655;border-radius:4px;padding:16px 15px 17px;text-align:center;box-shadow:0 15px 50px #000a}
 .tutorial-quiz-q{font:14px Georgia;color:#f1d9af;margin:0 0 12px}
 .tutorial-quiz-choices{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}

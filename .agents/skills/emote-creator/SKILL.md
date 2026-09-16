@@ -117,7 +117,7 @@ near-exact background and never eats into the character. Only loosen it if a vis
 green/background halo remains right at the silhouette edge; despill handles most of the
 residual fringing on its own.
 
-**Verify with raw pixel values, not the image preview.** Claude's image-preview tool does
+**Verify with raw pixel values, not the image preview.** Codex's image-preview tool does
 not reliably alpha-composite PNGs — a correctly-transparent image can look like it has a
 solid background in that preview. Confirm the real alpha channel instead:
 
@@ -243,7 +243,7 @@ mockup.
 
 ## Step 9 — Verify in the browser
 
-Use the Browser pane against the running dev server (`.claude/launch.json` has a
+Use the Browser pane against the running dev server (`.Codex/launch.json` has a
 `lotus-dev` config). The fastest path to a live game board without clicking through
 onboarding every time is the dev-only QA hook exposed on `window.__lotusQA` (see
 `app/page.tsx`, guarded by `NODE_ENV!=='production'`) — e.g. `__lotusQA.online(3)` boots

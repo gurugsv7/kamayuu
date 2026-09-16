@@ -8,6 +8,7 @@ import {TableAudio} from '@/lib/audio.mjs';
 import {cardHTML,Card,preloadCardArt} from '@/lib/card-render';
 import KamayuuTutorial from '@/components/tutorial/kamayuu-tutorial';
 import ScoreLedger from '@/components/score-ledger';
+import DesktopGate from '@/components/desktop-gate';
 import {MultiplayerService} from '@/lib/multiplayer';
 import {NAME_LIMIT,avatarForBadge,currentSession,isGuest,loadProfile,saveProfile,signInAsGuest,signInWithGoogle,signOut,supabaseConfigured,type Profile} from '@/lib/account';
 import {googleConfigured} from '@/lib/google-auth';
@@ -41,8 +42,8 @@ const deckSize=(st:any)=>st?(st.remote?st.deckCount??0:st.deck.length):35;
 const takeable=(st:any)=>st?(st.remote?!!st.canTakeDiscard:canTakeDiscard(st,0)):false;
 const defaults={players:4,difficulty:'medium',sound:true,haptics:true,motion:false};
 export default function Home(){
- const [settings,setSettings]=useState(defaults),[stats,setStats]=useState({played:0,won:0}),[hydrated,setHydrated]=useState(false),[menu,setMenu]=useState(true),[panel,setPanel]=useState<string|null>(null),[tutorial,setTutorial]=useState(false);
- const [lobby,setLobby]=useState<any>(null),[connection,setConnection]=useState(''),[presence,setPresence]=useState<string[]>([]),[joinCode,setJoinCode]=useState(''),[playerName,setPlayerName]=useState(''),[online,setOnline]=useState<string|null>(null),[clock,setClock]=useState<number|null>(null),[joinError,setJoinError]=useState(''),[codeCopied,setCodeCopied]=useState(false);
+ const [settings,setSettings]=useState(defaults),[stats,setStats]=useState({played:0,won:0}),[hydrated,setHydrated]=useState(false),[menu,setMenu]=useState(true),[panel,setPanel]=useState<string|null>(null),[tutorial,setTutorial]=useState(false),[desktop,setDesktop]=useState(false);
+ const [lobby,setLobby]=useState<any>(null),[connection,setConnection]=useState(''),[presence,setPresence]=useState<string[]>([]),[joinCode,setJoinCode]=useState(''),[playerName,setPlayerName]=useState(''),[online,setOnline]=useState<string|null>(null),[clock,setClock]=useState<number|null>(null),[clockTotal,setClockTotal]=useState(1),[joinError,setJoinError]=useState(''),[codeCopied,setCodeCopied]=useState(false);
  const [gate,setGate]=useState<'loading'|'signin'|'onboarding'|'ready'>('loading'),[profile,setProfile]=useState<Profile|null>(null),[guest,setGuest]=useState(false);
  const [assetProgress,setAssetProgress]=useState(0),[assetsDone,setAssetsDone]=useState(false),[minTimeElapsed,setMinTimeElapsed]=useState(false);
  const [authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(''),[draftName,setDraftName]=useState(''),[draftAvatar,setDraftAvatar]=useState('lotus'),[identityFrom,setIdentityFrom]=useState<'signin'|'ready'>('signin');
@@ -127,6 +128,10 @@ export default function Home(){
  // Started only once a session actually exists (gate==='ready'), so the first
  // session_start ping doesn't silently no-op against an unauthenticated request.
  useEffect(()=>{if(gate==='ready')return startHeartbeat();},[gate]);
+ // Desktop visitors get an invitation to open the table on a phone instead. A
+ // narrow window or a touch screen goes straight to the game, so tablets and
+ // device emulation still work; "continue anyway" is remembered per session.
+ useEffect(()=>{const mq=window.matchMedia('(min-width: 860px) and (hover: hover) and (pointer: fine)');const update=()=>{let ok=false;try{ok=sessionStorage.getItem('lotus-desktop-ok')==='1';}catch{}setDesktop(mq.matches&&!ok);};update();mq.addEventListener('change',update);return()=>mq.removeEventListener('change',update);},[]);
  useEffect(()=>{if(!emotePicker)return;const close=(e:Event)=>{if(!(e.target as HTMLElement)?.closest?.('.emote-picker,.emotes-button'))setEmotePicker(false);};const key=(e:KeyboardEvent)=>{if(e.key==='Escape')setEmotePicker(false);};document.addEventListener('pointerdown',close);document.addEventListener('keydown',key);return()=>{document.removeEventListener('pointerdown',close);document.removeEventListener('keydown',key);};},[emotePicker]);
  useEffect(()=>{if(!messagePicker)return;const close=(e:Event)=>{if(!(e.target as HTMLElement)?.closest?.('.message-picker,.message-button'))setMessagePicker(false);};const key=(e:KeyboardEvent)=>{if(e.key==='Escape')setMessagePicker(false);};document.addEventListener('pointerdown',close);document.addEventListener('keydown',key);return()=>{document.removeEventListener('pointerdown',close);document.removeEventListener('keydown',key);};},[messagePicker]);
  useEffect(()=>{const visibility=()=>{for(const a of animations.current)if(document.hidden)a.pause();else a.play();};document.addEventListener('visibilitychange',visibility);return()=>document.removeEventListener('visibilitychange',visibility);},[]);
@@ -374,6 +379,9 @@ export default function Home(){
  useEffect(()=>{
   if(!lobby?.deadline||!s||s.phase==='finished'){setClock(null);return;}
   const skew=(lobby.serverTime||Date.now())-Date.now();
+  // The packet's own timestamp against its deadline is the turn's full length —
+  // what the ring drains from.
+  setClockTotal(Math.max(1,Math.round((lobby.deadline-(lobby.serverTime||Date.now()))/1000)));
   const tick=()=>setClock(Math.max(0,Math.round((lobby.deadline-(Date.now()+skew))/1000)));
   tick();const id=setInterval(tick,500);return()=>clearInterval(id);
  },[lobby,s]);
@@ -410,6 +418,7 @@ export default function Home(){
  // null; rendering from the last panel it showed keeps a closing sheet from
  // morphing into the settings fallback on its way out.
  const lastPanelRef=useRef<string|null>(null);if(panel)lastPanelRef.current=panel;const view=panel??lastPanelRef.current;
+ if(desktop)return <DesktopGate onContinue={()=>{try{sessionStorage.setItem('lotus-desktop-ok','1');}catch{}setDesktop(false);}}/>;
  if(tutorial)return <KamayuuTutorial sound={settings.sound} haptics={settings.haptics} motion={settings.motion} onExit={()=>{setTutorial(false);setMenu(true);}} onPlayFirstGame={()=>{setTutorial(false);audio.current?.unlock();start();}}/>;
  return <main className="game-shell"><section ref={table as any} className={'table '+(s?.caller!==null&&s?'final-round':'')} data-phase={s?.phase||'menu'} aria-label="Kamayuu game table"><header className="table-header"><div className="brand"><Lotus/><span>KAMAYUU</span></div><div className="header-actions"><button className="icon-btn" aria-label={settings.sound?'Mute sound':'Enable sound'} onClick={()=>{audio.current?.unlock();setSettings(v=>({...v,sound:!v.sound}));}}>{settings.sound?<Volume2 size={17}/>:<VolumeX size={17}/>}</button><button className="icon-btn" aria-label="How to play" onClick={()=>setPanel('learn')}><BookOpen size={17}/></button></div></header><div className="round-label">{s?`ROUND ${s.round}`:'THE LANTERN TABLE'}</div>
  {players.map((player:any,p:number)=><section key={p} className={'player '+positions[p]+(player.eliminated?' eliminated':'')+(s?.active===p&&!menu&&!player.eliminated?' active':'')+(can&&!player.eliminated&&s.phase==='swap'&&p!==0?' targetable':'')+(target===p?' targeted':'')} aria-label={player.name+' board'}><button className="player-label" disabled={!(can&&!player.eliminated&&s.phase==='swap'&&p!==0)} onClick={()=>chooseSwap(swapSlot,p)}><span className={'avatar avatar-'+p}>{p===0?'✧':player.name[0]}</span><span className="player-name">{player.name}</span><i>{player.slots.filter(Boolean).length}</i>{player.eliminated&&<b className="out-badge">OUT</b>}{s?.remaining.includes(p)&&<b className="final-dot" title="Final turn remaining"/>}</button><div className="card-grid">{seatOrder(Math.max(5,player.slots.length+(player.eliminated||player.slots.slice(4).some((c:any)=>!c)?0:1)),p).map((i:number)=>renderSlot(player,p,player.slots[i]||null,i))}{emotes[p]&&<div key={emotes[p].token} className="emote-overlay" aria-hidden="true"><div className={`emote-sprite emote-sprite-${emotes[p].name}`}/></div>}{bubbles[p]&&<div key={bubbles[p].token} className="emote-overlay" role="status"><div className="chat-bubble">{bubbles[p].text}</div></div>}</div>{player.penalty>0&&<span className="penalty">+{player.penalty} penalty</span>}{s?.phase==='finished'&&<span className="total-label">{player.eliminated?'Eliminated':`${s.totals[p]} points`}</span>}<div data-loc={`held${p}`} className="decision-slot"><Card rev={revision} empty={!(s?.active===p&&s?.held)} card={s?.active===p&&s?.held?.rank&&(p===0||s.source==='discard'||s.phase==='peek'||s.phase==='swap')?s.held:null}/></div><div data-loc={`reveal${p}`} className="reveal-slot"><Card rev={revision} empty/></div></section>)}
@@ -458,7 +467,7 @@ export default function Home(){
  <button className="text-action" onClick={leaveOnline}>Leave table</button>
  <small>{connection||'Connected'}</small></div></div>}
  {online==='connecting'&&<div className="welcome"><div className="welcome-card"><Lotus/><p className="eyebrow">{connection||'CONNECTING…'}</p></div></div>}
- {online==='room'&&s&&<div className="online-hud"><i className={'seat-dot'+(connection==='Connected'?' on':'')}/><span>{lobby?.code}</span>{clock!==null&&<b>{clock}s</b>}<button className="text-action" onClick={()=>leaveOnline()}>Leave</button></div>}
+ {online==='room'&&s&&<div className="online-hud"><i className={'seat-dot'+(connection==='Connected'?' on':'')}/><span>{lobby?.code}</span>{clock!==null&&<span className={'turn-clock'+(clock<=5?' urgent':'')} style={{'--p':Math.min(1,clock/clockTotal)} as React.CSSProperties} role="timer" aria-label={`${clock} seconds left`}><b>{clock}</b></span>}<button className="text-action" onClick={()=>leaveOnline()}>Leave</button></div>}
  {gate==='ready'&&menu&&(
     <HomeScreen
       playerName={profile?.display_name || playerName || 'Guru'}
