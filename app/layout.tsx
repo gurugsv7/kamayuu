@@ -11,6 +11,14 @@ export const metadata: Metadata = {
   publisher: 'builtbygsv',
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large' } },
   manifest: '/site.webmanifest',
+  icons: {
+    icon: [
+      {url: '/favicon.svg', type: 'image/svg+xml'},
+      {url: '/favicon.ico', sizes: '32x32 48x48'},
+      {url: '/icon-192.png', type: 'image/png', sizes: '192x192'},
+    ],
+    apple: [{url: '/apple-touch-icon.png', sizes: '180x180'}],
+  },
   keywords: [
     'Kamayuu',
     'Kamayuu game',
