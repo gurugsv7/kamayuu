@@ -45,7 +45,7 @@ export default function CreditsPage() {
         </div>
         <p>
           Design, engineering, and the table itself —{' '}
-          <a href="https://www.builtbygsv.com" target="_blank" rel="noopener noreferrer">www.builtbygsv.com</a>.
+          <a href="https://builtbygsv.in" target="_blank" rel="noopener noreferrer">builtbygsv.in</a>.
         </p>
         <a className="primary" href="/" style={{ display: 'inline-block', textDecoration: 'none', marginTop: 18 }}>
           Back to the table

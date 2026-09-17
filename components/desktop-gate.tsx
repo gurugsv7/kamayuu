@@ -61,7 +61,7 @@ export default function DesktopGate({onContinue}: {onContinue: () => void}) {
       </section>
       <footer className="gate-footer">
         <span>Remember. Observe. Outthink.</span>
-        <a href="https://www.builtbygsv.com" target="_blank" rel="noopener noreferrer">Built by builtbygsv</a>
+        <a href="https://builtbygsv.in" target="_blank" rel="noopener noreferrer">Built by builtbygsv</a>
         <button className="text-action" onClick={onContinue}>Continue on this screen anyway</button>
       </footer>
     </main>

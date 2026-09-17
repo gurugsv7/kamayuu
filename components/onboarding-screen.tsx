@@ -222,7 +222,7 @@ export default function OnboardingScreen({
         </div>
 
         <p className="onboarding-footer-tagline">
-          Built by <a href="https://www.builtbygsv.com" target="_blank" rel="noopener noreferrer">builtbygsv</a>
+          Built by <a href="https://builtbygsv.in" target="_blank" rel="noopener noreferrer">builtbygsv</a>
         </p>
       </div>
     </div>
