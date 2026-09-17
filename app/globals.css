@@ -2208,3 +2208,33 @@ html,body,#root { background: #090f15; }
    Tailwind v4 writes the thumb's offset to the `translate` property, which
    stacks with our own transform and throws the knob outside the track. */
 .game-dialog.lacquer [data-slot=switch-thumb]{translate:none!important}
+
+/* ---- Three crowding fixes on the table ------------------------------------
+   1. The room pill floated at the same height as the top opponent's name
+      plate, so in a two-player match it landed straight on their name. There
+      is no clear band at that height, so the pill moves into the header row
+      (flex puts it between the wordmark and the icons) and the turn clock
+      moves beside the turn caption, where turn state already lives. Leaving
+      the table stays available in Settings. */
+.online-hud{position:static;flex:0 1 auto;min-width:0;padding:5px 12px;gap:8px;border-radius:20px;align-self:center}
+.online-hud span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.table-header{gap:10px}
+.status .turn-clock{position:absolute;left:2px;top:-9px;width:30px;height:30px}
+.status .turn-clock b{font-size:10px}
+.table .status>span:not(.turn-clock){padding:0 38px}
+
+/* 2. The deck's label was painted under the deck itself: `.pile` is positioned
+      and the label is not, so the pile wins regardless of source order. Lift
+      the label into its own layer and leave room for the stacked-card shadow,
+      which reaches 13px below the card. */
+.piles>div>span{position:relative;z-index:1}
+.piles>div:has(.deck){gap:17px}
+
+/* 3. "Discard draw" sat on top of the Message button. Move it into the clear
+      band above the drawn card and give it the lacquer chip treatment the
+      other controls use, instead of a bare underlined link. */
+.player-0 .decision-slot:has(.playing-card):after{margin-top:6px}
+.hand-action{top:calc(56.5% - 6px);right:8px;width:auto;min-width:84px;max-width:96px;min-height:32px;padding:6px 8px;white-space:normal;text-decoration:none;color:#f1d59b;font:600 9px/1.25 'Cinzel',Georgia,serif;letter-spacing:1px;text-transform:uppercase;background:linear-gradient(180deg,#26313b,#0d141a 60%,#070b0f);border:1px solid #a1814d88;box-shadow:inset 0 1px 0 #ffe7b422,0 4px 10px #000a;clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px);transition:filter .18s,transform .18s}
+.hand-action:active:not(:disabled){transform:translateY(1px);filter:brightness(1.2)}
+@media(min-width:700px){.hand-action{right:26px;top:calc(55% - 6px);max-width:112px;font-size:10px}}
+@media(min-height:890px) and (max-width:600px){.hand-action{right:10px;top:calc(56.5% - 6px)}}
