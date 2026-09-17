@@ -46,4 +46,4 @@ tsconfig.tsbuildinfo
 /.agents/skills/brag/
 
 # Regenerable review frames from `hyperframes check --snapshots`.
-/brag-output/composition/snapshots/
+/brag-output/*/snapshots/

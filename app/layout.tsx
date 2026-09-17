@@ -29,10 +29,10 @@ export const metadata: Metadata = {
     locale: 'en_US',
     images: [
       {
-        url: '/og-image.png',
+        url: '/og-cover.png',
         width: 1200,
         height: 630,
-        alt: 'Kamayuu — A Game of Memory & Nerve',
+        alt: 'Kamayuu — A Game of Memory & Nerve. The wordmark on dark felt beside three cards, one a red King marked ZERO.',
         type: 'image/png',
       },
     ],
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Kamayuu — A Game of Memory & Nerve',
     description: 'Remember the card. Follow the position. Know when to buzz. Play Kamayuu free, online.',
-    images: ['/og-image.png'],
+    images: ['/og-cover.png'],
   },
 };
 export default function RootLayout({children}: Readonly<{children: React.ReactNode}>) {
