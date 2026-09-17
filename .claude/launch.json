@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "lotus-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vinext", "dev", "--port", "3013"],
+      "port": 3013
     }
   ]
 }

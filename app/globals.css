@@ -2191,3 +2191,20 @@ html,body,#root { background: #090f15; }
 .tutorial-quiz-feedback{font:italic 15px 'Cormorant Garamond',Georgia,serif;color:var(--ink-2)}
 @media(prefers-reduced-motion:reduce){.ledger-sheet,.ledger-seal,.welcome-card,.tutorial-quiz,.game-dialog.parchment,.game-dialog.lacquer{animation:none!important}}
 .onboarding-footer-tagline a{pointer-events:auto;color:inherit;text-decoration:none;border-bottom:1px solid #9a887066}
+/* ---- Parchment text on the invitation and the credits sheet --------------- */
+/* The lobby/credits card became parchment, but its headings, body copy and
+   links kept the cream-on-dark colours from the original dark sheet — pale
+   gold on pale parchment reads as blank. Restate them in ink. */
+.welcome-card h1{color:#1d1610;font-family:'Cinzel',Georgia,serif;letter-spacing:-.5px}
+.welcome-card h1 em{color:#7c5a2a}
+.welcome-card>p,.welcome-card .rule p,.welcome-card p{color:var(--ink-2);font-family:'Cormorant Garamond',Georgia,serif}
+.welcome-card .rule>b{color:#8a6533}
+.welcome-card .rule strong,.welcome-card strong{color:var(--ink);font-weight:600}
+.welcome-card .rules-foot{color:var(--ink-3)!important}
+.credits-content a{color:#7c5a2a;text-decoration-color:#a58a5a99}
+.credits-content a:hover{color:var(--ink)}
+
+/* ---- The settings switch --------------------------------------------------
+   Tailwind v4 writes the thumb's offset to the `translate` property, which
+   stacks with our own transform and throws the knob outside the track. */
+.game-dialog.lacquer [data-slot=switch-thumb]{translate:none!important}
