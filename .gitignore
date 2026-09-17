@@ -39,3 +39,11 @@ tsconfig.tsbuildinfo
 /.wrangler/
 /outputs/
 /work/
+
+# The brag skill installs itself twice, byte for byte. Track the .claude copy,
+# which is the one this project's agent reads, and leave the mirror on disk
+# without carrying a second 17MB of bundled audio in the repo.
+/.agents/skills/brag/
+
+# Regenerable review frames from `hyperframes check --snapshots`.
+/brag-output/composition/snapshots/

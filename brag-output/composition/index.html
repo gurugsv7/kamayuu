@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Kamayuu — brag</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script src="assets/music/audio-data.js"></script>
+    <style>
+      @font-face { font-family: "Cinzel"; src: url("assets/fonts/Cinzel-700.woff2") format("woff2"); font-weight: 600 700; font-style: normal; }
+      @font-face { font-family: "Cormorant Garamond"; src: url("assets/fonts/CormorantGaramond-600.woff2") format("woff2"); font-weight: 400 600; font-style: normal; }
+      @font-face { font-family: "Cormorant Garamond"; src: url("assets/fonts/CormorantGaramond-600i.woff2") format("woff2"); font-weight: 400 600; font-style: italic; }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #0b0e14; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: #0b0e14; color: #f5e6cb; font-family: "Cinzel", Georgia, serif; }
+      .clip { position: absolute; inset: 0; }
+
+      /* ---- background layer: felt, lantern, ghost wordmark, brass rule ---- */
+      .felt { position: absolute; inset: 0; background: #0b0e14 url("assets/img/table.webp") center / cover no-repeat; }
+      .felt-shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, #1a232c99 0%, #0a0e1399 45%, #05080bee 100%); }
+      #glow { position: absolute; left: -260px; top: -320px; width: 1100px; height: 1100px; border-radius: 50%; background: radial-gradient(circle, #e0a94a66 0%, #c9873322 38%, transparent 70%); opacity: 0.4; will-change: transform, opacity; }
+      #ghost { position: absolute; left: 60px; top: 380px; font: 700 420px/1 "Cinzel", Georgia, serif; letter-spacing: 0.08em; color: #e1b56b; opacity: 0.07; white-space: nowrap; will-change: transform; }
+      #rule { position: absolute; left: 140px; top: 940px; width: 520px; height: 2px; background: linear-gradient(90deg, #e6c17a, #a07a3a 60%, transparent); opacity: 0.5; }
+      .meta { position: absolute; font: 600 22px "Cinzel", Georgia, serif; letter-spacing: 0.32em; color: #c6b494; }
+      #meta-round { left: 140px; top: 900px; }
+      #meta-deck { left: 372px; top: 900px; }
+      #meta-tag { right: 140px; top: 56px; }
+
+      /* ---- typography ---- */
+      /* Left column is 120–1120px; the card grid starts at 1180px. Cinzel is
+         wide, so line sizes are chosen per copy length to stay inside it. */
+      .line { position: absolute; left: 120px; font: 700 96px/1 "Cinzel", Georgia, serif; letter-spacing: 0.02em; color: #f5e6cb; text-shadow: 0 6px 30px #000c; white-space: nowrap; will-change: transform, opacity; }
+      .line.mid { font-size: 84px; }
+      .line.small { font-size: 72px; }
+      .line.italic { font: italic 500 62px/1.1 "Cormorant Garamond", Georgia, serif; letter-spacing: 0; color: #e1c9a3; }
+      .line.gold { color: #e1b56b; }
+
+      /* ---- cards (5:7, the game's own art) ---- */
+      .card { position: absolute; width: 200px; height: 280px; perspective: 1400px; will-change: transform, opacity; }
+      .card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; will-change: transform; }
+      .face { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 16px 34px #000b, 0 0 0 1px #c8a46944; }
+      .face.back { background: #0c1e30 url("assets/img/cards/back.png") center / 100% 100% no-repeat; }
+      .face.front { background: #f7ead2; transform: rotateY(180deg); }
+      .face.front img { display: block; width: 100%; height: 100%; }
+      .face.front .zero { position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%); font: 700 20px/1 "Cinzel", Georgia, serif; letter-spacing: 0.1em; color: #ffe1a1; background: #101b26e0; border: 1px solid #c8a46988; border-radius: 3px; padding: 7px 10px; }
+      .card-glow { position: absolute; inset: -30px; border-radius: 24px; background: radial-gradient(circle, #ffd88a99 0%, #e0a94a33 45%, transparent 72%); opacity: 0; will-change: opacity; }
+      .stack { position: absolute; width: 200px; height: 280px; }
+      .stack .face { position: absolute; inset: 0; }
+      .stack .face:nth-child(1) { transform: translate(6px, 6px); }
+      .stack .face:nth-child(2) { transform: translate(3px, 3px); }
+
+      /* ---- buzzer (the game's own .buzzer, scaled for video) ---- */
+      #buzzer-wrap { position: absolute; left: 1180px; top: 300px; width: 420px; height: 480px; display: grid; place-items: center; will-change: transform, opacity; }
+      #buzzer-glow { position: absolute; inset: -80px; border-radius: 50%; background: radial-gradient(circle, #ff6870aa 0%, #df142a33 40%, transparent 70%); opacity: 0; will-change: opacity; }
+      #buzzer { position: relative; display: grid; place-items: center; width: 340px; height: 296px; border-radius: 50%; border: 24px solid #9b713a; outline: 5px solid #d1a366; background: radial-gradient(ellipse at 40% 20%, #ff6870, #df142a 40%, #a6061a 68%, #6d0415); box-shadow: 0 6px 0 #e5c482, 0 16px 0 #5d3f1b, 0 28px 0 #aa8146, 0 40px 0 #261d16, 0 52px 40px #000c, inset 0 10px 24px #ffe09288; will-change: transform; }
+      #buzzer span { font-size: 140px; line-height: 1; color: #fff1cf; text-shadow: 0 4px 20px #fded9466; }
+      #buzzer-label { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font: 700 30px "Cinzel", Georgia, serif; letter-spacing: 0.3em; color: #d9b06c; }
+      #s4-vig { position: absolute; inset: 0; background: radial-gradient(ellipse at 68% 50%, transparent 20%, #05080b 80%); opacity: 0; will-change: opacity; }
+
+      /* ---- the brass proclamation plaque (the game's .announce) ---- */
+      #plaque { position: absolute; left: 50%; top: 110px; margin-left: -480px; width: 960px; padding: 30px 40px; text-align: center; font: 700 48px "Cinzel", Georgia, serif; letter-spacing: 0.22em; color: #1e150a; background: linear-gradient(180deg, #f1d59b, #c9a35a 45%, #a07a3a); border: 2px solid #6a4f26; box-shadow: inset 0 2px 0 #fff3cc, inset 0 -4px 0 #5a412088; clip-path: polygon(22px 0, calc(100% - 22px) 0, 100% 22px, 100% calc(100% - 22px), calc(100% - 22px) 100%, 22px 100%, 0 calc(100% - 22px), 0 22px); will-change: transform, opacity; }
+      #plaque-shadow { position: absolute; left: 50%; top: 110px; margin-left: -480px; width: 960px; height: 118px; filter: blur(30px); background: #000; opacity: 0; }
+
+      /* ---- the parchment ledger (the game's ScoreLedger) ---- */
+      #ledger-wrap { position: absolute; left: 610px; top: 190px; width: 700px; will-change: transform, opacity; }
+      #ledger { position: relative; padding: 60px 52px 44px; color: #2b2116; font-family: "Cormorant Garamond", Georgia, serif; background: radial-gradient(120% 70% at 50% 0%, #fff6e2 0%, transparent 60%), radial-gradient(60% 40% at 12% 88%, #d6bf9666 0%, transparent 70%), linear-gradient(180deg, #f3e6cc, #e6d3ae); box-shadow: inset 0 0 0 2px #b39a6d, inset 0 0 0 14px #f1e4c8, inset 0 0 0 16px #a58a5a88; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), 96% 100%, 91% calc(100% - 7px), 85% 100%, 79% calc(100% - 10px), 72% 100%, 65% calc(100% - 5px), 58% 100%, 50% calc(100% - 10px), 43% 100%, 36% calc(100% - 7px), 29% 100%, 22% calc(100% - 10px), 15% 100%, 9% calc(100% - 5px), 4% 100%, 0 calc(100% - 12px)); }
+      #ledger::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 20px; background: radial-gradient(circle at 32px 50%, #fff2c4 0 3px, #5d4320 4.4px 6.8px, transparent 8px), radial-gradient(circle at calc(100% - 32px) 50%, #fff2c4 0 3px, #5d4320 4.4px 6.8px, transparent 8px), linear-gradient(180deg, #f1d59b, #a07a3a 55%, #cfa75c 80%, #7c5a2a); box-shadow: 0 2px 0 #5a4120, 0 6px 12px #0006; }
+      #ledger-shadow { position: absolute; inset: 20px -10px -30px; filter: blur(34px); background: #000; opacity: 0.7; z-index: -1; }
+      .l-eyebrow { font: 600 20px "Cinzel", Georgia, serif; letter-spacing: 0.4em; text-transform: uppercase; color: #8a7454; }
+      .l-head { margin: 12px 90px 4px 0; font: 400 74px/1.02 "Cormorant Garamond", Georgia, serif; color: #2b2116; }
+      .l-head em { font-style: italic; font-weight: 600; color: #17100a; }
+      .l-sub { font: italic 500 30px "Cormorant Garamond", Georgia, serif; color: #5a4931; margin-bottom: 28px; }
+      .l-row { display: flex; align-items: baseline; gap: 16px; padding: 18px 0 0; border-top: 2px solid #a58a5a99; margin-top: 18px; will-change: transform, opacity; }
+      .l-row:first-of-type { margin-top: 0; }
+      .l-name { font: 600 36px "Cormorant Garamond", Georgia, serif; color: #2b2116; padding: 0 6px; }
+      .l-row.winner .l-name { background: linear-gradient(transparent 55%, #c9a35a66 55%, #c9a35a66 92%, transparent 92%); }
+      .l-note { font: italic 500 24px "Cormorant Garamond", Georgia, serif; color: #8a7454; }
+      .l-leader { flex: 1; border-bottom: 4px dotted #a58a5a99; transform: translateY(-9px); }
+      .l-total { font: 700 44px "Cinzel", Georgia, serif; color: #2b2116; min-width: 2.2ch; text-align: right; }
+      .l-row.winner .l-total { color: #7d1a21; }
+      #seal { position: absolute; z-index: 2; top: -30px; right: 34px; width: 128px; height: 128px; display: grid; place-items: center; color: #f7d9b0; font: 60px/1 Georgia, serif; border-radius: 46% 54% 52% 48% / 52% 46% 54% 48%; background: radial-gradient(circle at 35% 30%, #d9464f, #8d1a22 55%, #5b0d13); box-shadow: inset 0 0 0 8px #7a151d, inset 0 0 0 10px #c33b44aa, inset 0 -10px 18px #40070c, 0 16px 28px #0009; will-change: transform, opacity; }
+
+      /* ---- wordmark ---- */
+      .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
+      #wm-glow { position: absolute; left: 50%; top: 50%; width: 1400px; height: 520px; margin: -260px 0 0 -700px; border-radius: 50%; background: radial-gradient(ellipse, #e0a94a55 0%, #c9873322 40%, transparent 70%); opacity: 0; will-change: opacity; }
+      #wm { font: 700 210px/1 "Cinzel", Georgia, serif; letter-spacing: 0.16em; padding-left: 0.16em; color: #f5e6cb; text-shadow: 0 0 40px #e0a94a66, 0 8px 30px #000c; will-change: transform, opacity; }
+      #tag { font: italic 500 54px/1 "Cormorant Garamond", Georgia, serif; letter-spacing: 0.04em; color: #e1c9a3; will-change: transform, opacity; }
+      #addr { margin-top: 26px; font: 600 34px "Cinzel", Georgia, serif; letter-spacing: 0.26em; padding-left: 0.26em; color: #e1b56b; will-change: transform, opacity; }
+      #cta { font: italic 500 40px/1 "Cormorant Garamond", Georgia, serif; letter-spacing: 0.04em; color: #c6b494; will-change: transform, opacity; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="24" data-width="1920" data-height="1080">
+
+      <!-- ===== background layer (untimed) ===== -->
+      <div class="felt" data-layout-ignore></div>
+      <div class="felt-shade" data-layout-ignore></div>
+      <div id="glow" data-layout-ignore></div>
+      <div id="ghost" data-layout-ignore aria-hidden="true">KAMAYUU</div>
+      <div id="rule" data-layout-ignore></div>
+      <div id="meta-round" class="meta">ROUND 1</div>
+      <div id="meta-deck" class="meta">DECK 35</div>
+      <div id="meta-tag" class="meta">REMEMBER · OBSERVE · OUTTHINK</div>
+
+      <!-- ===== Scene 1: the deal (0–7.5) ===== -->
+      <section id="s1" class="clip" data-start="0" data-duration="7.5" data-track-index="1" data-layout-allow-overflow>
+        <div id="s1-l1" class="line" style="top: 300px">FOUR CARDS.</div>
+        <div id="s1-l2" class="line small" style="top: 440px">YOU MAY LOOK</div>
+        <div id="s1-l2b" class="line small gold" style="top: 530px">AT TWO.</div>
+        <div id="s1-l3" class="line mid" style="top: 330px">REMEMBER THEM.</div>
+        <div id="s1-l4" class="line italic" style="top: 470px">They won't show you again.</div>
+
+        <div class="card" id="s1-c0" style="left: 1180px; top: 248px"><div class="card-inner" id="s1-c0-in"><div class="face back"></div><div class="face front"><img src="assets/img/cards/9C.svg" alt="" /></div></div></div>
+        <div class="card" id="s1-c1" style="left: 1404px; top: 248px"><div class="card-inner" id="s1-c1-in"><div class="face back"></div><div class="face front"><img src="assets/img/cards/QC.svg" alt="" /></div></div></div>
+        <div class="card" id="s1-c2" style="left: 1180px; top: 552px"><div class="card-inner" id="s1-c2-in"><div class="face back"></div><div class="face front"><img src="assets/img/cards/TS.svg" alt="" /></div></div></div>
+        <div class="card" id="s1-c3" style="left: 1404px; top: 552px"><div class="card-inner" id="s1-c3-in"><div class="face back"></div><div class="face front"><img src="assets/img/cards/8C.svg" alt="" /></div></div></div>
+      </section>
+
+      <!-- ===== Scene 2: the gamble (7.5–11.5) ===== -->
+      <section id="s2" class="clip" data-start="7.5" data-duration="4" data-track-index="2" data-layout-allow-overflow>
+        <div id="s2-l1" class="line small" style="top: 310px">EVERY HIDDEN CARD</div>
+        <div id="s2-l2" class="line gold" style="top: 450px">IS A GAMBLE.</div>
+
+        <div class="stack" id="s2-deck" style="left: 1660px; top: 300px"><div class="face back"></div><div class="face back"></div><div class="face back"></div></div>
+        <div class="card" id="s2-c1" style="left: 1404px; top: 248px"><div class="card-inner"><div class="face back"></div></div></div>
+        <div class="card" id="s2-c2" style="left: 1180px; top: 552px"><div class="card-inner"><div class="face back"></div></div></div>
+        <div class="card" id="s2-c3" style="left: 1404px; top: 552px"><div class="card-inner"><div class="face back"></div></div></div>
+        <div class="card" id="s2-draw" style="left: 1540px; top: 330px"><div class="card-inner" id="s2-draw-in"><div class="face back"></div><div class="face front"><img src="assets/img/cards/2D.svg" alt="" /></div></div></div>
+        <div class="card" id="s2-c0" style="left: 1180px; top: 248px"><div class="card-glow" id="s2-c0-glow"></div><div class="card-inner" id="s2-c0-in"><div class="face back"></div><div class="face front"><img src="assets/img/cards/KD.svg" alt="" /><em class="zero">ZERO</em></div></div></div>
+      </section>
+
+      <!-- ===== Scene 3: the throw (11.5–14.5) ===== -->
+      <section id="s3" class="clip" data-start="11.5" data-duration="3" data-track-index="3" data-layout-allow-overflow>
+        <div id="s3-l1" class="line" style="top: 300px">MATCH.</div>
+        <div id="s3-l2" class="line mid gold" style="top: 450px">ONE LESS CARD.</div>
+
+        <div class="card" id="s3-c0" style="left: 1180px; top: 248px"><div class="card-inner"><div class="face back"></div></div></div>
+        <div class="card" id="s3-c1" style="left: 1404px; top: 248px"><div class="card-inner"><div class="face back"></div></div></div>
+        <div class="card" id="s3-c2" style="left: 1180px; top: 552px"><div class="card-inner"><div class="face back"></div></div></div>
+        <div class="card" id="s3-pile" style="left: 1608px; top: 676px"><div class="card-inner" id="s3-pile-in"><div class="face back"></div><div class="face front"><img src="assets/img/cards/8D.svg" alt="" /></div></div></div>
+        <div class="card" id="s3-c3" style="left: 1404px; top: 552px"><div class="card-inner" id="s3-c3-in"><div class="face back"></div><div class="face front"><img src="assets/img/cards/8C-thrown.svg" alt="" /></div></div></div>
+      </section>
+
+      <!-- ===== Scene 4: the call (14.5–19.1) ===== -->
+      <section id="s4" class="clip" data-start="14.5" data-duration="4.6" data-track-index="4" data-layout-allow-overflow>
+        <div id="s4-vig" data-layout-ignore></div>
+        <div id="s4-l1" class="line" style="top: 300px">KNOW WHEN</div>
+        <div id="s4-l2" class="line gold" style="top: 450px">TO CALL.</div>
+        <div id="buzzer-wrap">
+          <div id="buzzer-glow" data-layout-ignore></div>
+          <div id="buzzer"><span>♛</span></div>
+          <div id="buzzer-label">KAMAYUU</div>
+        </div>
+        <div id="plaque-shadow" data-layout-ignore></div>
+        <div id="plaque">YOU BUZZED · FINAL ROUND</div>
+      </section>
+
+      <!-- ===== Scene 5: the tally and the invitation (18.6–24) ===== -->
+      <section id="s5" class="clip" data-start="18.6" data-duration="5.4" data-track-index="5" data-layout-allow-overflow>
+        <div id="ledger-wrap">
+          <div id="ledger-shadow" data-layout-ignore></div>
+          <div id="seal" aria-hidden="true" data-layout-ignore>♛</div>
+          <div id="ledger">
+            <div class="l-eyebrow">The tally</div>
+            <div class="l-head"><em>You</em> take the hand</div>
+            <div class="l-sub">8 points · lowest at the table</div>
+            <div class="l-row winner" id="l-row-1"><span class="l-name">You</span><span class="l-note">3 cards</span><span class="l-leader"></span><span class="l-total">8</span></div>
+            <div class="l-row" id="l-row-2"><span class="l-name">Kai</span><span class="l-note">4 cards</span><span class="l-leader"></span><span class="l-total">27</span></div>
+          </div>
+        </div>
+        <div id="wm-glow" data-layout-ignore></div>
+        <div class="center">
+          <div id="wm">KAMAYUU</div>
+          <div id="tag">A Game of Memory &amp; Nerve</div>
+          <div id="addr">kamayuu.builtbygsv.in</div>
+          <div id="cta">Play it on your phone</div>
+        </div>
+      </section>
+
+      <!-- ===== audio ===== -->
+      <audio id="bgm" src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3" data-start="0" data-duration="24" data-track-index="10" data-volume="1"></audio>
+      <!-- beat-grid: deal at 0.50 / 1.03 / 1.58 / 2.13 (grid 0.56 / 1.09 / 1.64 / 2.19, SFX leads the motion by ~60ms) -->
+      <audio id="sfx-deal-1" src="assets/sfx/casino/card-slide-1.ogg" data-start="0.5" data-duration="0.6" data-track-index="11" data-volume="0.6"></audio>
+      <audio id="sfx-deal-2" src="assets/sfx/casino/card-slide-1.ogg" data-start="1.03" data-duration="0.6" data-track-index="12" data-volume="0.55"></audio>
+      <audio id="sfx-deal-3" src="assets/sfx/casino/card-slide-1.ogg" data-start="1.58" data-duration="0.6" data-track-index="13" data-volume="0.55"></audio>
+      <audio id="sfx-deal-4" src="assets/sfx/casino/card-slide-1.ogg" data-start="2.13" data-duration="0.6" data-track-index="14" data-volume="0.6"></audio>
+      <audio id="sfx-flip-1" src="assets/sfx/casino/card-place-1.ogg" data-start="3.6" data-duration="0.69" data-track-index="11" data-volume="0.6"></audio>
+      <audio id="sfx-flip-2" src="assets/sfx/casino/card-place-1.ogg" data-start="3.78" data-duration="0.69" data-track-index="12" data-volume="0.55"></audio>
+      <audio id="sfx-flip-3" src="assets/sfx/casino/card-place-1.ogg" data-start="6.4" data-duration="0.69" data-track-index="11" data-volume="0.55"></audio>
+      <audio id="sfx-draw" src="assets/sfx/casino/card-slide-1.ogg" data-start="7.7" data-duration="0.6" data-track-index="12" data-volume="0.6"></audio>
+      <!-- beat-locked: 8.74s (strong cue) — the red King reveal -->
+      <audio id="sfx-king-1" src="assets/sfx/impact/impactSoft_medium_001.ogg" data-start="8.72" data-duration="0.18" data-track-index="11" data-volume="0.8"></audio>
+      <audio id="sfx-king-2" src="assets/sfx/interface/bong_001.ogg" data-start="8.8" data-duration="0.12" data-track-index="12" data-volume="0.7"></audio>
+      <audio id="sfx-discard" src="assets/sfx/casino/card-slide-1.ogg" data-start="9.9" data-duration="0.6" data-track-index="13" data-volume="0.5"></audio>
+      <audio id="sfx-flip-4" src="assets/sfx/casino/card-place-1.ogg" data-start="12.2" data-duration="0.69" data-track-index="11" data-volume="0.6"></audio>
+      <!-- beat-locked: 13.11s (strong cue) — the thrown 8 lands -->
+      <audio id="sfx-throw" src="assets/sfx/casino/card-shove-1.ogg" data-start="13.05" data-duration="0.77" data-track-index="12" data-volume="0.75"></audio>
+      <!-- beat-locked: 17.47s (strong cue) — the buzzer press -->
+      <audio id="sfx-buzz" src="assets/sfx/impact/impactBell_heavy_000.ogg" data-start="17.45" data-duration="1.48" data-track-index="11" data-volume="0.85"></audio>
+      <audio id="sfx-plaque" src="assets/sfx/impact/impactSoft_medium_004.ogg" data-start="17.58" data-duration="0.15" data-track-index="12" data-volume="0.7"></audio>
+      <audio id="sfx-ledger" src="assets/sfx/impact/impactSoft_medium_001.ogg" data-start="18.95" data-duration="0.18" data-track-index="13" data-volume="0.7"></audio>
+      <audio id="sfx-seal" src="assets/sfx/impact/impactWood_medium_000.ogg" data-start="19.5" data-duration="0.33" data-track-index="14" data-volume="0.75"></audio>
+      <!-- beat-locked: 22.93s (strong cue) — the wordmark echo -->
+      <audio id="sfx-echo" src="assets/sfx/impact/impactBell_heavy_003.ogg" data-start="22.9" data-duration="0.65" data-track-index="15" data-volume="0.45"></audio>
+    </div>
+
+    <script>
+      // One paused timeline; every tween is fromTo with explicit start states so
+      // any frame is a pure function of time (seek-safe both directions).
+      const tl = gsap.timeline({ paused: true });
+      const SLOTS = [[1180, 248], [1404, 248], [1180, 552], [1404, 552]];
+
+      // ---- ambient (finite, deterministic) ----
+      tl.fromTo("#ghost", { x: -30 }, { x: 30, duration: 24, ease: "none" }, 0);
+      tl.fromTo("#rule", { opacity: 0.35 }, { opacity: 0.75, duration: 2, ease: "sine.inOut", yoyo: true, repeat: 9 }, 0);
+      tl.fromTo("#meta-round, #meta-deck, #meta-tag", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "power2.out", stagger: 0.12 }, 0.6);
+
+      // Audio-reactive lantern: per-frame sampling of the pre-extracted bands.
+      // Subtle — the glow breathes with RMS and swells a little on bass.
+      const AD = window.AUDIO_DATA;
+      if (AD) {
+        for (let f = 0; f < AD.totalFrames; f++) {
+          const fr = AD.frames[f];
+          tl.call(function () {
+            gsap.set("#glow", { opacity: 0.28 + fr.rms * 0.34, scale: 1 + fr.bands[0] * 0.07 });
+            gsap.set("#wm-glow", { opacity: 0.35 + fr.rms * 0.5 });
+          }, [], f / AD.fps);
+        }
+      }
+
+      // ---- Scene 1: the deal ----
+      // beat-grid: card 1 at 0.56, card 2 at 1.09, card 3 at 1.64, card 4 at 2.19
+      [0.56, 1.09, 1.64, 2.19].forEach((t, i) => {
+        tl.fromTo("#s1-c" + i, { x: 560, y: -300, rotation: 14, opacity: 0 }, { x: 0, y: 0, rotation: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, t - 0.06);
+      });
+      tl.fromTo("#s1-l1", { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power4.out" }, 0.8);
+      tl.fromTo("#s1-l2", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power4.out" }, 2.4);
+      tl.fromTo("#s1-l2b", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power4.out" }, 2.55);
+      tl.to("#s1-l1, #s1-l2, #s1-l2b", { y: -24, opacity: 0, duration: 0.35, ease: "power2.in" }, 3.55);
+      // the two you may see: flip up, hold, flip back
+      tl.fromTo("#s1-c2-in", { rotationY: 0 }, { rotationY: 180, duration: 0.5, ease: "power2.inOut" }, 3.6);
+      tl.fromTo("#s1-c3-in", { rotationY: 0 }, { rotationY: 180, duration: 0.5, ease: "power2.inOut" }, 3.78);
+      tl.fromTo("#s1-c2, #s1-c3", { y: 0 }, { y: -18, duration: 0.5, ease: "power2.out" }, 3.6);
+      tl.fromTo("#s1-l3", { scale: 1.25, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "power4.out" }, 3.9);
+      tl.fromTo("#s1-l4", { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, 5.0);
+      tl.to("#s1-c2-in", { rotationY: 360, duration: 0.5, ease: "power2.inOut" }, 6.4);
+      tl.to("#s1-c3-in", { rotationY: 360, duration: 0.5, ease: "power2.inOut" }, 6.55);
+      tl.to("#s1-c2, #s1-c3", { y: 0, duration: 0.5, ease: "power2.inOut" }, 6.4);
+      tl.to("#s1-l3, #s1-l4", { opacity: 0, x: -30, duration: 0.35, ease: "power2.in" }, 7.1);
+
+      // ---- Scene 2: the gamble ----
+      tl.fromTo("#s2-draw", { x: 120, y: -30, opacity: 0, rotation: 6 }, { x: 0, y: 0, opacity: 1, rotation: 0, duration: 0.5, ease: "power3.out" }, 7.7);
+      tl.fromTo("#s2-draw-in", { rotationY: 0 }, { rotationY: 180, duration: 0.45, ease: "power2.inOut" }, 7.95);
+      tl.fromTo("#s2-c0", { y: 0, scale: 1 }, { y: -26, scale: 1.08, duration: 0.4, ease: "power2.out" }, 8.35);
+      // beat-locked: 8.74s — the hidden card is the red King (worth 0)
+      tl.fromTo("#s2-c0-in", { rotationY: 0 }, { rotationY: 180, duration: 0.5, ease: "power2.inOut" }, 8.49);
+      tl.fromTo("#s2-c0-glow", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 8.74);
+      tl.to("#s2-c0-glow", { opacity: 0, duration: 0.9, ease: "power2.in" }, 9.1);
+      tl.fromTo("#s2-l1", { x: 70, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power4.out" }, 8.9);
+      tl.fromTo("#s2-l2", { x: 70, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power4.out" }, 9.6);
+      // the King goes to the discard; the 2 takes its place
+      tl.to("#s2-c0", { x: 480, y: 512, scale: 0.9, rotation: 8, duration: 0.55, ease: "power2.inOut" }, 9.9);
+      tl.to("#s2-draw", { x: -360, y: -82, duration: 0.5, ease: "power3.inOut" }, 10.3);
+      tl.to("#s2-draw-in", { rotationY: 360, duration: 0.45, ease: "power2.inOut" }, 10.55);
+      tl.to("#s2-l1, #s2-l2", { opacity: 0, duration: 0.3, ease: "power2.in" }, 11.15);
+
+      // ---- Scene 3: the throw ----
+      tl.fromTo("#s3-pile-in", { rotationY: 180 }, { rotationY: 180, duration: 0.01 }, 11.5);
+      tl.fromTo("#s3-c3-in", { rotationY: 0 }, { rotationY: 180, duration: 0.45, ease: "power2.inOut" }, 12.2);
+      tl.fromTo("#s3-c3", { y: 0 }, { y: -22, duration: 0.45, ease: "power2.out" }, 12.2);
+      tl.fromTo("#s3-l1", { scale: 1.3, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "power4.out" }, 12.4);
+      // beat-locked: 13.11s — the match lands on the pile
+      tl.to("#s3-c3", { x: 204, y: 124, rotation: -7, duration: 0.42, ease: "power2.in" }, 12.69);
+      tl.fromTo("#s3-c3", { scale: 1.06 }, { scale: 1, duration: 0.18, ease: "power2.out", immediateRender: false }, 13.11);
+      tl.fromTo("#s3-l2", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power4.out" }, 13.3);
+
+      // ---- Scene 4: the call ----
+      tl.fromTo("#s4-vig", { opacity: 0 }, { opacity: 0.55, duration: 0.8, ease: "power2.out" }, 14.5);
+      tl.fromTo("#buzzer-wrap", { y: 190, scale: 0.88, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.75, ease: "power3.out" }, 14.6);
+      tl.fromTo("#s4-l1", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power4.out" }, 15.0);
+      tl.fromTo("#s4-l2", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power4.out" }, 15.25);
+      tl.fromTo("#buzzer-glow", { opacity: 0 }, { opacity: 0.35, duration: 1.05, ease: "sine.inOut", yoyo: true, repeat: 1 }, 15.2);
+      // beat-locked: 17.47s — the press
+      tl.fromTo("#buzzer", { y: 0, scale: 1 }, { y: 16, scale: 0.955, duration: 0.11, ease: "power2.in" }, 17.36);
+      tl.to("#buzzer", { y: 0, scale: 1, duration: 0.38, ease: "back.out(2.2)" }, 17.47);
+      tl.fromTo("#buzzer-glow", { opacity: 0.1 }, { opacity: 0.95, duration: 0.08, ease: "power2.out", immediateRender: false }, 17.47);
+      tl.to("#buzzer-glow", { opacity: 0, duration: 0.9, ease: "power2.in" }, 17.55);
+      tl.fromTo("#plaque", { scale: 1.35, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: "power4.out" }, 17.6);
+      tl.fromTo("#plaque-shadow", { opacity: 0 }, { opacity: 0.7, duration: 0.3 }, 17.6);
+      tl.to("#plaque, #plaque-shadow, #s4-l1, #s4-l2, #buzzer-wrap", { opacity: 0, duration: 0.3, ease: "power2.in" }, 18.8);
+
+      // ---- Scene 5: the tally, then the invitation ----
+      tl.fromTo("#ledger-wrap", { y: -90, rotation: -3, opacity: 0 }, { y: 0, rotation: -1.2, opacity: 1, duration: 0.6, ease: "power3.out" }, 18.7);
+      tl.fromTo("#l-row-1", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 19.05);
+      tl.fromTo("#l-row-2", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 19.3);
+      tl.fromTo("#seal", { scale: 2.2, rotation: -12, opacity: 0 }, { scale: 1, rotation: -12, opacity: 1, duration: 0.42, ease: "back.out(1.7)" }, 19.5);
+      tl.to("#ledger-wrap", { y: 760, rotation: 2, opacity: 0, duration: 0.6, ease: "power3.in" }, 21.0);
+      // The table HUD retires with the ledger so the closing card is just the name.
+      tl.to("#meta-round, #meta-deck, #meta-tag, #rule", { opacity: 0, duration: 0.7, ease: "power2.in" }, 20.9);
+      tl.fromTo("#wm", { scale: 1.18, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.65, ease: "power4.out" }, 21.05);
+      tl.fromTo("#tag", { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, 21.4);
+      tl.fromTo("#addr", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, 21.8);
+      tl.fromTo("#cta", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 22.05);
+      // beat-locked: 22.93s — a final echo on the wordmark
+      tl.to("#wm", { scale: 1.035, duration: 0.12, ease: "power2.out" }, 22.93);
+      tl.to("#wm", { scale: 1, duration: 0.5, ease: "back.out(2)" }, 23.05);
+      // The bed carries its own level on the timeline rather than in data-volume,
+      // so the fade's absolute values and the clip gain can never disagree.
+      tl.set("#bgm", { volume: 0.34 }, 0);
+      tl.fromTo("#bgm", { volume: 0.34 }, { volume: 0, duration: 1.6, ease: "power1.in", immediateRender: false }, 22.4);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
