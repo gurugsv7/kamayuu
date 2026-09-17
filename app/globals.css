@@ -2238,3 +2238,16 @@ html,body,#root { background: #090f15; }
 .hand-action:active:not(:disabled){transform:translateY(1px);filter:brightness(1.2)}
 @media(min-width:700px){.hand-action{right:26px;top:calc(55% - 6px);max-width:112px;font-size:10px}}
 @media(min-height:890px) and (max-width:600px){.hand-action{right:10px;top:calc(56.5% - 6px)}}
+
+/* ---- The top seat's penalty cards ----------------------------------------
+   Every seat but yours fans its penalties in a row under its grid. For the
+   top seat that row lands on the deck and the discard, because the piles sit
+   directly below it. Fan its penalties out to the right instead, level with
+   the grid's top row: that band clears the piles, and it clears the side
+   seats, whose name plates start lower. The 61px offset clears this seat's
+   own drawn card, which hangs off the same edge. */
+.player-2 .penalty-slot{top:-14px;left:calc(100% + 61px + (var(--extra-column) * 2 + var(--extra-row)) * 17px)}
+/* The right-hand seat fanned its penalties rightward from its grid's left
+   edge, so on a narrow phone the first one landed on the discard. Mirror the
+   left seat instead: anchor to that grid's right edge and fan inward. */
+.player-3 .penalty-slot{left:auto;right:calc((var(--extra-column) * 2 + var(--extra-row)) * 17px)}
