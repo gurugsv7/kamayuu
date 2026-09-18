@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { NAME_LIMIT } from '@/lib/account';
+import { DEFAULT_NAME, NAME_LIMIT } from '@/lib/account';
 
 export interface PlayerIdentityData {
   name: string;
@@ -64,7 +64,7 @@ const COUNTRIES = [
 ];
 
 export default function PlayerIdentityScreen({
-  initialName = 'Guru',
+  initialName = '',
   initialCountry = 'India',
   initialBadge = 'compass',
   initialPhoto = '',
@@ -136,7 +136,7 @@ export default function PlayerIdentityScreen({
       try { navigator.vibrate(12); } catch {}
     }
     onContinue({
-      name: name.trim().slice(0, NAME_LIMIT) || 'Guru',
+      name: name.trim().slice(0, NAME_LIMIT) || DEFAULT_NAME,
       country,
       badge: selectedBadge,
       photo,

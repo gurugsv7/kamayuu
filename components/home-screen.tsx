@@ -11,6 +11,7 @@ import {
   ArrowRight,
   BookOpen,
 } from 'lucide-react';
+import {DEFAULT_NAME} from '@/lib/account';
 
 export interface HomeScreenProps {
   playerName?: string;
@@ -33,7 +34,7 @@ export interface HomeScreenProps {
 }
 
 export default function HomeScreen({
-  playerName = 'Guru',
+  playerName = DEFAULT_NAME,
   playerPhoto = '',
   playerRank = 'Gold II',
   playerRating = 1248,

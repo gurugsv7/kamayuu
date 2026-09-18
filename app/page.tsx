@@ -10,7 +10,7 @@ import KamayuuTutorial from '@/components/tutorial/kamayuu-tutorial';
 import ScoreLedger from '@/components/score-ledger';
 import DesktopGate from '@/components/desktop-gate';
 import {MultiplayerService} from '@/lib/multiplayer';
-import {NAME_LIMIT,avatarForBadge,currentSession,isGuest,loadProfile,saveProfile,signInAsGuest,signInWithGoogle,signOut,supabaseConfigured,type Profile} from '@/lib/account';
+import {DEFAULT_NAME,NAME_LIMIT,avatarForBadge,currentSession,isGuest,loadProfile,saveProfile,signInAsGuest,signInWithGoogle,signOut,supabaseConfigured,type Profile} from '@/lib/account';
 import {googleConfigured} from '@/lib/google-auth';
 import {track,startHeartbeat} from '@/lib/analytics';
 import OnboardingScreen from '@/components/onboarding-screen';
@@ -268,7 +268,7 @@ export default function Home(){
   }finally{setAuthBusy('');}
  }
  async function finishOnboarding(identity?: PlayerIdentityData){
-  const name=(identity?.name||draftName).trim().slice(0,NAME_LIMIT)||'Guru';
+  const name=(identity?.name||draftName).trim().slice(0,NAME_LIMIT)||DEFAULT_NAME;
   const badge=identity?.badge??draftAvatar??'compass';
   const country=identity?.country||'';
   const photo=identity?.photo||'';
@@ -443,7 +443,7 @@ export default function Home(){
   )}
  {gate==='onboarding'&&(
     <PlayerIdentityScreen
-      initialName={draftName || (typeof window !== 'undefined' ? localStorage.getItem('lotus-name') || 'Guru' : 'Guru')}
+      initialName={draftName || (typeof window !== 'undefined' ? localStorage.getItem('lotus-name') || '' : '')}
       initialCountry={typeof window !== 'undefined' ? localStorage.getItem('lotus-country') || 'India' : 'India'}
       initialBadge={typeof window !== 'undefined' ? localStorage.getItem('lotus-badge') || 'compass' : 'compass'}
       initialPhoto={typeof window !== 'undefined' ? localStorage.getItem('lotus-avatar-photo') || '' : ''}
@@ -469,7 +469,7 @@ export default function Home(){
  {online==='connecting'&&<div className="welcome"><div className="welcome-card"><Lotus/><p className="eyebrow">{connection||'CONNECTING…'}</p></div></div>}
   {gate==='ready'&&menu&&(
     <HomeScreen
-      playerName={profile?.display_name || playerName || 'Guru'}
+      playerName={profile?.display_name || playerName || DEFAULT_NAME}
       playerPhoto={typeof window !== 'undefined' ? localStorage.getItem('lotus-avatar-photo') || '' : ''}
       playerRank="Gold II"
       playerRating={1248}
@@ -515,10 +515,10 @@ export default function Home(){
   <div className="rule"><b>02</b><p><strong>Kai (Shadow Dancer)</strong> — 2,180 Rating (Master I)</p></div>
   <div className="rule"><b>03</b><p><strong>Rin (Silent River)</strong> — 1,995 Rating (Diamond II)</p></div>
   <div className="rule"><b>04</b><p><strong>Mira (Lotus Heart)</strong> — 1,820 Rating (Gold I)</p></div>
-  <div className="rule"><b>05</b><p><strong>{profile?.display_name||playerName||'Guru'} (You)</strong> — 1,248 Rating (Gold II)</p></div>
+  <div className="rule"><b>05</b><p><strong>{profile?.display_name||playerName||DEFAULT_NAME} (You)</strong> — 1,248 Rating (Gold II)</p></div>
  </div>:view==='rules'?<div className="rules-content"><div className="rule"><b>01</b><p><strong>Remember two.</strong> At the deal, only your bottom two cards are revealed. All four positions stay fixed, even when empty.</p></div><div className="rule"><b>02</b><p><strong>Take your turn.</strong> Draw from the deck, then replace one occupied card or discard your draw. Or take the public discard and replace a card, unless you were the one who discarded it. You cannot take back your own top discard. Removed cards reveal publicly.</p></div><div className="rule"><b>03</b><p><strong>Throw a match.</strong> During anyone’s turn, tap your card if you think its rank matches the top discard — but not once you are holding a draw of your own; finish that turn first. A hit does not spend a turn. A miss reveals your card to everyone, returns it, and adds the top discard to a separate penalty slot; if it was your own turn, the miss ends it. Penalty cards can be replaced, peeked at, or matched away.</p></div><div className="power-rules"><p><b className="red-text">J ♥</b><span>A <strong>red</strong> Jack drawn from the deck: privately peek at one of your cards. Black Jacks have no power.</span></p><p><b className="red-text">Q ♥</b><span>A <strong>red</strong> Queen drawn from the deck: pick one of your four positions and an opponent. You alone see both faces, then choose to trade or keep yours — the trade is never forced. Either way the Queen is discarded. Black Queens have no power.</span></p><p><b className="red-text">K ♦</b><span>Red Kings are worth zero. A = 1; numbers = face value; J = 11; Q = 12; black K = 13.</span></p></div><p>Red Jack and red Queen powers may be passed; the drawn power card is discarded. Taking either from the discard has no power.</p><div className="rule"><b>04</b><p><strong>Know when to buzz.</strong> Buzz at the start of your turn — it costs you nothing: you still play that turn, and then every other remaining player gets exactly one final turn. You may also buzz right after your turn ends, before the next player has drawn — then you do not get another turn, and the final round runs from the next player onward. You can still be targeted by a Queen. Then every card reveals; the lowest total among remaining players wins. Ties share the win.</p></div><p className="rules-foot">Empty hands automatically call the final round. The original four positions never move. Queen swaps use only those four positions, matched one to one: your top left pairs with their top left. Opponent boards are drawn mirrored, because their own bottom two face them. Penalty cards appear only when received. Your original four positions stay fixed as penalties extend horizontally. Reaching six cards on your board eliminates you immediately. Empty slots and your pending draw do not count. Eliminated players cannot act or be swapped with. The last remaining player wins automatically. When needed, shuffle the discards back into the deck, keeping its top card.</p></div>:<div className="settings-content"><label><span>Table sounds</span><Switch checked={settings.sound} onCheckedChange={v=>{audio.current?.unlock();setSettings(x=>({...x,sound:v}));}}/></label><label><span>Haptics <small>On supported devices</small></span><Switch checked={settings.haptics} onCheckedChange={v=>setSettings(x=>({...x,haptics:v}))}/></label><label><span>Shorter movements</span><Switch checked={settings.motion} onCheckedChange={v=>setSettings(x=>({...x,motion:v}))}/></label><p>{stats.won} wins in {stats.played} completed matches</p>{online==='room'?<>{isHost&&s?.phase==='finished'&&<button className="primary" onClick={()=>{setPanel(null);sendCommand('rematch');}}><RotateCcw size={16}/> Rematch</button>}{!isHost&&s?.phase==='finished'&&<small>The host starts the rematch.</small>}<button className="text-action" onClick={()=>{setPanel(null);leaveOnline();}}>Leave the table</button></>:<><button className="primary" onClick={()=>start()}><RotateCcw size={16}/> New match</button><button className="text-action" onClick={()=>{cancel();setPanel(null);setMenu(true);}}>Return to main menu</button></>}
  <div className="account-block">
-  <p><b>{profile?.display_name||playerName||'Guru'}</b>{guest?' · guest':''}</p>
+  <p><b>{profile?.display_name||playerName||DEFAULT_NAME}</b>{guest?' · guest':''}</p>
   {profile&&<small>{profile.matches_won} online wins in {profile.matches_played} matches</small>}
   <button className="text-action" onClick={()=>{setDraftName(profile?.display_name||playerName||'');setDraftAvatar(profile?.avatar||'lotus');setPanel(null);setIdentityFrom('ready');setGate('onboarding');}}>Change name or mark</button>
   <button className="text-action" onClick={()=>{setPanel(null);setGate('signin');}}>View onboarding page</button>

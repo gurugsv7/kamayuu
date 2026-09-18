@@ -25,6 +25,9 @@ export const AVATAR_GLYPH: Record<string,string> = {
 /** profiles.name is capped at 16 characters and profiles.avatar is constrained to
  *  AVATARS by the database, so both are narrowed here before any upsert. */
 export const NAME_LIMIT = 16;
+/** Shown when a player has not chosen a name yet. Deliberately generic: a
+ *  real first name here reads as someone else's account to a new player. */
+export const DEFAULT_NAME = 'Guest';
 const BADGE_AVATAR: Record<string,string> = {
   compass:'star', wolf:'spade', dragon:'club', lotus:'lotus', mountain:'diamond', tree:'heart',
 };
