@@ -24,3 +24,12 @@ discard during the flight and confirmed the older overlay's completion did not
 overwrite it. Overlays ignored pointer input and cleaned up after completion.
 Local screenshot: outputs/restored-discard-motion.png (outside tracked source).
 No backend, deadline, rating or account changes are part of this correction.
+
+After owner approval, source `9a0d3b2651a4ab5cb6e51bf2781ab9c6053da578` was
+promoted to production deployment `SEE5dnwUAomqy8iFPcFzWDYUtg5v`. Vercel reported
+Ready with `kamayuu.builtbygsv.in` assigned. Public HTML/JS/CSS returned HTTP 200;
+the live JS includes both the card-motion overlay and handoff event handling.
+All four policy-page checks passed. Backend functions were unchanged.
+
+The owner's request to obtain approval before unrequested changes to existing UI,
+animations or working behaviour is recorded in the repository's AGENTS.md.
