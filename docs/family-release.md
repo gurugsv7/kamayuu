@@ -1,87 +1,36 @@
-# Mixed-audience release: implementation and gates
+# First release: under-13 offline practice
 
-Local development only, 4 November 2026. This is not a compliance certification.
+The owner changed scope on 4 November 2026: under-13 users have local practice only.
+KWS/provider integration and parent onboarding are deferred. Do not configure a
+verification provider or offer parent approval as a way to unlock this release.
 
-## Experience
+One remembered age-group question sends users straight to the game. Under-13
+users skip Google, CAPTCHA and identity/profile onboarding. Online entry panels
+explain the age restriction and offer practice. No parent-credential form appears
+in settings. Product engagement analytics remains disabled for known children.
 
-One neutral age-band question precedes authentication. No exact birthday is
-collected. Older users continue through existing sign-in. Under-13 players use
-generated aliases and skip identity/photo/country onboarding. They can play solo
-immediately, or ask a parent to approve online access. The ranked ladder stays
-shared. Consent setup is not silently replaced with an adult checkbox or PIN.
+The shared server policy denies all known under-13 accounts even if old consent
+flags are true. Parent begin/redeem endpoints return 403 before calling a provider
+or creating an account. The database queue trigger independently rejects children.
+Historical consent code and management/deletion APIs are retained for future work;
+they do not authorize child gameplay in this release. No real child accounts or
+queue entries existed at rollout. No account or consent records were deleted.
 
-Child accounts have no Google login, CAPTCHA, engagement heartbeat or product
-analytics. Essential multiplayer state, game statistics and rank are retained.
-Child recipients receive pseudonyms instead of freeform names. All private and
-ranked messages are server-allowlisted presets. Parent settings independently
-control online access, reactions and rematches. Withdrawn or expired consent
-blocks access, including new queue allocations. Profiles cannot override child
-aliases through the Data API. Server state, not localStorage or user metadata,
-is authoritative for known accounts.
+The old private-table website's unknown-age compatibility path remains until the
+new frontend is released. This policy does not claim verified age assurance or
+complete protection of that legacy client. Self-declared age can be falsified;
+do not call it verified. The website was not published by this change.
 
-Self-declared age bands cannot prevent a fresh visitor lying about age, or someone
-clearing device storage and creating another account. Do not describe this as
-verified age assurance. Regional age thresholds (including India) and the actual
-target countries need review; “13+” is not a universal consent exemption.
+## Remaining release work
 
-## Verification adapter (not yet configured)
+- Review India age treatment and commencement dates; under 13 is not a universal
+  legal threshold. Resolve teen consent/analytics before an India public release.
+- Finalize and publish reviewed privacy, parent information and deletion pages;
+  verify retention/deletion, support handling and moderation.
+- Test real ranked/leaderboard/rematch/reconnect flows and native Android auth.
+- Configure Play India availability, target audience/Families, Data safety, account
+  deletion and content rating accurately. Keeping practice for children means the
+  app still has a child audience; do not declare it adult-only.
 
-`FAMILY_VPC_URL` must be an operator-controlled HTTPS adapter for a reviewed real
-verifiable parental consent provider. `FAMILY_VPC_KEY` is server-only.
-`FAMILY_VPC_VERIFICATION_ORIGINS` explicitly allowlists the hosted verification origins.
-The adapter receives POST `{operation,noticeVersion,...}`. It must enforce abuse limits, replay/expiry,
-parent authentication, retention, consent notices and ownership of child records.
-Never use the test fake in a deployment.
-
-- `begin`: accepts `deviceHash`; returns `session`, `verificationUrl`. Do not send
-  child names, emails, exact birthdates, analytics or gameplay. Pending requests
-  must expire within 24 hours and be deleted by the adapter.
-- `verify`: accepts `session`, `deviceHash`; only after genuine VPC returns
-  `{verified:true,receipt,guardian,deviceHash,noticeVersion,expiresAt,online,social,rematches}`.
-  Receipt/guardian are opaque identifiers, not email addresses. Default scopes off
-  unless the parent explicitly approves them. Refuse expired/revoked receipts.
-- `parent`: accepts a short-lived `credential`, returns verified guardian identity.
-  Management credentials must include a future `expiresAt`, be limited to the parent and be revoked on logout.
-  The adapter's hosted verification UX must provide a secure way to return or
-  obtain that credential. The current local controls accept it in a password field;
-  polished authenticated redirect/handoff awaits the chosen provider.
-
-Kamayuu binds redemption to a random 256-bit device secret (only hash goes to
-verification). Receipt allocation is idempotent and device-bound. Only after
-verified consent does the server provision a Supabase account with an internal
-non-deliverable email and random password. A magic-link token is exchanged on the
-server; only the child access/refresh tokens return to the initiating device.
-No real child email or identity document enters Kamayuu. Service keys stay on Edge.
-Post-consent verification URLs must use a reviewed allowlisted provider host.
-
-## Release gates still open
-
-1. Choose and contract a VPC provider; confirm its SDK/API terms permit child use,
-   configure its adapter, rate limits and verified parent management handoff.
-   Test real approval, refusal, expiry, retry, device mismatch, revocation and deletion.
-2. Review regional consent thresholds, target countries and child/adult age bands.
-   Review parent notice, processor agreements and public legal drafts with the operator.
-3. Approve retention periods and configure/test scheduled cleanup for expired
-   consent requests, inactive child accounts, game payloads and revoked receipts.
-   Revoked receipt tombstones currently remain to prevent replay. Deletion clears
-   account/game records but processor backups/log retention needs confirmation.
-4. Add/report/block moderation appropriate to public profiles and online safety;
-   test hostile names, reactions and repeated rematch harassment across two devices.
-5. Publish approved privacy, parent notice and deletion pages only with release
-   permission. Email requests must actually be monitored. Configure Play Data safety,
-   Families, target audience, IARC and account deletion declarations accurately.
-6. Family migrations and all Edge endpoints are deployed; see `backend-deployment.md`.
-   Migrate legacy unknown-age private-table players before claiming a complete
-   rollout. Keep ranked disabled until release checks pass. Never deploy only UI.
-7. Complete on-device Android auth/gameplay/background/network tests. The Capacitor
-   app now embeds the game and family UI; offline practice does not load the hosted
-   website. The hosted ranked worker is deployed with its schedule inactive. Public
-   privacy/deletion pages still need approved hosting. Android OAuth is registered
-   for the local release certificate; device sign-in and Play signing registration
-   remain to be verified.
-8. Verify real leaderboard/home standings on staging with humans and AI rivals.
-   Local placeholders have been replaced with service results and an Unranked fallback.
-
-Sources: [Google Play Families](https://support.google.com/googleplay/android-developer/answer/9893335),
-[FTC parental consent](https://www.ftc.gov/business-guidance/privacy-security/verifiable-parental-consent-childrens-online-privacy-rule),
-[FTC COPPA FAQs](https://www.ftc.gov/business-guidance/resources/complying-coppa-frequently-asked-questions).
+The current APK/AAB candidate predates this UI change until explicitly rebuilt.
+See backend-deployment.md and india-release-status.md for deployment/testing limits.

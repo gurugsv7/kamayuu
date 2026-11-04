@@ -9,6 +9,7 @@ Deno.serve(async req=>{
  try{
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request too large'},413);
   const input=JSON.parse(raw);
+  if(['begin','redeem'].includes(input.command))return reply({error:'Under-13 players can use practice on this device. Online child accounts are not available.'},403);
   const url=Deno.env.get('SUPABASE_URL')!,key=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const server=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
   const rpc=async(name:string,args:Record<string,unknown>)=>{const {data,error}=await server.rpc(name,args);if(error)throw Error(error.message);return data;};

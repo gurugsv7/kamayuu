@@ -54,7 +54,7 @@ Back opens game settings during play and minimizes only from the home menu. Solo
 timers/audio pause in background; online games remain server-authoritative.
 
 Native guests start offline immediately. Native online play requires Google
-sign-in for older users, or verified parent-approved child setup. Merely opening
+sign-in for ages 13 and above. Under-13 players use local practice only. Merely opening
 Home/Ranked never creates an anonymous account or triggers CAPTCHA. Browser guest
 sign-in remains available through its existing CAPTCHA flow.
 
@@ -81,8 +81,8 @@ UI simulation files in `work` are test aids, not production source or APK conten
   hosted scheduler remain disabled. Complete the checks in `backend-deployment.md`
   before activating either. Legacy unknown-age private-table players retain access;
   this temporary compatibility path is not a complete child-safety rollout.
-- Configure a reviewed real parental-consent provider and secure parent handoff.
-  Finalize countries/age thresholds, privacy, retention, deletion and moderation.
+- Parent-verification setup is deferred for this release. Finalize India age
+  treatment, privacy, retention, deletion and moderation; see family-release.md.
 - Complete actual Android Google sign-in, storage, cutout/keyboard, background,
   offline first-launch and reconnect tests on a device. Phone tests were paused at
   the owner's request; desktop simulation is not a substitute for those checks.

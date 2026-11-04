@@ -24,6 +24,13 @@ Endpoints: `lotus-game` v13; `lotus-ranked`, `lotus-family` and
 inside the handler. Gateway JWT verification remains off for those authenticated
 handler flows, including modern asymmetric Supabase sessions.
 
+Under-13 offline-only follow-up: lotus-game v14, lotus-family v2 and lotus-ranked
+v2 are deployed. Parent begin/redeem returns 403, known under-13 accounts are denied
+online access even with old consent flags, and the queue trigger rejects them.
+No child accounts or queue entries existed at rollout. The UI is updated in this
+branch; the public website and existing APK/AAB have not been rebuilt/published
+with this follow-up yet. KWS is deferred and no longer a first-release prerequisite.
+
 Ranked is **disabled**. Cron job `kamayuu-ranked-worker` is **inactive**. When later
 activated, its two-second dispatcher skips empty queues and due-job scans with no
 work. The follow-up `ranked_single_use_worker_tokens` migration replaces the
@@ -90,9 +97,9 @@ URLs are blank. No Google branding settings were changed in this follow-up.
 Actual device sign-in, publishing status and the eventual Play app-signing SHA-1
 remain to be checked. No additional API scopes were configured.
 
-Before enabling ranked or releasing child online play: configure/review the real
-parent-verification provider; complete consent/revocation/deletion and moderation
-checks; migrate legacy clients; verify native authentication and reconnect; test
+Before enabling ranked for the revised offline-child release: complete India
+age-policy, deletion and moderation checks; migrate legacy clients; verify native
+authentication and reconnect; test
 real leaderboard/rematch flows; and preserve extension isolation. Approve activation
 as a separate release step. Do not enable ranked merely because deployment passed.
 

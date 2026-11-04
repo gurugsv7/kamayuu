@@ -38,8 +38,8 @@ back navigation, rotation and online reconnect on Android before release.
 
 The family/ranked backend and Android OAuth registration are now deployed; see
 `backend-deployment.md` for exact versions, smoke checks and remaining limits.
-The real consent provider is still unconfigured: child setup fails closed and keeps
-practice available. Native sign-in has not been verified end to end on Android.
+Under-13 online access is now disabled for this release and parent setup is deferred.
+Practice remains available. Native sign-in has not been verified end to end on Android.
 Review target-country age thresholds, privacy/retention/deletion and moderation
 before child online release.
 
@@ -47,3 +47,16 @@ The public certificate and SHA-1/SHA-256 information are in
 `android/upload-certificate.der` and `docs/mobile-signing-public.json`. They are not
 the private upload key. The private key/password remain on the original laptop in
 ignored `work/signing`; preserve them and arrange a secure backup separately.
+
+## Under-13 offline-only follow-up
+
+All 115 tests passed after the scope change, along with frontend/Edge TypeScript
+and the mobile web production build. Targeted family/UI lint passed; the account
+module retains its pre-existing no-explicit-any lint finding. Live family begin
+and redeem return 403. Known under-13 accounts are denied by the deployed shared
+policy and database queue trigger even with old consent flags. No real child
+accounts or queue entries existed at rollout. No account records were deleted.
+
+The local browser preview timed out, so the new age flow has no visual pass claim.
+The existing APK/AAB artifacts predate this change and need rebuilding. The public
+website was not published. KWS and parent onboarding are deferred.

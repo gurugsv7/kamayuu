@@ -31,3 +31,16 @@ test('purge removes shared match payloads and restrictive references before auth
  await rpc(d,'family_purge',[id]);await d.query('delete from auth.users where id=$1',[id]);assert.equal((await d.query('select count(*)::int n from lotus_ranked.matches')).rows[0].n,0);assert.equal((await d.query('select revoked from lotus_family.receipts')).rows[0].revoked,true);
  }finally{await d.close();}
 });
+
+test('offline-only release rejects consented children and preserves adult queue admission',async()=>{
+ const d=await db();try{
+  const id=await child(d);await d.exec('update lotus_ranked.settings set enabled=true');
+  await rpc(d,'ranked_acknowledge',[id,'ranked-ai-v1']);
+  await d.exec(migration('20261104110514_under13_offline_only'));
+  assert.equal((await d.query('select count(*)::int n from lotus_ranked.tickets')).rows[0].n,0);
+  await assert.rejects(()=>rpc(d,'ranked_enqueue_ticket',[id,'ap-south-1']),/13 and above/);
+  await d.query('insert into auth.users values($1)',[uid]);await rpc(d,'family_register',[uid,'18_plus']);
+  await rpc(d,'ranked_acknowledge',[uid,'ranked-ai-v1']);await rpc(d,'ranked_enqueue_ticket',[uid,'ap-south-1']);
+  assert.equal((await d.query('select count(*)::int n from lotus_ranked.tickets')).rows[0].n,1);
+ }finally{await d.close();}
+});

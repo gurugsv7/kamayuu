@@ -12,6 +12,7 @@ export const analyticsAllowed=()=>familyPermissions(current).analytics;
 export function storedAge():AgeBand|null {try{const x=localStorage.getItem('kamayuu-age-band');return ['under_13','13_17','18_plus'].includes(x||'')?x as AgeBand:null;}catch{return null;}}
 export function rememberAge(age:AgeBand){localStorage.setItem('kamayuu-age-band',age);}
 export async function familyRequest<T=Record<string,unknown>>(command:string,extra:Record<string,unknown>={},signed=true):Promise<T>{
+ if(['begin','redeem'].includes(command))throw Error('Under-13 players can use practice on this device. Online child accounts are not available.');
  if(!connectionAvailable())throw Error('You are offline. Practice is available without signing in.');
  const session=signed?(await auth().auth.getSession()).data.session:null;
  const r=await fetch(`${URL}/functions/v1/lotus-family`,{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json',...(session?{Authorization:`Bearer ${session.access_token}`}:{})},body:JSON.stringify({command,...extra}),signal:AbortSignal.timeout(20000)});

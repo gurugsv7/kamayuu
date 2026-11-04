@@ -4,6 +4,7 @@ A memory card game with offline practice and a human-first ranked 1v1 ladder.
 
 This development branch includes a **bundled Capacitor Android app**, ranked tiers
 from Bronze to Diamond, stable AI rivals, rematches and child-safety infrastructure.
+Under-13 players use offline practice only; parental verification is deferred.
 It is a release candidate. The Supabase foundations are deployed with ranked disabled;
 the website and Play release have not been published from this branch.
 
@@ -25,5 +26,5 @@ sign-in, Android Keystore storage, haptics and native lifecycle handling.
 Signing keys, passwords and server credentials are intentionally excluded from
 the repository. Public client configuration and the public upload certificate are
 included. Android OAuth is registered for the local release certificate. The
-parental-consent service, release checks and on-device verification remain required
+India age-policy review, release checks and on-device verification remain required
 before a Play release.

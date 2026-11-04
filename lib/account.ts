@@ -54,14 +54,14 @@ export function auth(): SupabaseClient {
 export async function currentSession() {
   if(!connectionAvailable())return null;
   if (!storedAge()) return null;
-  if (storedAge()==='under_13' && (familyState()?.age_band!=='under_13'||!familyPermissions(familyState()).online)) return null;
+  if (storedAge()==='under_13') return null;
   if (!supabaseConfigured()) return null;
   const {data} = await auth().auth.getSession();
   return data.session ?? null;
 }
 
 export async function signInWithGoogle(token: string, nonce: string) {
-  const age=storedAge();if(!age||age==='under_13')throw Error('Use parent-approved family setup for online play.');
+  const age=storedAge();if(!age||age==='under_13')throw Error('Online play is available for ages 13 and above. Practice is available without signing in.');
   const {data, error} = await auth().auth.signInWithIdToken({provider: 'google', token, nonce});
   if (error) throw Error(error.message);
   await setupAge(age);
@@ -71,7 +71,7 @@ export async function signInWithGoogle(token: string, nonce: string) {
 /** Anonymous fallback. Supabase enforces CAPTCHA on this endpoint. */
 export async function signInAsGuest() {
   if(!connectionAvailable())throw Error('You are offline. Practice is available without signing in.');
-  const age=storedAge();if(!age||age==='under_13')throw Error('Use parent-approved family setup for online play.');
+  const age=storedAge();if(!age||age==='under_13')throw Error('Online play is available for ages 13 and above. Practice is available without signing in.');
   const captcha = await captchaToken();
   const {data, error} = await auth().auth.signInAnonymously(
     captcha ? {options: {captchaToken: captcha}} : undefined,
@@ -144,6 +144,6 @@ export async function onlineSession(allowGuest=false){
  if(!session&&allowGuest&&!isNative())session=await signInAsGuest();
  if(!session)throw Error('Sign in for online play. Practice works offline.');
  const safety=familyState()||await refreshFamily();
- if(!familyPermissions(safety).online)throw Error('Complete age or parent-approved online setup first.');
+ if(!familyPermissions(safety).online)throw Error('Online play is available for ages 13 and above. Complete age setup first.');
  return session;
 }
