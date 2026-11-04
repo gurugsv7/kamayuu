@@ -16,6 +16,7 @@ import RankedLeaderboardView from '@/components/ranked-leaderboard';
 import RematchControls from '@/components/rematch-controls';
 import ActionButton from '@/components/action-button';
 import {turnClock,immediateTurn} from '@/lib/turn-timing.mjs';
+import {turnFlights} from '@/lib/turn-motion.mjs';
 import {restoreSettings} from '@/lib/table-settings.mjs';
 import {DEFAULT_NAME,NAME_LIMIT,avatarForBadge,currentSession,isGuest,loadProfile,saveProfile,signInAsGuest,signInWithGoogle,signOut,supabaseConfigured,type Profile} from '@/lib/account';
 import {googleConfigured,nativeGoogleSignIn} from '@/lib/google-auth';
@@ -173,6 +174,24 @@ function GameHome(){
   const dx=b.left-a.left,dy=b.top-a.top,sx=b.width/a.width,sy=b.height/a.height;
   sound('slide');try{await animate(node,[{transform:'translate(0,0) rotate(0deg) scale(1)',filter:'drop-shadow(0 3px 3px #0008)'},{transform:`translate(${dx*.47+arc}px,${dy*.47-27}px) rotate(${arc?Math.sign(arc)*9:-5}deg) scale(${(1+sx)/2},${(1+sy)/2})`,filter:'drop-shadow(0 20px 13px #000a)',offset:.48},{transform:`translate(${dx}px,${dy}px) rotate(0deg) scale(${sx},${sy})`,filter:'drop-shadow(0 4px 4px #0009)'}],duration,token);put(to,c);sound('impact');}finally{node.remove();}}
  function commit(next:any){observedDiscard.current=next.discard.at(-1)?.id||null;game.current=next;setS(next);setRevision(v=>v+1);}
+ function playTurnMotion(events:any[],token:number){
+  if(document.hidden||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const flights=turnFlights(events);
+  requestAnimationFrame(()=>{
+   if(token!==epoch.current||!mounted.current||document.hidden)return;
+   for(const flight of flights){
+    const source=table.current?.querySelector(`[data-loc="${flight.from}"]`),target=table.current?.querySelector(`[data-loc="${flight.to}"]`);
+    if(!source||!target)continue;
+    const a=source.getBoundingClientRect(),b=target.getBoundingClientRect();if(!a.width||!b.width)continue;
+    const node=document.createElement('div');node.className='flying-card turn-flight';node.setAttribute('aria-hidden','true');node.innerHTML=cardHTML(flight.card);
+    Object.assign(node.style,{position:'fixed',left:a.left+'px',top:a.top+'px',width:a.width+'px',height:a.height+'px',zIndex:'80',pointerEvents:'none',transformOrigin:'0 0'});document.body.appendChild(node);
+    const dx=b.left-a.left,dy=b.top-a.top,sx=b.width/a.width,sy=b.height/a.height;
+    const motion=node.animate([{transform:'translate(0,0) scale(1)',opacity:.95},{transform:`translate(${dx*.45+12}px,${dy*.45-32}px) rotate(-7deg) scale(${(1+sx)/2},${(1+sy)/2})`,opacity:1,offset:.45},{transform:`translate(${dx}px,${dy}px) scale(${sx},${sy})`,opacity:0}],{duration:config.current.motion?300:650,easing:'cubic-bezier(.22,.7,.25,1)',fill:'forwards'});
+    animations.current.add(motion);void motion.finished.catch(()=>{}).finally(()=>{animations.current.delete(motion);node.remove();motion.cancel();});
+   }
+   if(flights.length)sound('slide');
+  });
+ }
  function neutralPrompt(state:any){if(state.phase==='finished'||state.phase==='memory')return;if(state.phase==='lastCall'){setCaption('LAST CHANCE TO MATCH');setMessage('Throw a match before the final reveal.');return;}if(state.players[0].eliminated){setCaption('YOU’RE OUT · WATCH THE TABLE');setMessage(`${seatName(state.active,state)}’s turn. Six cards ended your hand.`);return;}if(state.phase==='swapConfirm'&&state.active===0&&state.pending){setCaption('TRADE OR KEEP');setMessage(`Your ${positionName(state.pending.i)} against ${seatName(state.pending.target,state)}’s. Trade, or keep yours.`);return;}const you=state.active===0;setCaption(state.caller!==null?`FINAL ROUND · ${state.remaining.map((p:number)=>seatName(p,state)).join(' · ')}`:you?'YOUR TURN':`${seatName(state.active,state).toUpperCase()}’S TURN`);
  const messages:any={ready:you?(state.discard.length&&!takeable(state)?'You threw this discard. Draw from the deck.':'Draw, take the discard, or throw a match.'):'You can throw a match during this turn.',decision:you?'Tap a card to replace it.':'Considering the draw.',peek:you?'Jack — peek at one of your cards.':'A private peek.',swap:you?'Red Queen — pick one of your cards, then an opponent.':'A same-position exchange.',swapConfirm:you?'Trade the two cards, or keep yours.':'Weighing the exchange.'};setMessage(messages[state.phase]||'');}
  function cancel(){epoch.current++;activeAbort.current.abort();activeAbort.current=new AbortController();animations.current.forEach(a=>a.cancel());animations.current.clear();document.querySelectorAll('.flying-card').forEach(e=>e.remove());locked.current=false;setBusy(false);setMemory(false);setTarget(null);setResult(false);setCountdown(null);setSwapSlot(null);queuedMatch.current=null;setQueued(false);movingSlots.current.clear();motionTarget.current=null;Object.values(emoteTimers.current).forEach(clearTimeout);emoteTimers.current={};emoteTokens.current={};setEmotes({});setEmotePicker(false);Object.values(bubbleTimers.current).forEach(clearTimeout);bubbleTimers.current={};bubbleTokens.current={};setBubbles({});setMessagePicker(false);}
@@ -270,7 +289,7 @@ function GameHome(){
   const token=epoch.current;locked.current=true;setBusy(true);setMenu(false);
   try{
    if(opening){memorized.current=false;setCaption('THE LANTERN TABLE');setMessage('A fresh hand. A clean slate.');}
-   if(silent||resync||!packet.events.length)commit(next);
+   if(silent||resync||!packet.events.length){commit(next);if(!silent&&packet.handoffEvents?.length)playTurnMotion(packet.handoffEvents,token);}
    else{
     if(opening){
      commit(next);await paint();check(token);
@@ -287,7 +306,7 @@ function GameHome(){
  }
  packetHandler.current=(packet:any)=>{
   if(lobbyRef.current?.matchId&&packet.room.matchId!==lobbyRef.current.matchId){cancel();memorized.current=false;seenSocial.current.clear();game.current=null;queue.current=Promise.resolve();}
-  if(immediateTurn(game.current,packet.state)){cancel();queue.current=Promise.resolve();packet={...packet,recover:true,metaOnly:false};}
+  if(immediateTurn(game.current,packet.state)){cancel();queue.current=Promise.resolve();packet={...packet,handoffEvents:packet.recover?[]:packet.events,recover:true,metaOnly:false};}
   packet.room.receivedAt??=Date.now();lobbyRef.current=packet.room;setLobby(packet.room);setJoinError('');
   const socialNow=packet.room.serverTime||Date.now();
   for(const e of packet.social||[])if(e.at<=socialNow&&socialNow-e.at<6000&&!seenSocial.current.has(`${packet.room.id}:${e.id}`)){
