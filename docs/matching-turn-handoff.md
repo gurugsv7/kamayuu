@@ -44,3 +44,18 @@ during an old Queen animation: within 60 ms it showed 7, active player zero,
 Draw enabled and presentation unlocked; after the old animation's duration the
 new state remained intact. This was local synthetic gameplay, not a claim of
 physical-device or live player verification. No schema or rating data changes.
+
+## Approved production release
+
+After explicit owner approval, deployed lotus-game v17, lotus-ranked v5 and
+lotus-ranked-worker v3. Read-back confirmed the updated matching rule in all
+three bundles. Unauthorized smoke requests returned 401; ranked admission and
+worker cron remained enabled/active. Security advisors retained the existing six
+warnings. No authentication permissions were expanded.
+
+Web source `c32e958360e78a0eb6894f26493c6df9695ed7ef` was promoted to production
+deployment `GPEaQDn3F93ayFUe6A32XmsUEGEf` after Vercel email reauthentication.
+Vercel reported Ready with `kamayuu.builtbygsv.in` assigned. Public HTML/JS/CSS
+returned HTTP 200, and the live JS contains the immediate-handoff path. All four
+policy-page checks passed. Refresh cached clients before testing; no new Android
+binary was built during this correction.
