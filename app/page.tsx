@@ -15,7 +15,7 @@ import RankedEntry from '@/components/ranked-entry';
 import RankedLeaderboardView from '@/components/ranked-leaderboard';
 import RematchControls from '@/components/rematch-controls';
 import ActionButton from '@/components/action-button';
-import {turnClock} from '@/lib/turn-timing.mjs';
+import {turnClock,immediateTurn} from '@/lib/turn-timing.mjs';
 import {restoreSettings} from '@/lib/table-settings.mjs';
 import {DEFAULT_NAME,NAME_LIMIT,avatarForBadge,currentSession,isGuest,loadProfile,saveProfile,signInAsGuest,signInWithGoogle,signOut,supabaseConfigured,type Profile} from '@/lib/account';
 import {googleConfigured,nativeGoogleSignIn} from '@/lib/google-auth';
@@ -287,6 +287,7 @@ function GameHome(){
  }
  packetHandler.current=(packet:any)=>{
   if(lobbyRef.current?.matchId&&packet.room.matchId!==lobbyRef.current.matchId){cancel();memorized.current=false;seenSocial.current.clear();game.current=null;queue.current=Promise.resolve();}
+  if(immediateTurn(game.current,packet.state)){cancel();queue.current=Promise.resolve();packet={...packet,recover:true,metaOnly:false};}
   packet.room.receivedAt??=Date.now();lobbyRef.current=packet.room;setLobby(packet.room);setJoinError('');
   const socialNow=packet.room.serverTime||Date.now();
   for(const e of packet.social||[])if(e.at<=socialNow&&socialNow-e.at<6000&&!seenSocial.current.has(`${packet.room.id}:${e.id}`)){
