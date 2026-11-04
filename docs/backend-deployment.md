@@ -26,9 +26,12 @@ handler flows, including modern asymmetric Supabase sessions.
 
 Ranked is **disabled**. Cron job `kamayuu-ranked-worker` is **inactive**. When later
 activated, its two-second dispatcher skips empty queues and due-job scans with no
-work. It invokes a bounded Edge worker using a scoped 64-character Vault credential,
-never the service-role key in cron SQL or HTTP headers. Only service-role callers
-can invoke the boolean token verifier. Edge runtime supplies its own service key.
+work. The follow-up `ranked_single_use_worker_tokens` migration replaces the
+reusable Vault credential with random single-use credentials that expire after
+30 seconds. Only hashes are kept in a private RLS-protected table; validation
+atomically consumes each token. The dispatcher alone mints tokens. Player roles
+cannot mint, read or validate them; the worker role cannot mint them. No service-role
+key enters cron SQL or HTTP headers. Edge runtime supplies its own service key.
 Jobs use existing leases, version checks and idempotent settlement.
 
 The existing `lotus-game` endpoint permits unknown-age legacy private-table players
@@ -40,6 +43,8 @@ through age/consent setup. It does not establish protection for every legacy use
 ## Verified
 
 - 111 tests passed after the compatibility change: 89 core and 22 database tests.
+- Follow-up worker hardening: all 25 database tests passed, including three new
+  expiry, single-use, ACL and dispatch tests; the 89 core tests were unchanged.
 - Frontend and all four Edge entrypoints passed TypeScript checks.
 - Unauthenticated game, ranked and family status calls return 401. Worker missing
   credentials return 401; invalid scoped credentials return 403.
@@ -61,9 +66,11 @@ Supabase-owned `net` tables retain PUBLIC grants, and cron tables use platform R
 The connected database role cannot revoke the owner's grants. These schemas are
 not exposed through the Data API, but do not grant untrusted SQL access or expose
 them later. The queued token can only invoke a bounded worker; it cannot fetch
-player data, choose match actions or administer accounts. Ask Supabase support to
-review extension ACL hardening before enabling the hosted schedule. The worker
-token can be rotated entirely within Vault without exposing it.
+player data, choose match actions or administer accounts. The follow-up single-use
+token migration removes reusable secrets from this queue. A live invocation returned
+200 with no work, consumed its token, and left no token rows. The old Vault credential
+was confirmed rejected. Extension schemas must remain outside the Data API; a
+Supabase support review is optional additional hardening, not an activation dependency.
 
 Security advisers report intentional service-only tables with RLS/no client policy,
 anonymous guest own-row policies, platform cron policies and existing disabled
@@ -74,14 +81,19 @@ leaked-password protection. Review the [database adviser guidance](https://supab
 Android OAuth client `694818732271-fgrgj925halm4tfcjc873gamt0lo14sl.apps.googleusercontent.com`
 was created in existing project `kamayuu` for `in.builtbygsv.kamayuu` and the local
 release SHA-1 in `mobile-signing-public.json`. The native server client ID remains
-the existing **web** client ID. Google reports OAuth access restricted to test users.
+the existing **web** client ID. Google shows Testing status. A follow-up inspection
+found no configured sensitive/restricted scopes. The code uses Google Identity
+Services/Credential Manager basic sign-in. Google's basic identity-scope exception
+means the generic test-user warning alone does not prove sign-in is blocked.
+The Publish button is disabled until Branding is completed: home, privacy and terms
+URLs are blank. No Google branding settings were changed in this follow-up.
 Actual device sign-in, publishing status and the eventual Play app-signing SHA-1
 remain to be checked. No additional API scopes were configured.
 
 Before enabling ranked or releasing child online play: configure/review the real
 parent-verification provider; complete consent/revocation/deletion and moderation
 checks; migrate legacy clients; verify native authentication and reconnect; test
-real leaderboard/rematch flows; and review extension isolation. Approve activation
+real leaderboard/rematch flows; and preserve extension isolation. Approve activation
 as a separate release step. Do not enable ranked merely because deployment passed.
 
 ## Migration history and rollback

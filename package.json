@@ -8,7 +8,7 @@
   "scripts": {
     "test": "node --test tests/engine.test.mjs tests/multiplayer.test.mjs tests/ranked.test.mjs tests/ranked-runtime.test.mjs tests/ranked-service.test.mjs tests/rival-personality.test.mjs tests/ranked-transport.test.mjs tests/family.test.mjs tests/mobile.test.mjs",
     "test:family:db": "node --test tests/family-database.test.mjs",
-    "test:ranked:db": "node --test tests/ranked-database.test.mjs",
+    "test:ranked:db": "node --test tests/ranked-database.test.mjs tests/ranked-worker-auth.test.mjs",
     "sync:edge": "node scripts/sync-edge.mjs",
     "worker:ranked": "node scripts/ranked-worker.mjs",
     "dev": "vinext dev",
