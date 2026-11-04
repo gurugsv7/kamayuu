@@ -6,6 +6,10 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "test": "node --test tests/engine.test.mjs tests/multiplayer.test.mjs tests/ranked.test.mjs tests/ranked-runtime.test.mjs tests/ranked-service.test.mjs",
+    "test:ranked:db": "node --test tests/ranked-database.test.mjs",
+    "sync:edge": "node scripts/sync-edge.mjs",
+    "worker:ranked": "node scripts/ranked-worker.mjs",
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
@@ -38,6 +42,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
     "@cloudflare/workers-types": "4.20260515.1",
+    "@electric-sql/pglite": "0.3.14",
     "@openai/sites-vite-plugin": "0.2.0",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
