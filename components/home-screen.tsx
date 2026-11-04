@@ -389,6 +389,9 @@ export default function HomeScreen({
             <span className="divider-diamond">◆</span>
             <span className="divider-line" />
           </div>
+          <nav aria-label="Kamayuu policies" style={{display:'flex',justifyContent:'center',flexWrap:'wrap',gap:'10px 18px',padding:'16px 12px 22px',fontSize:11,color:'#c6b28e'}}>
+            <a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/parents.html">For parents</a><a href="/delete-account.html">Delete data</a>
+          </nav>
         </main>
       </div>
     </div>

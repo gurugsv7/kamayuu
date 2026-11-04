@@ -577,7 +577,7 @@ function GameHome(){
   {profile&&<small>{profile.matches_won} online wins in {profile.matches_played} matches</small>}
   {storedAge()!=='under_13'&&<button className="text-action" onClick={()=>{setDraftName(profile?.display_name||playerName||'');setDraftAvatar(profile?.avatar||'lotus');setPanel(null);setIdentityFrom('ready');setGate('onboarding');}}>Change name or mark</button>}
   {storedAge()!=='under_13'&&<button className="text-action" onClick={()=>{setPanel(null);setGate('signin');}}>View onboarding page</button>}
-  <a className="text-action" href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a><a className="text-action" href="/delete-account.html" target="_blank" rel="noopener noreferrer">Delete account or data</a>
+  <a className="text-action" href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a><a className="text-action" href="/terms.html" target="_blank" rel="noopener noreferrer">Terms</a><a className="text-action" href="/delete-account.html" target="_blank" rel="noopener noreferrer">Delete account or data</a>
   {storedAge()!=='under_13'&&profile&&<button className="text-action" onClick={()=>{if(window.confirm('Delete your online account? This cannot be undone.'))void familyRequest('delete_account').then(()=>leaveAccount()).catch(e=>setAuthError(e.message));}}>Delete my online account</button>}
   {storedAge()!=='under_13'&&<button className="text-action" onClick={leaveAccount}>{storedAge()==='under_13'?'Close online session':guest?'Sign in with Google':'Sign out'}</button>}
   <a className="text-action" href="/credits">Credits</a>

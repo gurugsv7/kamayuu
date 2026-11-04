@@ -13,7 +13,7 @@ import {storedAge} from './family';
 export const googleConfigured = () => !!CLIENT_ID;
 export async function nativeGoogleSignIn(){
  if(!isNative()||!CLIENT_ID)throw Error('Native Google sign-in is not configured.');
- if(!storedAge()||storedAge()==='under_13')throw Error('Use parent-approved family setup for online play.');
+ if(!storedAge()||storedAge()==='under_13')throw Error('Online play is available for ages 13 and above. Practice is available without signing in.');
  const nonce=await makeNonce();
  const {idToken}=await NativeIdentity.signIn({clientId:CLIENT_ID,nonce:nonce.hashed});
  return {token:idToken,nonce:nonce.raw};
