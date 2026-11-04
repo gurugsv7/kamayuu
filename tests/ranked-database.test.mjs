@@ -26,6 +26,7 @@ async function database() {
   await db.exec(migration);
   await db.exec(rivalsMigration);
   await db.exec(readFileSync(new URL('../supabase/migrations/20261104050547_ranked_rematches_social_preferences.sql',import.meta.url),'utf8'));
+  await db.exec(readFileSync(new URL('../supabase/migrations/20261104115847_ranked_rematch_confirmation_delay.sql',import.meta.url),'utf8'));
   await db.exec(`insert into auth.users select ('00000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid from generate_series(1,20) n;`);
   return db;
 }
@@ -408,4 +409,57 @@ test('exhausted worker retries atomically release the player without rating chan
     assert.equal((await rpc(db,'ranked_status',[uid(1)])).activeMatchId,null);
     assert.equal((await rpc(db,'ranked_status',[uid(1)])).played,0);
   } finally {await db.close();}
+});
+
+
+test('a request crossing a due AI offer still waits for server-side confirmation',async()=>{
+ const db=await database();try{
+  const match=await finishedMatch(db,true,{offer:true,accept:true,offerDelayMs:3000,replyDelayMs:2500});
+  await db.query("update lotus_ranked.rematches set offer_at=clock_timestamp()-interval '1 second' where match_id=$1",[match]);
+  const reply=await rpc(db,'ranked_rematch',[uid(1),match,'request']);
+  assert.equal(reply.status,'offered');assert.equal(reply.fromSeat,0);assert.equal(reply.nextMatchId,null);
+  const deadline=(await db.query('select response_at,extract(epoch from(response_at-clock_timestamp())) seconds from lotus_ranked.rematches where match_id=$1',[match])).rows[0];
+  assert.ok(Number(deadline.seconds)>2&&Number(deadline.seconds)<=2.5);
+  await rpc(db,'ranked_rematch',[uid(1),match,'request']);
+  assert.equal(String((await db.query('select response_at from lotus_ranked.rematches where match_id=$1',[match])).rows[0].response_at),String(deadline.response_at));
+  assert.equal((await rpc(db,'ranked_rematch',[uid(1),match,'status'])).nextMatchId,null);
+  await db.query("update lotus_ranked.rematches set response_at=clock_timestamp()-interval '1 second' where match_id=$1",[match]);
+  assert.equal((await rpc(db,'ranked_rematch',[uid(1),match,'status'])).status,'accepted');
+ }finally{await db.close();}
+});
+
+test('accepting an AI offer waits, retries keep its deadline, and its existing offer remains willing',async()=>{
+ const db=await database();try{
+  const match=await finishedMatch(db,true,{offer:true,accept:false,offerDelayMs:3000,replyDelayMs:3000});
+  await db.query("update lotus_ranked.rematches set offer_at=clock_timestamp()-interval '1 second' where match_id=$1",[match]);
+  assert.equal((await rpc(db,'ranked_rematch',[uid(1),match,'status'])).fromSeat,1);
+  const reply=await rpc(db,'ranked_rematch',[uid(1),match,'accept']);
+  assert.equal(reply.status,'offered');assert.equal(reply.fromSeat,0);assert.equal(reply.nextMatchId,null);
+  const before=(await db.query('select response_at from lotus_ranked.rematches where match_id=$1',[match])).rows[0].response_at;
+  assert.equal((await rpc(db,'ranked_rematch',[uid(1),match,'accept'])).status,'offered');
+  assert.equal(String((await db.query('select response_at from lotus_ranked.rematches where match_id=$1',[match])).rows[0].response_at),String(before));
+  await db.query("update lotus_ranked.rematches set response_at=clock_timestamp()-interval '1 second' where match_id=$1",[match]);
+  const accepted=await rpc(db,'ranked_rematch',[uid(1),match,'status']);assert.equal(accepted.status,'accepted');
+  assert.equal((await rpc(db,'ranked_rematch',[uid(1),match,'accept'])).nextMatchId,accepted.nextMatchId);
+  assert.equal((await db.query('select count(*)::int n from lotus_ranked.matches where parent_match_id=$1',[match])).rows[0].n,1);
+ }finally{await db.close();}
+});
+
+test('cancelling an AI confirmation prevents a later poll from allocating a rematch',async()=>{
+ const db=await database();try{
+  const match=await finishedMatch(db,true,{offer:true,accept:true,offerDelayMs:3000,replyDelayMs:3000});
+  await db.query("update lotus_ranked.rematches set offer_at=clock_timestamp()-interval '1 second' where match_id=$1",[match]);
+  assert.equal((await rpc(db,'ranked_rematch',[uid(1),match,'accept'])).status,'offered');
+  assert.equal((await rpc(db,'ranked_rematch',[uid(1),match,'cancel'])).status,'declined');
+  await db.query("update lotus_ranked.rematches set response_at=clock_timestamp()-interval '1 second' where match_id=$1",[match]);
+  assert.equal((await rpc(db,'ranked_rematch',[uid(1),match,'status'])).nextMatchId,null);
+ }finally{await db.close();}
+});
+
+test('crossed human rematch requests still match immediately',async()=>{
+ const db=await database();try{
+  const match=await finishedMatch(db);
+  await rpc(db,'ranked_rematch',[uid(1),match,'request']);
+  assert.equal((await rpc(db,'ranked_rematch',[uid(2),match,'request'])).status,'accepted');
+ }finally{await db.close();}
 });
