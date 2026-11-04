@@ -8,6 +8,12 @@ export type RankedStatus = {
   activeMatchId:string|null;
 };
 
+export type RankedStanding = {
+  entry_id:string; name:string; kind:'human'|'bot'; rating_type:'competitive'|'benchmark';
+  rating:number; played:number; wins:number; rank:number;
+};
+export type RankedLeaderboard = {season:string;entries:RankedStanding[];total:number;offset:number};
+
 // Transport foundation; the ranked UI must show status.disclosureText before
 // acknowledge(). Never silently acknowledge on behalf of a player.
 export class RankedService {
@@ -34,6 +40,7 @@ export class RankedService {
     }
   }
   status():Promise<RankedStatus>{return this.request<RankedStatus>('status');}
+  leaderboard(offset=0):Promise<RankedLeaderboard>{return this.request<RankedLeaderboard>('leaderboard',{offset});}
   acknowledge(version:string):Promise<RankedStatus>{return this.request<RankedStatus>('acknowledge',{version});}
   enqueue(region='ap-south-1'):Promise<RankedStatus>{return this.request<RankedStatus>('enqueue',{region});}
   cancel():Promise<RankedStatus>{return this.request<RankedStatus>('cancel');}

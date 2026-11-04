@@ -30,6 +30,21 @@ they cannot inspect unrevealed cards or deck order. Recall v1 models missed
 observations; persistent time-dependent forgetting and search-based play are future
 policy versions. Strength and tier win rates still need human calibration.
 
+`lib/ranked-roster.mjs` supplies 180 fictional names (140 Indian names and 40
+other Asian names). Each tier has 36 identities, with 12 assigned to each style.
+Names, tier/style assignments and policy seeds persist across matches. Allocation
+avoids the last rival when another is available and prefers idle rivals, but can run parallel AI challenges
+if the tier roster is busy. Every match snapshots the name and policy. No real
+accounts, photos, locations, online indicators, or invented career records are
+created for these rivals.
+
+The authenticated `leaderboard` command returns paginated standings on one rating
+scale. Bot entries retain `kind: bot` and `rating_type: benchmark`; human entries
+use competitive ratings and appear after a completed match. Bot anchor ratings
+are provisional and fixed, while their displayed played/win counts come only
+from completed ranked results. Consumers must preserve the identity distinction
+in profile/details and avoid describing this table as exclusively human players.
+
 Labels can change independently of tier IDs. Future roster changes require new
 profile IDs/versions and a new migration, not editing an applied migration.
 `node scripts/ranked-seed.mjs` regenerates this initial, unapplied migration's
@@ -40,7 +55,7 @@ roster from configuration; the database tests verify that both agree.
 The service returns a versioned notice:
 
 > Ranked matchmaking prioritizes players and may use AI-controlled opponents when
-> needed. Both count toward your rank.
+> needed. Both count toward your rank. The leaderboard includes AI-controlled rivals.
 
 The UI must display it before the player explicitly acknowledges and queues.
 Acknowledgment is stored against the authenticated account, so routine re-entry
@@ -53,14 +68,18 @@ opponent badges are undecided; no fabricated human claims are implemented here.
 ## Queue
 
 One queue serves all tiers per configured region (initially Mumbai,
-`ap-south-1`). Compatibility starts at ±150, widens to ±250 after 5 seconds and
-±350 after 10 seconds. Both tickets must permit the rating difference. Renewing
+`ap-south-1`). Compatibility starts at ±150, widens to ±250 after 1 second and
+±350 after 2 seconds. Both tickets must permit the rating difference. Renewing
 an unexpired ticket keeps its ID, region, and original join time. Clients should
 renew every 10 seconds while actively waiting; the default lease is 30 seconds.
 Queue cancellation, admission, and pairing share a short transaction-level
 advisory lock, appropriate to this launch population. It prevents a locked human
 ticket from being skipped in favour of a bot. Pairing searches all eligible human
-pairs first; only when none exists can an eligible 12-second ticket get a bot.
+pairs first. With no other waiting humans in the region, a bot becomes eligible
+after 750 ms. With incompatible humans waiting, the search window is 3 seconds.
+The admission request itself pairs compatible humans immediately. Actual match
+entry also includes worker scheduling, database/network latency, and bootstrap;
+these eligibility thresholds are not a guaranteed end-to-end latency SLA.
 Queue cancellation after allocation returns the active match rather than undoing
 an already-started pairing. Leaving the match uses the normal forfeit path.
 
@@ -78,6 +97,7 @@ ignored. The transport in `lib/ranked.ts` supports these commands:
 | Command | Extra fields | Result |
 | --- | --- | --- |
 | status | none | rating, tier, notice requirement, ticket and active match |
+| leaderboard | offset (optional) | 50 standings; kind, rating type, real result counts; no auth IDs |
 | acknowledge | version | updated status |
 | enqueue | region | renewed ticket or active match |
 | cancel | none | updated status |

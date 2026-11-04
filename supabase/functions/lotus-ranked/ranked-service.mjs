@@ -11,6 +11,7 @@ export async function handleRanked(rpc, userId, input, now = Date.now()) {
   if (!userId) throw new RankedError('Sign in to play.',401);
   const status = () => rpc('ranked_status',{p_user:userId});
   if (input.command === 'status') return status();
+  if (input.command === 'leaderboard') return rpc('ranked_leaderboard',{p_user:userId,p_limit:50,p_offset:input.offset ?? 0});
   if (input.command === 'acknowledge') {
     await rpc('ranked_acknowledge',{p_user:userId,p_version:input.version});
     return status();

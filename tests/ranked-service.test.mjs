@@ -19,6 +19,13 @@ test('first-entry acknowledgment is explicit and versioned',async()=>{
   assert.deepEqual(calls[0].args,{p_user:'user',p_version:'ranked-ai-v1'});
 });
 
+test('leaderboard uses authenticated identity and bounded page size',async()=>{
+  const calls=[];
+  await handleRanked(async(name,args)=>{calls.push({name,args});return {};},'actual-user',
+    {command:'leaderboard',userId:'forged',limit:10000,offset:50});
+  assert.deepEqual(calls,[{name:'ranked_leaderboard',args:{p_user:'actual-user',p_limit:50,p_offset:50}}]);
+});
+
 test('nonmembers cannot recover private state or worker jobs',async()=>{
   const rpc=async()=>({participants:[{kind:'human',user_id:'other'}],data:{secret:'hidden'}});
   await assert.rejects(handleRanked(rpc,'user',{command:'recover',matchId:'match'}),/not found/);

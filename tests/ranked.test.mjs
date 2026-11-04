@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {TIERS, BOT_PROFILES, tierForRating, ratingWindow, ratingChange, selectBotProfile, botMatchConfig} from '../lib/ranked-config.mjs';
 import {createRankedRoom, rankedHumanIntent, rankedHumanPacket} from '../lib/ranked-room.mjs';
+import {BOT_IDENTITIES} from '../lib/ranked-roster.mjs';
 
 test('tier boundaries are contiguous, stable, and independent of labels', () => {
   assert.equal(tierForRating(899).id, 'bronze');
@@ -24,7 +25,7 @@ test('rating rewards are symmetric, bounded, and half weighted for bots', () => 
 });
 
 test('human compatibility widens without tier-specific queues', () => {
-  assert.deepEqual([0, 4999, 5000, 9999, 10000].map(ratingWindow), [150, 150, 250, 250, 350]);
+  assert.deepEqual([0, 999, 1000, 1999, 2000].map(ratingWindow), [150, 150, 250, 250, 350]);
 });
 
 test('each tier has three distinct, frozen bot profiles; avoid immediate repeats', () => {
@@ -39,6 +40,18 @@ test('each tier has three distinct, frozen bot profiles; avoid immediate repeats
     assert.equal(config.seed, 42);
     assert.throws(() => { config.rating = 0; });
   }
+});
+
+test('180 fictional rivals have unique display-safe names and balanced stable tier/style assignments',()=>{
+  assert.equal(BOT_IDENTITIES.length,180);
+  assert.equal(new Set(BOT_IDENTITIES.map(p=>p.id)).size,180);
+  assert.equal(new Set(BOT_IDENTITIES.map(p=>p.name)).size,180);
+  for(const p of BOT_IDENTITIES) {
+    assert.ok(p.name.length<=16 && /^[A-Za-z ]+$/.test(p.name));
+    assert.ok(BOT_PROFILES.some(profile=>profile.id===p.profileId));
+    assert.ok(Object.isFrozen(p));
+  }
+  for(const profile of BOT_PROFILES) assert.equal(BOT_IDENTITIES.filter(p=>p.profileId===profile.id).length,12);
 });
 
 const participants = [

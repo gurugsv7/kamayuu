@@ -8,10 +8,13 @@ import {ratingChange, BOT_PROFILES} from '../lib/ranked-config.mjs';
 import {handleRanked} from '../lib/ranked-service.mjs';
 import {processRankedJob} from '../lib/ranked-worker.mjs';
 import {aiView,chooseAction} from '../lib/engine.mjs';
+import {BOT_IDENTITIES} from '../lib/ranked-roster.mjs';
+import {identityRosterSql} from '../scripts/ranked-roster-seed.mjs';
 
 const modulePath = process.env.PGLITE_MODULE;
 const {PGlite} = await import(modulePath ? pathToFileURL(modulePath).href : '@electric-sql/pglite');
 const migration = readFileSync(new URL('../supabase/migrations/20261104043814_ranked_infrastructure.sql', import.meta.url), 'utf8');
+const rivalsMigration = readFileSync(new URL('../supabase/migrations/20261104045454_ranked_named_rivals_fast_queue.sql', import.meta.url), 'utf8');
 const uid = n => `00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 
 async function database() {
@@ -21,6 +24,7 @@ async function database() {
     create table public.profiles(id uuid primary key,display_name text);
     grant usage on schema auth to service_role; grant select on auth.users,public.profiles to service_role;`);
   await db.exec(migration);
+  await db.exec(rivalsMigration);
   await db.exec(`insert into auth.users select ('00000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid from generate_series(1,20) n;`);
   return db;
 }
@@ -30,7 +34,9 @@ async function rpc(db, name, args = []) {
 }
 async function enter(db, n) {
   await rpc(db,'ranked_acknowledge',[uid(n),'ranked-ai-v1']);
-  return rpc(db,'ranked_enqueue',[uid(n),'ap-south-1']);
+  // Stage tickets explicitly when testing the pairer's individual transactions.
+  // Public enqueue's immediate pairing is exercised separately below.
+  return rpc(db,'ranked_enqueue_ticket',[uid(n),'ap-south-1']);
 }
 async function age(db, n, seconds=13) {
   await db.query(`update lotus_ranked.tickets set joined_at=now()-make_interval(secs=>$1), expires_at=now()+interval '30 seconds' where user_id=$2`,[seconds,uid(n)]);
@@ -40,12 +46,116 @@ test('migration compiles, roster matches policy configuration, private RPCs reje
   const db = await database();
   try {
     assert.ok(migration.endsWith(rosterSql()));
+    assert.ok(rivalsMigration.endsWith(identityRosterSql()));
+    assert.equal((await db.query('select count(*)::int as n from lotus_ranked.bot_identities')).rows[0].n,180);
     assert.equal((await db.query('select count(*)::int as n from lotus_ranked.bot_profiles')).rows[0].n,15);
     await db.exec('set role authenticated');
     await assert.rejects(rpc(db,'ranked_status',[uid(1)]),/permission denied/);
     await assert.rejects(db.query('select * from lotus_ranked.ratings'),/permission denied/);
     await db.exec('reset role; set role service_role');
     assert.equal((await rpc(db,'ranked_status',[uid(1)])).enabled,false);
+  } finally {await db.close();}
+});
+
+test('empty queue assigns a named bot after 750 ms, not before; name survives roster edits',async()=>{
+  const db=await database();
+  try {
+    await db.exec('update lotus_ranked.settings set enabled=true');
+    await enter(db,1);await age(db,1,0.6);
+    assert.equal(await rpc(db,'ranked_pair',['ap-south-1']),null);
+    await age(db,1,0.8);
+    const match=await rpc(db,'ranked_pair',['ap-south-1']);
+    const record=await rpc(db,'ranked_load_match',[match]);
+    const rival=BOT_IDENTITIES.find(p=>p.id===record.participants[1].bot_identity_id);
+    assert.ok(rival);
+    assert.equal(record.participants[1].name,rival.name);
+    assert.equal(record.participants[1].bot_config.seed,rival.seed);
+    await db.query('update lotus_ranked.bot_identities set name=$1 where id=$2',['Changed Name',rival.id]);
+    assert.equal((await rpc(db,'ranked_load_match',[match])).participants[1].name,rival.name);
+  } finally {await db.close();}
+});
+
+test('a newly enqueued compatible human wins over eligible fast bot fallback immediately',async()=>{
+  const db=await database();
+  try {
+    await db.exec('update lotus_ranked.settings set enabled=true');
+    await enter(db,1);await age(db,1,0.8);
+    await rpc(db,'ranked_acknowledge',[uid(2),'ranked-ai-v1']);
+    const status=await rpc(db,'ranked_enqueue',[uid(2),'ap-south-1']);
+    assert.ok(status.activeMatchId);
+    const record=await rpc(db,'ranked_load_match',[status.activeMatchId]);
+    assert.deepEqual(record.participants.map(p=>p.kind),['human','human']);
+    assert.equal(await rpc(db,'ranked_pair',['ap-south-1']),null);
+  } finally {await db.close();}
+});
+
+test('busy or reduced cosmetic roster never forces a long wait when an enabled bot exists',async()=>{
+  const db=await database();
+  try {
+    await db.exec("update lotus_ranked.settings set enabled=true; update lotus_ranked.bot_identities set enabled=false where id<>'rival-001'");
+    await enter(db,1);await age(db,1,0.8);
+    const first=await rpc(db,'ranked_pair',['ap-south-1']);
+    await enter(db,2);await age(db,2,0.8);
+    const second=await rpc(db,'ranked_pair',['ap-south-1']);
+    assert.ok(second);
+    assert.equal((await rpc(db,'ranked_load_match',[second])).participants[1].bot_identity_id,'rival-001');
+    await rpc(db,'ranked_abort',[first]);
+    await enter(db,1);await age(db,1,0.8);
+    const repeat=await rpc(db,'ranked_pair',['ap-south-1']);
+    assert.ok(repeat);
+  } finally {await db.close();}
+});
+
+test('incompatible waiting humans get at most a 3 second search window',async()=>{
+  const db=await database();
+  try {
+    await db.exec('update lotus_ranked.settings set enabled=true');
+    await enter(db,1);await enter(db,2);
+    await db.query('update lotus_ranked.tickets set rating=2000 where user_id=$1',[uid(2)]);
+    await age(db,1,0.8);await age(db,2,0.8);
+    assert.equal(await rpc(db,'ranked_pair',['ap-south-1']),null);
+    await age(db,1,3.1);
+    const match=await rpc(db,'ranked_pair',['ap-south-1']);
+    assert.equal((await rpc(db,'ranked_load_match',[match])).participants[1].kind,'bot');
+  } finally {await db.close();}
+});
+
+test('public admission pairs 15 entrants into seven human matches with one fast fallback',async()=>{
+  const db=await database();
+  try {
+    await db.exec('update lotus_ranked.settings set enabled=true');
+    for(let n=1;n<=15;n++) {
+      await rpc(db,'ranked_acknowledge',[uid(n),'ranked-ai-v1']);
+      await rpc(db,'ranked_enqueue',[uid(n),'ap-south-1']);
+    }
+    assert.equal((await db.query("select count(*)::int as n from lotus_ranked.matches")).rows[0].n,7);
+    await age(db,15,0.8);
+    const match=await rpc(db,'ranked_pair',['ap-south-1']);
+    assert.equal((await rpc(db,'ranked_load_match',[match])).participants[1].kind,'bot');
+  } finally {await db.close();}
+});
+
+test('leaderboard includes named benchmark rivals and genuine human results without fabricated wins or auth IDs',async()=>{
+  const db=await database();
+  try {
+    await assert.rejects(rpc(db,'ranked_leaderboard',[uid(1),50,0]),/acknowledge/);
+    await db.exec('update lotus_ranked.settings set enabled=true');
+    await enter(db,1);await age(db,1,0.8);
+    const match=await rpc(db,'ranked_pair',['ap-south-1']);
+    const record=await rpc(db,'ranked_load_match',[match]);
+    const initial=await rpc(db,'ranked_leaderboard',[uid(1),100,0]);
+    assert.equal(initial.total,180);
+    assert.ok(initial.entries.every(p=>p.kind==='bot' && p.rating_type==='benchmark' && p.wins===0 && p.played===0));
+    await rpc(db,'ranked_commit',[match,0,{state:{phase:'finished',winners:[1],totals:[20,10]}},null,{}]);
+    const pages=[await rpc(db,'ranked_leaderboard',[uid(1),100,0]),await rpc(db,'ranked_leaderboard',[uid(1),100,100])];
+    const entries=pages.flatMap(p=>p.entries);
+    const rival=entries.find(p=>p.entry_id===record.participants[1].bot_identity_id);
+    assert.equal(rival.name,record.participants[1].name);
+    assert.equal(rival.played,1);assert.equal(rival.wins,1);
+    assert.equal(entries.find(p=>p.kind==='human').played,1);
+    assert.equal(pages[0].total,181);
+    assert.equal(JSON.stringify(entries).includes(uid(1)),false);
+    await assert.rejects(rpc(db,'ranked_leaderboard',[uid(1),101,0]),/Invalid/);
   } finally {await db.close();}
 });
 
@@ -174,6 +284,7 @@ test('entry service and leased worker play a complete bot match, retries do not 
     const seen=await handleRanked(transport,uid(1),{command:'recover',matchId:match});
     assert.equal(seen.packet.state.deck,undefined);
     assert.equal(seen.packet.state.players[1].slots[2].rank,undefined);
+    assert.equal(seen.packet.state.players[1].name,(await rpc(db,'ranked_load_match',[match])).participants[1].name);
     const first={command:'remember',matchId:match,actionId:uid(100)};
     const remembered=await handleRanked(transport,uid(1),first,now);
     const duplicate=await handleRanked(transport,uid(1),first,now);

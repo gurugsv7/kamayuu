@@ -1,7 +1,7 @@
 // Versioned ladder rules. IDs persist even when display names change.
 export const LADDER_VERSION = 1;
 export const DISCLOSURE_VERSION = 'ranked-ai-v1';
-export const RANKED_DISCLOSURE = 'Ranked matchmaking prioritizes players and may use AI-controlled opponents when needed. Both count toward your rank.';
+export const RANKED_DISCLOSURE = 'Ranked matchmaking prioritizes players and may use AI-controlled opponents when needed. Both count toward your rank. The leaderboard includes AI-controlled rivals.';
 export const INITIAL_RATING = 600;
 export const MAX_RATING = 4000;
 export const TIERS = Object.freeze([
@@ -19,7 +19,7 @@ export function tierForRating(rating) {
 
 export function ratingWindow(waitMs) {
   if (!Number.isFinite(waitMs) || waitMs < 0) throw Error('Invalid queue wait');
-  return waitMs >= 10000 ? 350 : waitMs >= 5000 ? 250 : 150;
+  return waitMs >= 2000 ? 350 : waitMs >= 1000 ? 250 : 150;
 }
 
 export function ratingChange(rating, opponentRating, score, kind = 'human') {
