@@ -12,6 +12,7 @@
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/postcss';
 import path from 'node:path';
+import mobilePublic from './config/mobile-public.json';
 import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
@@ -19,7 +20,7 @@ export default defineConfig(({ mode }) => {
   // default. This app reads process.env.NEXT_PUBLIC_* (Next.js convention),
   // so we explicitly load and inline those two public/non-secret vars via
   // `define`, matching what vinext/Next does at build time.
-  const env = loadEnv(mode, process.cwd(), 'NEXT_PUBLIC_');
+  const env = {...(mode==='mobile'?mobilePublic:{}),...loadEnv(mode, process.cwd(), 'NEXT_PUBLIC_')};
 
   return {
     root: '.',
@@ -45,7 +46,7 @@ export default defineConfig(({ mode }) => {
       ),
     },
     build: {
-      outDir: 'dist-vercel',
+      outDir: mode==='mobile'?'dist-mobile':'dist-vercel',
       emptyOutDir: true,
     },
   };

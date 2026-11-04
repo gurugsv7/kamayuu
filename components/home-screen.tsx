@@ -198,7 +198,7 @@ export default function HomeScreen({
                   </button>
                 </div>
 
-                <p className="mode-card-subtitle">Find players instantly</p>
+                <p className="mode-card-subtitle">Human-first matchmaking</p>
 
                 {/* Casual / Ranked Mode Segmented Switch */}
                 <div
@@ -225,7 +225,7 @@ export default function HomeScreen({
                   </button>
                 </div>
 
-                <p className="mode-card-footer">2 – 4 players · Fast games</p>
+                <p className="mode-card-footer">Ranked 1v1 · Bronze to Diamond</p>
               </div>
             </div>
           </article>

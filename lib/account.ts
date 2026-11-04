@@ -4,8 +4,9 @@
 // actually goes online.
 import {createClient, type SupabaseClient} from '@supabase/supabase-js';
 import {captchaToken} from './captcha';
-import {storedAge,setupAge,refreshFamily,familyState} from './family';
+import {storedAge,setupAge,refreshFamily,familyState,clearFamilyState} from './family';
 import {familyPermissions} from './family-policy.mjs';
+import {isNative,nativeAuthStorage,connectionAvailable,NativeIdentity} from './native';
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
@@ -44,13 +45,14 @@ export function auth(): SupabaseClient {
     if (!supabaseConfigured()) throw Error('Online play is not configured yet.');
     // Scoped per project so a session can never leak across Supabase projects.
     client = createClient(URL, KEY, {
-      auth: {storageKey: 'lotus-guest-' + REF, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false},
+      auth: {storageKey: 'lotus-guest-' + REF, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false,...(isNative()?{storage:nativeAuthStorage}:{})},
     });
   }
   return client;
 }
 
 export async function currentSession() {
+  if(!connectionAvailable())return null;
   if (!storedAge()) return null;
   if (storedAge()==='under_13' && (familyState()?.age_band!=='under_13'||!familyPermissions(familyState()).online)) return null;
   if (!supabaseConfigured()) return null;
@@ -68,6 +70,7 @@ export async function signInWithGoogle(token: string, nonce: string) {
 
 /** Anonymous fallback. Supabase enforces CAPTCHA on this endpoint. */
 export async function signInAsGuest() {
+  if(!connectionAvailable())throw Error('You are offline. Practice is available without signing in.');
   const age=storedAge();if(!age||age==='under_13')throw Error('Use parent-approved family setup for online play.');
   const captcha = await captchaToken();
   const {data, error} = await auth().auth.signInAnonymously(
@@ -86,7 +89,16 @@ export async function signInAsGuest() {
 }
 
 export async function signOut() {
-  if (supabaseConfigured()) await auth().auth.signOut({scope: 'local'}).catch(() => {});
+  if(isNative()){
+    // Local logout must also work offline. Stop refresh before removing the
+    // persisted session, then discard the old client and its in-memory state.
+    await client?.auth.stopAutoRefresh();
+    await nativeAuthStorage.removeItem('lotus-guest-'+REF);
+    await nativeAuthStorage.removeItem('lotus-guest-'+REF+'-user');
+    client=null;
+  }else if (supabaseConfigured()) await auth().auth.signOut({scope: 'local'}).catch(() => {});
+  clearFamilyState();
+  if(isNative()&&storedAge()!=='under_13')await NativeIdentity.clearSignIn().catch(()=>{});
 }
 
 /** Upgrades the current anonymous account to Google, keeping the same id and stats. */
@@ -126,3 +138,12 @@ export async function saveProfile(display_name: string, avatar: string): Promise
 }
 
 export const isGuest = (session: any) => !!session?.user?.is_anonymous;
+export async function onlineSession(allowGuest=false){
+ if(!connectionAvailable())throw Error('You are offline. Play Practice while you reconnect.');
+ let session=await currentSession();
+ if(!session&&allowGuest&&!isNative())session=await signInAsGuest();
+ if(!session)throw Error('Sign in for online play. Practice works offline.');
+ const safety=familyState()||await refreshFamily();
+ if(!familyPermissions(safety).online)throw Error('Complete age or parent-approved online setup first.');
+ return session;
+}

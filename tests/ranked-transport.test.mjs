@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
-const source=readFileSync(new URL('../lib/ranked.ts',import.meta.url),'utf8').replace("import {currentSession} from './account';",'const currentSession=async()=>null;');
+const source=readFileSync(new URL('../lib/ranked.ts',import.meta.url),'utf8').replace("import {onlineSession} from './account';",'const onlineSession=async()=>null;');
 const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
 const {RankedTable}=await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`);
 const packet=(id,version,phase='ready')=>({room:{id,version,me:'seat-0',members:[{id:'seat-0'},{id:'seat-1'}]},state:{phase,active:0,turn:1},events:[]});

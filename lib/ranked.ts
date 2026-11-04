@@ -1,4 +1,4 @@
-import {currentSession} from './account';
+import {onlineSession} from './account';
 
 export type RankedStatus = {
   enabled:boolean; season:string; disclosureVersion:string; disclosureText:string;
@@ -22,7 +22,7 @@ type RankedResponse={packet?:RankedPacket;nextMatchId?:string|null;rematch?:Reco
 // acknowledge(). Never silently acknowledge on behalf of a player.
 export class RankedService {
   async request<T=Record<string,unknown>>(command:string,extra:Record<string,unknown>={}):Promise<T> {
-    const session=await currentSession();
+    const session=await onlineSession();
     if(!session)throw Error('Sign in to enter ranked.');
     const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
+import {isNative,nativeVibrate} from '@/lib/native';
 
 interface OnboardingScreenProps {
   onContinueWithGoogle?: () => void;
@@ -32,7 +33,7 @@ export default function OnboardingScreen({
 
   // Mount Google GIS invisible overlay button if GIS is available and configured
   useEffect(() => {
-    if (!googleConfigured || !googleSlotRef.current) return;
+    if (isNative() || !googleConfigured || !googleSlotRef.current) return;
     let active = true;
 
     async function setupGIS() {
@@ -63,6 +64,7 @@ export default function OnboardingScreen({
   }, [googleConfigured, onGoogleToken, onGoogleError, onContinueWithGoogle]);
 
   const handleGoogleClick = () => {
+    if(isNative()){nativeVibrate(10);onContinueWithGoogle?.();return;}
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try { navigator.vibrate(10); } catch {}
     }
@@ -77,6 +79,7 @@ export default function OnboardingScreen({
   };
 
   const handleGuestClick = () => {
+    if(isNative()){nativeVibrate(12);onContinueAsGuest();return;}
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try { navigator.vibrate(12); } catch {}
     }
@@ -175,7 +178,7 @@ export default function OnboardingScreen({
             )}
           </div>
 
-          {/* 2. Continue as Guest Button */}
+          {/* Offline play never waits for an account. */}
           <div className="onboarding-btn-wrapper guest-wrapper">
             <button
               type="button"
@@ -183,7 +186,7 @@ export default function OnboardingScreen({
               className="onboarding-btn btn-guest"
               onClick={handleGuestClick}
               disabled={!!authBusy}
-              aria-label="Continue as Guest"
+              aria-label={isNative()?'Play offline':'Continue as Guest'}
             >
               {/* Ornate Frame & Chamfered Polygon Borders */}
               <div className="btn-bg-layer" aria-hidden="true" />
@@ -208,7 +211,7 @@ export default function OnboardingScreen({
                   </svg>
                 </span>
 
-                <span className="btn-text">Continue as Guest</span>
+                <span className="btn-text">{isNative()?'Play offline':'Continue as Guest'}</span>
 
                 <span className="btn-arrow" aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

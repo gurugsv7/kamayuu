@@ -72,9 +72,11 @@ Post-consent verification URLs must use a reviewed allowlisted provider host.
    Families, target audience, IARC and account deletion declarations accurately.
 6. Deploy family migrations and all Edge endpoints together before enabling the
    release website; old endpoints do not enforce this policy. Never deploy only UI.
-7. Complete on-device Android auth/gameplay/background/network tests. TWA loads the
-   hosted website: local ranked/family code is not embedded in the Android bundle.
-   Approve and deploy the tested website, ranked worker and backend separately.
+7. Complete on-device Android auth/gameplay/background/network tests. The Capacitor
+   app now embeds the game and family UI; offline practice does not load the hosted
+   website. Approve and deploy the ranked worker and backend separately. Public
+   privacy/deletion pages still need approved hosting. Native Google also requires
+   Android OAuth registration for the package and installed signing certificate.
 8. Verify real leaderboard/home standings on staging with humans and AI rivals.
    Local placeholders have been replaced with service results and an Unranked fallback.
 

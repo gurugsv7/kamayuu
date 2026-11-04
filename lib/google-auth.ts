@@ -7,8 +7,17 @@
 // own name and origin. It also needs no client secret and costs nothing, whereas
 // rebranding the redirect flow needs a paid Supabase custom domain.
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+import {isNative,NativeIdentity} from './native';
+import {storedAge} from './family';
 
 export const googleConfigured = () => !!CLIENT_ID;
+export async function nativeGoogleSignIn(){
+ if(!isNative()||!CLIENT_ID)throw Error('Native Google sign-in is not configured.');
+ if(!storedAge()||storedAge()==='under_13')throw Error('Use parent-approved family setup for online play.');
+ const nonce=await makeNonce();
+ const {idToken}=await NativeIdentity.signIn({clientId:CLIENT_ID,nonce:nonce.hashed});
+ return {token:idToken,nonce:nonce.raw};
+}
 
 let loading: Promise<any> | null = null;
 
@@ -52,6 +61,7 @@ export async function mountGoogleButton(
   onToken: (token: string, nonce: string) => void,
   onError: (message: string) => void,
 ) {
+  if(isNative())return;
   if (!CLIENT_ID) return onError('Google sign-in is not configured yet.');
   let api: any;
   try {

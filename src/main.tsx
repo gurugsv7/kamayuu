@@ -6,6 +6,8 @@ import { createRoot } from 'react-dom/client';
 import '../app/globals.css';
 import Home from '../app/page';
 import CreditsPage from '../app/credits/page';
+import {initializeNative,hideNativeSplash} from '../lib/native';
+import '../app/mobile.css';
 
 // This SPA build has no router — vercel.json rewrites every path to
 // index.html, so the page to render is picked here from the real URL.
@@ -13,8 +15,9 @@ const path = window.location.pathname.replace(/\/+$/, '') || '/';
 const Page = path === '/credits' ? CreditsPage : Home;
 
 const container = document.getElementById('root')!;
+void initializeNative().catch(()=>{});
 createRoot(container).render(
   <StrictMode>
     <Page />
   </StrictMode>,
-);
+);requestAnimationFrame(hideNativeSplash);

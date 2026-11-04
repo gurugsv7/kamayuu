@@ -1,5 +1,5 @@
 import {type SupabaseClient, type RealtimeChannel} from '@supabase/supabase-js';
-import {auth, currentSession, signInAsGuest, supabaseConfigured} from './account';
+import {auth, onlineSession, supabaseConfigured} from './account';
 import {getSessionId} from './analytics';
 
 const URL=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
@@ -19,9 +19,7 @@ export class MultiplayerService {
  async authenticate(){
   // A Google or guest session already exists by the time online play is reachable;
   // this only mints one if the player somehow arrived without it.
-  const existing=await currentSession();
-  if(existing)return existing;
-  return (await signInAsGuest())!;
+  return (await onlineSession(true))!;
  }
  async request(command:string,extra:any={},retry=true):Promise<any>{
   const session=await this.authenticate();
