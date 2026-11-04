@@ -41,3 +41,20 @@ flip-back and discard sequences. It injected a metadata poll while the Jack face
 was visible and confirmed the full viewing hold survived. The seven-second timer
 remained full afterward. These are local synthetic tests, not a live-device pass.
 The screenshot outputs/original-jack-view.png is stored outside tracked source.
+
+## Production release
+
+Published source b3f8fd3bc4c7fd3e5b913863b0b353a5839404eb to
+https://kamayuu.builtbygsv.in on 2026-11-04. Vercel production deployment
+B7nfdkjiE4sC9i9mABRzBDiQA1Fo is Ready. Supabase lotus-game v18,
+lotus-ranked v6 and lotus-ranked-worker v4 are ACTIVE; read-back confirmed the
+original-duration floor, completion acknowledgment and retained transition code
+in all three bundles. Ranked settings and worker cron remain enabled.
+
+The public homepage and JavaScript returned HTTP 200. The served JavaScript
+contains the presentation protocol and paused timer indicator, and no longer
+contains the shortened flying-card overlay path. All three game endpoints still
+reject unauthenticated requests with HTTP 401. All four policy-page checks pass.
+No live match or phone test was performed in this release verification; animation
+timings were measured with the local browser harness described above. Refresh
+existing browser clients before starting a new match.
