@@ -44,31 +44,18 @@ export class MultiplayerService {
   if(sameRoom&&packet.room.version<=previous)return;
   if(sameRoom&&previous>=0&&packet.room.version>previous+1)packet={...packet,recover:true,events:[]};
   this.version=packet.room.version;this.room=packet.room;this.myTurn=packet.state?.active===0;
-  this.onPacket(packet);this.scheduleDeadline();
+  packet.room.receivedAt=Date.now();this.onPacket(packet);this.scheduleDeadline();
  }
- unclaimed(){return !!this.room?.deadline&&this.room.deadline-this.room.serverTime<=8000;}
- claim(){
-  if(this.holding||this.closed||typeof document==='undefined'||document.visibilityState!=='visible')return;
-  this.holding=true;
-  this.request('hold').then((packet:any)=>this.receive(packet)).catch(()=>{}).finally(()=>{this.holding=false;});
- }
- // A tap that is really a move must reach the server first: the move carries a
- // version and would lose a race with the claim. Waiting a beat lets the move
- // land, and the claim then buys thinking time for whatever it opened.
- interact=()=>{this.lastInput=Date.now();if(this.myTurn&&this.unclaimed())setTimeout(()=>{if(this.myTurn&&this.unclaimed())this.claim();},450);};
+ // Kept for event-listener compatibility; interactions never extend deadlines.
+ interact=()=>{this.lastInput=Date.now();};
  scheduleDeadline(){
   clearTimeout(this.deadline);if(!this.room?.deadline||this.closed)return;
-  // A turn opens on a short unclaimed window. Touching anything claims it and buys
-  // the full turn to think; doing nothing at all lets it lapse, so the table moves
-  // on instead of waiting out a player who is not there. Claiming lengthens the
-  // deadline, so this cannot re-enter on its own response.
-  if(this.myTurn&&this.unclaimed()&&Date.now()-this.lastInput<3000)this.claim();
   // Every client watches the same deadline, so stagger the nudge: whoever fires
   // first advances the room and the rest cancel on the broadcast that follows.
   // The stalled player is usually the active one, so they wait longest.
   const seat=Math.max(0,this.room.members.findIndex((m:any)=>m.id===this.room.me));
-  const stagger=this.myTurn?6000:seat*1200;
-  const delay=Math.max(500,this.room.deadline-this.room.serverTime+500+stagger);
+  const stagger=seat*150;
+  const delay=Math.max(100,this.room.deadline-this.room.serverTime+100+stagger);
   this.deadline=setTimeout(async()=>{if(this.closed)return;try{const packet=await this.request('timeout');this.receive(packet);}catch{await this.recover();}},delay);
  }
  async enter(command:'create'|'join'|'recover',extra:any={}){

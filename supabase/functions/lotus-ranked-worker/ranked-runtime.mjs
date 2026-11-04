@@ -109,9 +109,6 @@ export function advanceRanked(record, job, now = Date.now()) {
 }
 
 export function applyRankedHuman(record, userId, input, now = Date.now(), previousJob = null) {
-  // Claim once per opened turn/phase; repeated holds cannot extend it indefinitely.
-  const seat = record.participants.find(p=>p.kind==='human' && p.user_id===userId);
-  const claimKey = `${record.data.state.turn}:${record.data.state.phase}:${seat?.seat}`;
   const r = rankedHumanIntent(record.data,record.participants,userId,input,now);
   queueRivalSocial(r.room,record.participants,r.events,now);
   if(['emote','message'].includes(input.command)) {
@@ -120,9 +117,5 @@ export function applyRankedHuman(record, userId, input, now = Date.now(), previo
     r.events=[];
   }
   r.room.ranked.lastEvents=r.events;
-  if (input.command === 'hold' && seat?.seat===record.data.state.active && !['memory','lastCall','finished'].includes(record.data.state.phase)) {
-    if (record.data.ranked?.claimKey === claimKey) r.room.deadline=record.data.deadline;
-    else r.room.ranked={...r.room.ranked,claimKey};
-  }
   return {...r,next:planRankedJob(r.room,record.participants,now,previousJob)};
 }

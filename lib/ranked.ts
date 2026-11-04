@@ -75,24 +75,15 @@ export class RankedTable {
     if(this.room?.id===p.room.id && p.room.version<this.version)return;
     const unchanged=this.room?.id===p.room.id && p.room.version===this.version;
     this.lastState=p.state;
-    this.room={...p.room,rematch:result.rematch||null};this.version=p.room.version;
+    this.room={...p.room,receivedAt:Date.now(),rematch:result.rematch||null};this.version=p.room.version;
     this.onPacket({...p,room:this.room,metaOnly:unchanged});this.onConnection('Connected');
     // Presence represents connected humans only, never fictitious bot activity.
     this.onPresence([p.room.me]);
   }
-  schedule(){clearTimeout(this.timer);if(!this.closed)this.timer=setTimeout(async()=>{await this.recover();this.schedule();},2000);}
+  schedule(){clearTimeout(this.timer);if(!this.closed)this.timer=setTimeout(async()=>{await this.recover();this.schedule();},1000);}
   async recover(){if(this.closed||this.pollBusy)return;this.pollBusy=true;try{this.receive(await this.client.recover(this.matchId,this.version));}catch{this.onConnection('Reconnecting…');}finally{this.pollBusy=false;}}
   resume=()=>{if(!document.hidden)void this.recover();};
-  interact=()=>{
-    if(this.closed||!this.room||!this.lastState||this.lastState.active!==0||['memory','finished','lastCall'].includes(this.lastState.phase))return;
-    const key=`${this.matchId}:${this.lastState.turn}:${this.lastState.phase}`;
-    if(this.lastHoldKey===key)return;this.lastHoldKey=key;
-    const version=this.version;
-    clearTimeout(this.holdTimer);this.holdTimer=setTimeout(()=>{
-      if(this.closed||this.version!==version){this.lastHoldKey='';return;}
-      void this.command('hold').catch(()=>{this.lastHoldKey='';});
-    },450);
-  };
+  interact=()=>{}; // Cached hold support is server-side only; taps do not buy time.
   lastState:RankedTableState|null=null;
   async command(command:string,extra:Record<string,unknown>={}){
     if(command==='preferences')return this.client.preferences(extra.allowRematches!==false);

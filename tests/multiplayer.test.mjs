@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newRoom,applyIntent,playerPacket,secureGame,TURN_MS,AFK_MS} from '../lib/multiplayer-rules.mjs';
+import {newRoom,applyIntent,playerPacket,secureGame,AFK_MS} from '../lib/multiplayer-rules.mjs';
 import {assertState,transition} from '../lib/engine.mjs';
 const users=['a','b','c','d'];
 
@@ -49,9 +49,9 @@ test('Deadlines cannot be accelerated; a missed turn is passed and a second remo
  let x=applyIntent(r,'b',{command:'timeout'},r.deadline);
  assert.equal(x.room.state.phase,'ready');assert.equal(x.room.state.active,1);
  assert.equal(x.room.strikes.a,1);assert.ok(!(x.room.departed||[]).includes('a'));
- // Claiming the turn buys the full thinking time and clears the strike.
+ // Presence claims cannot refill the fixed draw window.
  const held=applyIntent(x.room,'b',{command:'hold'},x.room.deadline-1).room;
- assert.equal(held.deadline,x.room.deadline-1+TURN_MS);
+ assert.equal(held.deadline,x.room.deadline);
  x=applyIntent(x.room,'a',{command:'timeout'},x.room.deadline);
  assert.equal(x.room.state.active,0);
  // Second miss for the same player: they are taken off the table and the match ends.
