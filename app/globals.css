@@ -2255,3 +2255,31 @@ html,body,#root { background: #090f15; }
    left seat instead: anchor to that grid's right edge and fan inward. */
 .player-3 .penalty-slot{left:auto;right:calc((var(--extra-column) * 2 + var(--extra-row)) * 17px)}
 .rematch-status{display:block;margin:.75rem 0;line-height:1.5}
+/* Home is a single screen over fixed artwork. Allocate space instead of scrolling. */
+html.home-open,html.home-open body{overflow:hidden;overscroll-behavior:none}
+.home-viewport{overscroll-behavior:none}
+.home-canvas{container-type:size;overflow:hidden;overscroll-behavior:none}
+.home-canvas .home-top-hud{top:max(14px,env(safe-area-inset-top,0px))}
+.home-profile-capsule{min-width:0;max-width:calc(100% - 128px)}
+.profile-meta{min-width:0}
+.profile-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-canvas .home-modes-container{top:31.8%;bottom:calc(38px + env(safe-area-inset-bottom,0px));display:grid;grid-template-rows:minmax(0,1.05fr) minmax(0,.85fr) minmax(0,1.85fr) 40px;gap:clamp(6px,1.2cqh,12px)}
+.home-canvas .mode-card{min-height:0}
+.home-canvas .mode-card .mode-card-layout{height:100%;min-height:0}
+.home-canvas .mode-art-thumb{width:clamp(76px,26%,112px)}
+.home-canvas .mode-card-details{padding:6px 12px 6px 3px}
+.home-canvas .home-how-to-play-wrapper{min-height:0;height:100%;margin:0}
+.home-canvas .home-how-to-play-btn{height:100%;max-width:none}
+.home-policy-links{position:absolute;z-index:20;bottom:env(safe-area-inset-bottom,0px);left:0;right:0;height:34px;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 10px;font:10px/1.2 Arial,sans-serif;color:#c6b28e}
+.home-policy-links a{display:flex;align-items:center;min-height:30px;color:inherit;text-decoration:none}
+.home-policy-links a:focus-visible{outline:2px solid #f0ce91;outline-offset:2px}
+@container (max-height:740px){
+ .home-canvas .home-modes-container{top:30.2%;grid-template-rows:minmax(0,1fr) minmax(0,.8fr) minmax(0,1.85fr) 38px}
+ .mode-card-subtitle,.mode-card-footer{display:none}
+ .home-canvas .mode-card-details{padding:4px 10px 4px 3px}
+ .ai-diff-selector{gap:3px;margin-bottom:1px}
+ .diff-label-group{font-size:11px;line-height:1.2}
+ .diff-segments{padding:2px}
+ .diff-segment{min-height:32px;font-size:11px;padding:3px 4px}
+ .private-table-tag{font-size:11px}
+}

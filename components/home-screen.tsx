@@ -55,6 +55,11 @@ export default function HomeScreen({
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>(aiDifficulty);
   const [selectedPlayers, setSelectedPlayers] = useState<number>(playerCount);
 
+  useEffect(() => {
+    document.documentElement.classList.add('home-open');
+    return () => document.documentElement.classList.remove('home-open');
+  }, []);
+
   // Follow both when they change elsewhere (restored settings, replay).
   useEffect(() => {
     setSelectedDifficulty(aiDifficulty);
@@ -384,15 +389,10 @@ export default function HomeScreen({
           {/* ================================================================
               BOTTOM ORNAMENT DIVIDER
               ================================================================ */}
-          <div className="home-bottom-divider" aria-hidden="true">
-            <span className="divider-line" />
-            <span className="divider-diamond">◆</span>
-            <span className="divider-line" />
-          </div>
-          <nav aria-label="Kamayuu policies" style={{display:'flex',justifyContent:'center',flexWrap:'wrap',gap:'10px 18px',padding:'16px 12px 22px',fontSize:11,color:'#c6b28e'}}>
+        </main>
+          <nav className="home-policy-links" aria-label="Kamayuu policies">
             <a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/parents.html">For parents</a><a href="/delete-account.html">Delete data</a>
           </nav>
-        </main>
       </div>
     </div>
   );
