@@ -83,10 +83,12 @@ export function applyIntent(before,userId,input,now=Date.now()) {
     room.departed=[];room.strikes={};delete room.rematch;room.members.forEach(m=>{m.ready=false;});
     if(!room.members.some(m=>m.id===room.host))room.host=room.members[0]?.id||null;
   }else if(input.command==='emote'){
+    if(!['haha','angry','noooo','crying','cool'].includes(input.name))throw Error('Unknown reaction');
     // Purely decorative: no state to mutate, just an event for everyone else's client to play.
     if(!s)return {room,events};
     events=[{type:'emote',p,name:String(input.name||'haha').slice(0,24)}];
   }else if(input.command==='message'){
+    if(!['Good luck!','Nice move!','Oops!','Well played!','Your turn!'].includes(input.text))throw Error('Unknown reaction');
     // Also purely decorative — a preset quick-chat line, capped short since it
     // rides the same untrusted client-text path as an emote name.
     if(!s)return {room,events};

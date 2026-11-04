@@ -36,8 +36,8 @@ export interface HomeScreenProps {
 export default function HomeScreen({
   playerName = DEFAULT_NAME,
   playerPhoto = '',
-  playerRank = 'Gold II',
-  playerRating = 1248,
+  playerRank = 'Unranked',
+  playerRating = 0,
   aiDifficulty = 'medium',
   onDifficultyChange,
   playerCount = 4,

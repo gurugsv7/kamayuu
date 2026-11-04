@@ -4,6 +4,8 @@
 // actually goes online.
 import {createClient, type SupabaseClient} from '@supabase/supabase-js';
 import {captchaToken} from './captcha';
+import {storedAge,setupAge,refreshFamily,familyState} from './family';
+import {familyPermissions} from './family-policy.mjs';
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
@@ -49,19 +51,24 @@ export function auth(): SupabaseClient {
 }
 
 export async function currentSession() {
+  if (!storedAge()) return null;
+  if (storedAge()==='under_13' && (familyState()?.age_band!=='under_13'||!familyPermissions(familyState()).online)) return null;
   if (!supabaseConfigured()) return null;
   const {data} = await auth().auth.getSession();
   return data.session ?? null;
 }
 
 export async function signInWithGoogle(token: string, nonce: string) {
+  const age=storedAge();if(!age||age==='under_13')throw Error('Use parent-approved family setup for online play.');
   const {data, error} = await auth().auth.signInWithIdToken({provider: 'google', token, nonce});
   if (error) throw Error(error.message);
+  await setupAge(age);
   return data.session;
 }
 
 /** Anonymous fallback. Supabase enforces CAPTCHA on this endpoint. */
 export async function signInAsGuest() {
+  const age=storedAge();if(!age||age==='under_13')throw Error('Use parent-approved family setup for online play.');
   const captcha = await captchaToken();
   const {data, error} = await auth().auth.signInAnonymously(
     captcha ? {options: {captchaToken: captcha}} : undefined,
@@ -74,6 +81,7 @@ export async function signInAsGuest() {
       : error.message,
     );
   }
+  await setupAge(age);
   return data.session;
 }
 
@@ -95,6 +103,7 @@ export async function linkGoogle() {
 export async function loadProfile(): Promise<Profile | null> {
   const session = await currentSession();
   if (!session) return null;
+  const age=storedAge();if(age&&age!=='under_13')await setupAge(age);else await refreshFamily();
   const {data, error} = await auth().from('profiles').select('*').eq('id', session.user.id).maybeSingle();
   if (error) throw Error(error.message);
   return (data as Profile) ?? null;
@@ -104,6 +113,7 @@ export async function loadProfile(): Promise<Profile | null> {
 export async function saveProfile(display_name: string, avatar: string): Promise<Profile> {
   const session = await currentSession();
   if (!session) throw Error('Sign in before saving a profile.');
+  if(familyState()?.age_band==='under_13'){display_name=familyState()?.alias||'Player';avatar='lotus';}
   const {data, error} = await auth()
     .from('profiles')
     .upsert({id: session.user.id, display_name, avatar}, {onConflict: 'id'})

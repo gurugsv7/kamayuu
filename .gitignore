@@ -39,6 +39,12 @@ tsconfig.tsbuildinfo
 /.wrangler/
 /outputs/
 /work/
+/android/.gradle/
+/android/build/
+/android/app/build/
+/android/local.properties
+*.jks
+*.keystore
 
 # The brag skill installs itself twice, byte for byte. Track the .claude copy,
 # which is the one this project's agent reads, and leave the mirror on disk

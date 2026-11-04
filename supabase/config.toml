@@ -386,3 +386,6 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # The handler verifies modern JWTs with auth.getUser before every operation.
 [functions.lotus-ranked]
 verify_jwt = false
+
+[functions.lotus-family]
+verify_jwt = false
