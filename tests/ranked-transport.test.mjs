@@ -22,3 +22,16 @@ test('metadata and social updates do not replay a game version; closed transport
  assert.equal(received[0].metaOnly,false);assert.equal(received[1].metaOnly,true);
  table.closed=true;table.receive({packet:packet('game',2)});assert.equal(table.version,1);
 });
+
+test('leaving closes packet delivery before its delayed rematch response arrives',async()=>{
+ const priorWindow=globalThis.window,priorDocument=globalThis.document;
+ globalThis.window={removeEventListener(){}};globalThis.document={removeEventListener(){}};
+ try{
+  const received=[];const table=new RankedTable('old',p=>received.push(p),()=>{},()=>{});
+  table.receive({packet:packet('old',5,'finished')});let release;
+  table.client.command=async(id,command)=>{assert.equal(id,'old');assert.equal(command,'rematch');return new Promise(r=>{release=r;});};
+  const leaving=table.leave();assert.equal(table.closed,true);await Promise.resolve();
+  release({packet:packet('old',6,'finished'),nextMatchId:'unwanted'});await leaving;
+  assert.equal(received.length,1);assert.equal(table.version,5);assert.equal(table.matchId,'old');
+ }finally{globalThis.window=priorWindow;globalThis.document=priorDocument;}
+});

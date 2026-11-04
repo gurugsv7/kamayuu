@@ -2328,3 +2328,28 @@ html.home-open,html.home-open body{overflow:hidden;overscroll-behavior:none}
 
 .game-dialog.parchment .primary.action-button,.results.ledger .primary.action-button{background:linear-gradient(135deg,#f7dfac,#d7aa62 60%,#bc8744)!important;color:#25180e!important;border:1px solid #b98b48!important;border-radius:9px!important;clip-path:none;box-shadow:inset 0 1px 0 #fff4d9,0 3px 0 #785126,0 6px 16px #0003!important;filter:none}
 .game-dialog.parchment .primary.action-button.action-secondary,.results.ledger .primary.action-button.action-secondary{background:transparent!important;color:inherit!important;box-shadow:none!important}
+
+/* Invitations and recovery belong to the same table as ranked matchmaking. */
+.ranked-recovery{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:18px 12px;border:1px solid #a17b4066;border-radius:12px;background:radial-gradient(ellipse at top,#f9e8bf88,transparent 70%)}
+.feedback-emblem{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;border:1px solid #b58d4e88;border-radius:50%;color:#91652f;background:radial-gradient(circle at 30% 20%,#fbe8b9,#c49b5c44);box-shadow:inset 0 0 0 4px #fff2,0 3px 12px #0001}
+.ranked-recovery small,.rematch-heading small{font:600 9px/1.4 'Cinzel',Georgia,serif;letter-spacing:2px;text-transform:uppercase}
+.ranked-recovery h3{font:600 25px/1.1 'Cormorant Garamond',Georgia,serif;margin:0;text-wrap:balance}
+.ranked-recovery p{font:14px/1.6 Arial,sans-serif;margin:0;max-width:32ch}
+.rematch-panel{width:100%;padding:17px 15px;display:grid;gap:13px;text-align:left;border:1px solid #ac864b99;border-radius:12px;background:radial-gradient(ellipse at 5% 0%,#27343f,#101921 65%);color:#f2e1c3;box-shadow:inset 0 1px 0 #ffe5ac22,0 5px 14px #0002}
+.rematch-heading{display:flex;align-items:center;gap:10px;min-width:0}.rematch-heading>div{flex:1;min-width:0}.rematch-heading small{color:#d3ae70}
+.rematch-heading h3{margin:4px 0 0;font:600 21px/1.15 'Cormorant Garamond',Georgia,serif;color:#f7e4c3;text-wrap:balance}
+.rematch-panel .feedback-emblem{color:#ecc688;background:radial-gradient(circle at 30% 20%,#65502e66,#0d1720);box-shadow:inset 0 0 0 4px #e9c0770a}
+.rematch-panel .rematch-description{display:flex;align-items:flex-start;gap:10px;margin:0;color:#d8c9ae;font:14px/1.5 Arial,sans-serif;overflow-wrap:anywhere}
+.rematch-description .activity-mark{margin-top:2px;width:16px;height:16px;flex-basis:16px;color:#dfb570}
+.rematch-expiry{font:600 12px/1 Arial,sans-serif;color:#e8c68d;border:1px solid #a17b4055;border-radius:20px;padding:7px;font-variant-numeric:tabular-nums}
+.rematch-buttons{display:flex;flex-wrap:wrap;gap:8px}.rematch-buttons .action-button{flex:1;min-width:115px;width:100%;padding:11px 12px}
+.rematch-panel .rematch-error{margin:0;color:#ffc5ad;font:13px/1.5 Arial,sans-serif}
+.ledger-actions>.rematch-panel{flex:1 0 100%}.ledger-actions>.text-action{min-height:44px;padding:8px 10px;color:#654520}
+.ledger-actions>.text-action:first-of-type{width:100%;border:1px solid #99713a77;border-radius:8px;text-decoration:none;font:600 12px/1.4 'Cinzel',Georgia,serif;background:#fff3cf44}
+.results.ledger .rematch-panel .action-button.action-secondary{color:#ecd1a1!important;border-color:#c19a5b88!important}
+.rematch-buttons .action-button{min-width:100px}
+.ledger-sheet{max-height:calc(100svh - 76px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#a17b40 transparent}
+.game-shell:has(.results.ledger){overflow-x:clip}
+.results.ledger .rematch-panel .action-button{padding:11px 10px!important}
+.rematch-panel .action-button-label{font-size:11px;letter-spacing:.2px;white-space:normal;text-align:center}
+.results.ledger{position:fixed;top:50svh}

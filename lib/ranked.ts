@@ -98,6 +98,12 @@ export class RankedTable {
     try{return await this.command('action',{action:intent,version:this.version});}
     catch(error:unknown){if(error instanceof Error&&'packet' in error&&error.packet)this.receive({packet:error.packet as RankedPacket});throw error;}
   }
-  async leave(){try{if(this.lastState?.phase!=='finished')await this.command('leave');else await this.command('rematch',{response:'decline'});}finally{await this.close();}}
+  async leave(){
+    // Stop polling and packet delivery before notifying the old table. Its late
+    // leave/rematch response must never reopen results over a new opponent search.
+    await this.close();
+    if(this.lastState?.phase!=='finished')await this.client.command(this.matchId,'leave');
+    else await this.client.command(this.matchId,'rematch',{response:'decline'});
+  }
   async close(){this.closed=true;clearTimeout(this.timer);clearTimeout(this.holdTimer);window.removeEventListener('online',this.resume);document.removeEventListener('visibilitychange',this.resume);document.removeEventListener('pointerdown',this.interact);document.removeEventListener('keydown',this.interact);}
 }
