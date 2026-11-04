@@ -25,3 +25,9 @@ and 390×844; inline request failure and retry; authentication classification; a
 recovery back to ranked entry. Screenshots were visually inspected. No production
 player data or backend schema was changed. Native packaging and physical-device
 testing are separate from this web update.
+
+After explicit owner approval, source `1d0a425985f73376950768a7310d8b50ba6928f1`
+was promoted to production deployment `CfTESiecjt5ot3cMGRFYGZ4PUG6x` on 2026-11-04.
+Vercel reported Ready with `kamayuu.builtbygsv.in` assigned. Public HTML and
+referenced JS/CSS returned HTTP 200 and contained both new UI components. All
+four public policy-page checks passed. The backend was unchanged by this release.
