@@ -5,7 +5,7 @@ A memory card game with offline practice and a human-first ranked 1v1 ladder.
 This development branch includes a **bundled Capacitor Android app**, ranked tiers
 from Bronze to Diamond, stable AI rivals, rematches and child-safety infrastructure.
 Under-13 players use offline practice only; parental verification is deferred.
-It is a release candidate. The Supabase foundations are deployed with ranked disabled;
+It is a release candidate. The Supabase foundations and ranked matchmaking are active for production testing;
 the website is published at https://kamayuu.builtbygsv.in/ from this branch.
 The Play release is still pending.
 

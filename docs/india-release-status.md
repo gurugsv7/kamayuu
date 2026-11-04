@@ -33,7 +33,7 @@ no KWS account or agreement is required for this version.
 5. Configure Play listing/signing and Play certificate OAuth, India availability,
    audience/Families, IARC, Data safety, deletion and applicable testing requirements.
 
-Ranked and its schedule remain off. The website was published from 08b1435. No main
+Ranked and its schedule are active for owner-requested production testing. The website was published from 08b1435. No main
 merge or Play upload has occurred. This checklist is implementation status, not legal certification.
 
 Sources: [Google OAuth states](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview),

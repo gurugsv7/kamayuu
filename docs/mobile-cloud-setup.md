@@ -3,7 +3,8 @@
 Use branch `codex/capacitor-mobile-release`. It includes the local ranked ladder,
 180 rivals, human-first queue, rematches, settings, child-safety infrastructure and
 the bundled Capacitor Android app. Nothing has been merged to main. Supabase
-foundations are deployed with ranked disabled; see `backend-deployment.md`.
+foundations and ranked matchmaking are active for production testing; see
+`ranked-production-activation.md`.
 
 ## Browser development
 
@@ -78,8 +79,8 @@ UI simulation files in `work` are test aids, not production source or APK conten
   the Play app-signing certificate SHA-1 too. The native request uses
   the **web** client ID as its server client ID. Never put a client secret in the app.
 - The family/ranked migrations and Edge endpoints are deployed. Ranked and its
-  hosted scheduler remain disabled. Complete the checks in `backend-deployment.md`
-  before activating either. The temporary unknown-age compatibility path was
+  hosted scheduler were activated for owner-requested production testing on
+  4 November 2026. See `ranked-production-activation.md` for status and rollback. The temporary unknown-age compatibility path was
   removed after website publication; existing
   cached clients must refresh and complete age setup.
 - Parent-verification setup is deferred for this release. Finalize India age

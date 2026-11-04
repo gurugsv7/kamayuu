@@ -32,9 +32,9 @@ No child accounts or queue entries existed at rollout. The public website now
 includes the age-gated UI and policy pages. Existing APK/AAB artifacts still predate
 this follow-up. KWS is deferred and no longer a first-release prerequisite.
 
-Ranked is **disabled**. Cron job `kamayuu-ranked-worker` is **inactive**. When later
-activated, its two-second dispatcher skips empty queues and due-job scans with no
-work. The follow-up `ranked_single_use_worker_tokens` migration replaces the
+Ranked is **enabled** and cron job `kamayuu-ranked-worker` is **active** for
+owner-requested production testing as of 4 November 2026, 11:44:31 UTC. Its
+two-second dispatcher skips empty queues and due-job scans with no work. The follow-up `ranked_single_use_worker_tokens` migration replaces the
 reusable Vault credential with random single-use credentials that expire after
 30 seconds. Only hashes are kept in a private RLS-protected table; validation
 atomically consumes each token. The dispatcher alone mints tokens. Player roles
@@ -102,8 +102,8 @@ remain to be checked. No additional API scopes were configured.
 Before enabling ranked for the revised offline-child release: complete India
 age-policy, deletion and moderation checks; migrate legacy clients; verify native
 authentication and reconnect; test
-real leaderboard/rematch flows; and preserve extension isolation. Approve activation
-as a separate release step. Do not enable ranked merely because deployment passed.
+real leaderboard/rematch flows; and preserve extension isolation. The owner subsequently authorized production activation for testing; see
+`ranked-production-activation.md`. Public Android/Play release checks remain separate.
 
 ## Migration history and rollback
 
