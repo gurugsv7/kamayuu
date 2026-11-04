@@ -53,5 +53,11 @@ minimum 44 px action targets, pending disabled state, animated search, cancellat
 short-motion preference, disclosure saving, and rematch pending/completion.
 The harness and screenshots remain in ignored local work/output directories.
 No production matches were created during these checks. Physical-device gameplay
-and full mockup-based layouts remain outstanding. This pass is branch-only and
-has not been promoted to the production website or packaged into a new Android app.
+and full mockup-based layouts remain outstanding.
+
+Published after owner approval on 2026-11-04 at approximately 17:50 IST:
+source `fab804ac672aa0eb1ec6211b7f0f447d10bb2fae`, production deployment
+`GEPfrfRWN33uLTfkadvwbZgwXDQD`, aliased to `kamayuu.builtbygsv.in`.
+Vercel reported Ready. The public homepage and referenced JS/CSS returned HTTP
+200; the live JS contains the new search message and action-button markup, and
+the live CSS contains the action-button styling. No new Android package was built.
