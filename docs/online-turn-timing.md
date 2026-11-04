@@ -33,3 +33,8 @@ All retain their internal authorization and verify_jwt=false configuration.
 Unauthenticated HTTP smoke requests returned 401. Ranked admission and worker cron
 were read back enabled/active. No database schema, ratings or player data changed.
 Existing turns retain their stored deadlines until the next relevant transition.
+
+Web source `87147795b64975f381a23824ba28674915192831` was promoted to production
+deployment `D3TZmvdw7MhvyJW2F5gHjnc1jgyB` at approximately 18:07 IST. Vercel
+reported Ready with the existing public domain assigned. Refresh cached clients
+before testing. No Android package was rebuilt during this correction.
