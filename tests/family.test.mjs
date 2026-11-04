@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {familyPermissions,enforceFamily,familyPacket,FAMILY_NOTICE,readFamilyResponse} from '../lib/family-policy.mjs';
 import {consentProvider,verifiedConsent} from '../lib/family-consent.mjs';
 const child={age_band:'under_13',consent:true,online_allowed:true,social_allowed:false,rematches_allowed:false};
-test('legacy private-table compatibility never bypasses known child controls or enables unknown-age analytics',()=>{
- assert.equal(enforceFamily({}, {command:'create'}, {allowLegacyUnknown:true}),true);
+test('age setup is mandatory for private tables and a retired legacy option cannot bypass it',()=>{
+ assert.throws(()=>enforceFamily({}, {command:'create'}, {allowLegacyUnknown:true}));
  assert.equal(enforceFamily({}, {command:'track'}, {allowLegacyUnknown:true}),false);
  assert.throws(()=>enforceFamily({}, {command:'enqueue'}));
  assert.throws(()=>enforceFamily({age_band:'under_13'}, {command:'join'}, {allowLegacyUnknown:true}));

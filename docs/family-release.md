@@ -16,10 +16,10 @@ Historical consent code and management/deletion APIs are retained for future wor
 they do not authorize child gameplay in this release. No real child accounts or
 queue entries existed at rollout. No account or consent records were deleted.
 
-The old private-table website's unknown-age compatibility path remains until the
-new frontend is released. This policy does not claim verified age assurance or
-complete protection of that legacy client. Self-declared age can be falsified;
-do not call it verified. The website was not published by this change.
+The age-gated website has now been published and the old private-table unknown-age
+exception removed from the server. Old cached clients need to refresh and complete
+age setup. Self-declared age can be falsified; do not describe it as verified age
+assurance. See publication-2026-11-04.md for the exact deployed versions.
 
 ## Remaining release work
 

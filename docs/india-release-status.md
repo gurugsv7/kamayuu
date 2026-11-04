@@ -22,8 +22,9 @@ no KWS account or agreement is required for this version.
    November 2025 commencement notification phases relevant substantive sections in
    18 months after publication. Confirm dates, exceptions, teen treatment and other
    applicable duties. Offline-only under 13 does not establish 13–17 compliance.
-2. Finalize retention/deletion, support and report/block moderation; publish reviewed
-   policy pages, finish Google branding, and migrate the old unknown-age website.
+2. Finalize retention/deletion operations, support and report/block moderation. Policy
+   pages and the age-gated website are now public; Google Branding URLs are saved.
+   The old unknown-age server exception has been removed.
 3. Run authenticated ranked matches end to end: human priority, bot fallback, rating,
    leaderboards, rematches and reconnect, with hosted jobs actually processing.
 4. Rebuild Android package with this UI policy. Existing 0.2.0 APK/AAB artifacts predate
@@ -32,8 +33,8 @@ no KWS account or agreement is required for this version.
 5. Configure Play listing/signing and Play certificate OAuth, India availability,
    audience/Families, IARC, Data safety, deletion and applicable testing requirements.
 
-Ranked and its schedule remain off. No main merge, website publication or Play
-upload has occurred. This checklist is implementation status, not legal certification.
+Ranked and its schedule remain off. The website was published from 08b1435. No main
+merge or Play upload has occurred. This checklist is implementation status, not legal certification.
 
 Sources: [Google OAuth states](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview),
 [DPDP Act](https://www.indiacode.nic.in/bitstream/123456789/22037/2/a2023-22.pdf),

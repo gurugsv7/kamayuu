@@ -6,7 +6,8 @@ This development branch includes a **bundled Capacitor Android app**, ranked tie
 from Bronze to Diamond, stable AI rivals, rematches and child-safety infrastructure.
 Under-13 players use offline practice only; parental verification is deferred.
 It is a release candidate. The Supabase foundations are deployed with ranked disabled;
-the website and Play release have not been published from this branch.
+the website is published at https://kamayuu.builtbygsv.in/ from this branch.
+The Play release is still pending.
 
 ```sh
 npm ci

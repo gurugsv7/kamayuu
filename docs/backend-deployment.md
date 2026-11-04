@@ -1,7 +1,8 @@
 # Backend deployment — 4 November 2026
 
 The existing Mumbai Supabase project `ljbysmgzqohvlkcdctyj` is retained. No database
-reset, website publication, main-branch merge or Play upload was performed.
+reset, main-branch merge or Play upload was performed. The website was later
+published from commit 08b1435; see publication-2026-11-04.md.
 
 ## Installed
 
@@ -27,9 +28,9 @@ handler flows, including modern asymmetric Supabase sessions.
 Under-13 offline-only follow-up: lotus-game v14, lotus-family v2 and lotus-ranked
 v2 are deployed. Parent begin/redeem returns 403, known under-13 accounts are denied
 online access even with old consent flags, and the queue trigger rejects them.
-No child accounts or queue entries existed at rollout. The UI is updated in this
-branch; the public website and existing APK/AAB have not been rebuilt/published
-with this follow-up yet. KWS is deferred and no longer a first-release prerequisite.
+No child accounts or queue entries existed at rollout. The public website now
+includes the age-gated UI and policy pages. Existing APK/AAB artifacts still predate
+this follow-up. KWS is deferred and no longer a first-release prerequisite.
 
 Ranked is **disabled**. Cron job `kamayuu-ranked-worker` is **inactive**. When later
 activated, its two-second dispatcher skips empty queues and due-job scans with no
@@ -41,11 +42,11 @@ cannot mint, read or validate them; the worker role cannot mint them. No service
 key enters cron SQL or HTTP headers. Edge runtime supplies its own service key.
 Jobs use existing leases, version checks and idempotent settlement.
 
-The existing `lotus-game` endpoint permits unknown-age legacy private-table players
-temporarily. Known child/revoked accounts are restricted; ranked requires family
-setup. Analytics stays off for unknown-age and child accounts. This compatibility
-exception must be removed after the release website migrates existing players
-through age/consent setup. It does not establish protection for every legacy user.
+After website publication, the legacy unknown-age exception was removed. Current
+endpoints are lotus-game v15, lotus-ranked v3 and lotus-family v3. Private tables
+and ranked require an age record. Old cached clients must refresh and complete
+age setup. Known under-13 accounts are offline-only. Analytics remains off for
+unknown-age and child accounts.
 
 ## Verified
 
@@ -92,8 +93,9 @@ the existing **web** client ID. Google shows Testing status. A follow-up inspect
 found no configured sensitive/restricted scopes. The code uses Google Identity
 Services/Credential Manager basic sign-in. Google's basic identity-scope exception
 means the generic test-user warning alone does not prove sign-in is blocked.
-The Publish button is disabled until Branding is completed: home, privacy and terms
-URLs are blank. No Google branding settings were changed in this follow-up.
+Home, privacy and terms URLs were subsequently saved in Google Branding, with
+app name Kamayuu. Google confirmed Branding changes saved. OAuth remains Testing;
+no brand-verification approval or public OAuth publication is claimed.
 Actual device sign-in, publishing status and the eventual Play app-signing SHA-1
 remain to be checked. No additional API scopes were configured.
 

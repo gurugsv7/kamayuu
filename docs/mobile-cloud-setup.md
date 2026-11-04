@@ -79,14 +79,17 @@ UI simulation files in `work` are test aids, not production source or APK conten
   the **web** client ID as its server client ID. Never put a client secret in the app.
 - The family/ranked migrations and Edge endpoints are deployed. Ranked and its
   hosted scheduler remain disabled. Complete the checks in `backend-deployment.md`
-  before activating either. Legacy unknown-age private-table players retain access;
-  this temporary compatibility path is not a complete child-safety rollout.
+  before activating either. The temporary unknown-age compatibility path was
+  removed after website publication; existing
+  cached clients must refresh and complete age setup.
 - Parent-verification setup is deferred for this release. Finalize India age
   treatment, privacy, retention, deletion and moderation; see family-release.md.
 - Complete actual Android Google sign-in, storage, cutout/keyboard, background,
   offline first-launch and reconnect tests on a device. Phone tests were paused at
   the owner's request; desktop simulation is not a substitute for those checks.
 
-Android OAuth and Supabase were updated on 4 November 2026. The release website and
-Play listing have not been published. Google currently reports OAuth test-user
-restrictions; review publishing status before public sign-in testing.
+Android OAuth, Supabase and Google Branding were updated on 4 November 2026.
+The website is published at kamayuu.builtbygsv.in from frontend commit 08b1435.
+The Play listing is not published and OAuth remains Testing. Basic identity-only
+sign-in has a test-user exception; actual Android sign-in still needs verification.
+See publication-2026-11-04.md for deployed versions and remaining limits.

@@ -15,11 +15,8 @@ export function familyPermissions(account) {
     social: online && (!child || account?.social_allowed === true),
     rematches: online && (!child || account?.rematches_allowed === true)};
 }
-export function enforceFamily(account, input, {allowLegacyUnknown=false}={}) {
+export function enforceFamily(account, input) {
   const p = familyPermissions(account);
-  // Temporary compatibility for the existing private-table website only.
-  // Never applies to known child/revoked accounts or the ranked endpoint.
-  if(allowLegacyUnknown&&!p.known)return input.command!=='track';
   if (input.command === 'track') return p.analytics;
   if (!p.online && !['leave','cancel'].includes(input.command)) throw Error(p.child?'Online play is available for ages 13 and above. Practice is available on this device.':'Complete age setup before online play.');
   if (!p.social && ['message','emote'].includes(input.command)) throw Error('Reactions are disabled by your parent.');
