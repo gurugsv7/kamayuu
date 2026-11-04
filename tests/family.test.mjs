@@ -3,6 +3,14 @@ import assert from 'node:assert/strict';
 import {familyPermissions,enforceFamily,familyPacket,FAMILY_NOTICE,readFamilyResponse} from '../lib/family-policy.mjs';
 import {consentProvider,verifiedConsent} from '../lib/family-consent.mjs';
 const child={age_band:'under_13',consent:true,online_allowed:true,social_allowed:false,rematches_allowed:false};
+test('legacy private-table compatibility never bypasses known child controls or enables unknown-age analytics',()=>{
+ assert.equal(enforceFamily({}, {command:'create'}, {allowLegacyUnknown:true}),true);
+ assert.equal(enforceFamily({}, {command:'track'}, {allowLegacyUnknown:true}),false);
+ assert.throws(()=>enforceFamily({}, {command:'enqueue'}));
+ assert.throws(()=>enforceFamily({age_band:'under_13'}, {command:'join'}, {allowLegacyUnknown:true}));
+ assert.throws(()=>enforceFamily({...child,revoked:true}, {command:'join'}, {allowLegacyUnknown:true}));
+ assert.throws(()=>enforceFamily(child, {command:'message'}, {allowLegacyUnknown:true}));
+});
 test('missing or malformed account services fail with a usable message instead of a parser error',async()=>{
  await assert.rejects(()=>readFamilyResponse({json:async()=>{throw Error('Unexpected token <');}}),/Practice is available offline/);
  await assert.rejects(()=>readFamilyResponse({ok:false,json:async()=>({error:'Parent approval expired'})}),/Parent approval expired/);

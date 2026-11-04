@@ -70,13 +70,15 @@ Post-consent verification URLs must use a reviewed allowlisted provider host.
 5. Publish approved privacy, parent notice and deletion pages only with release
    permission. Email requests must actually be monitored. Configure Play Data safety,
    Families, target audience, IARC and account deletion declarations accurately.
-6. Deploy family migrations and all Edge endpoints together before enabling the
-   release website; old endpoints do not enforce this policy. Never deploy only UI.
+6. Family migrations and all Edge endpoints are deployed; see `backend-deployment.md`.
+   Migrate legacy unknown-age private-table players before claiming a complete
+   rollout. Keep ranked disabled until release checks pass. Never deploy only UI.
 7. Complete on-device Android auth/gameplay/background/network tests. The Capacitor
    app now embeds the game and family UI; offline practice does not load the hosted
-   website. Approve and deploy the ranked worker and backend separately. Public
-   privacy/deletion pages still need approved hosting. Native Google also requires
-   Android OAuth registration for the package and installed signing certificate.
+   website. The hosted ranked worker is deployed with its schedule inactive. Public
+   privacy/deletion pages still need approved hosting. Android OAuth is registered
+   for the local release certificate; device sign-in and Play signing registration
+   remain to be verified.
 8. Verify real leaderboard/home standings on staging with humans and AI rivals.
    Local placeholders have been replaced with service results and an Unranked fallback.
 

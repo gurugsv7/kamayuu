@@ -2,7 +2,8 @@
 
 Use branch `codex/capacitor-mobile-release`. It includes the local ranked ladder,
 180 rivals, human-first queue, rematches, settings, child-safety infrastructure and
-the bundled Capacitor Android app. Nothing has been merged to main or deployed.
+the bundled Capacitor Android app. Nothing has been merged to main. Supabase
+foundations are deployed with ranked disabled; see `backend-deployment.md`.
 
 ## Browser development
 
@@ -72,17 +73,20 @@ UI simulation files in `work` are test aids, not production source or APK conten
 
 ## Before online or Play release
 
-- Register an Android OAuth client for `in.builtbygsv.kamayuu` in the same Google
-  project as the existing web client. Add the installed APK certificate SHA-1 and,
-  for Play builds, the Play app-signing certificate SHA-1. The native request uses
+- An Android OAuth client is registered for `in.builtbygsv.kamayuu` in the existing
+  Google project using the local release certificate. For Play builds, register
+  the Play app-signing certificate SHA-1 too. The native request uses
   the **web** client ID as its server client ID. Never put a client secret in the app.
-- Deploy and verify the family/ranked migrations and Edge endpoints together;
-  start the ranked worker. Existing production endpoints lack the local protections.
-  Until then the new client's online safety setup fails closed.
+- The family/ranked migrations and Edge endpoints are deployed. Ranked and its
+  hosted scheduler remain disabled. Complete the checks in `backend-deployment.md`
+  before activating either. Legacy unknown-age private-table players retain access;
+  this temporary compatibility path is not a complete child-safety rollout.
 - Configure a reviewed real parental-consent provider and secure parent handoff.
   Finalize countries/age thresholds, privacy, retention, deletion and moderation.
 - Complete actual Android Google sign-in, storage, cutout/keyboard, background,
   offline first-launch and reconnect tests on a device. Phone tests were paused at
   the owner's request; desktop simulation is not a substitute for those checks.
 
-No cloud/Google settings, backend, website or Play release was changed by this branch.
+Android OAuth and Supabase were updated on 4 November 2026. The release website and
+Play listing have not been published. Google currently reports OAuth test-user
+restrictions; review publishing status before public sign-in testing.

@@ -2,7 +2,7 @@
 
 ## Passed locally
 
-- 110 Node tests covering engine/multiplayer, ranked queue/database/worker/service,
+- Original package verification: 110 Node tests covering engine/multiplayer, ranked queue/database/worker/service,
   deterministic rivals/rematches, settings, family consent/privacy and mobile policy.
 - Frontend TypeScript and scoped lint for the new mobile/family modules.
 - Edge endpoint TypeScript against the installed Supabase SDK and local declarations
@@ -36,11 +36,12 @@ test pass is claimed. Verify actual Google account selection/cancellation, auth
 refresh, Keystore round trips, cold offline launch, system insets/keyboard, audio,
 back navigation, rotation and online reconnect on Android before release.
 
-The real consent provider and the new family/ranked backend have not been deployed.
-Their absence does not authorize online access: the client fails closed and keeps
-practice available. Register Android Google OAuth with the correct signing
-certificate before claiming native sign-in works end to end. Review target-country
-age thresholds, privacy/retention/deletion and moderation before child online release.
+The family/ranked backend and Android OAuth registration are now deployed; see
+`backend-deployment.md` for exact versions, smoke checks and remaining limits.
+The real consent provider is still unconfigured: child setup fails closed and keeps
+practice available. Native sign-in has not been verified end to end on Android.
+Review target-country age thresholds, privacy/retention/deletion and moderation
+before child online release.
 
 The public certificate and SHA-1/SHA-256 information are in
 `android/upload-certificate.der` and `docs/mobile-signing-public.json`. They are not

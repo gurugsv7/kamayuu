@@ -4,9 +4,9 @@ export async function familyAccount(server:any,user:string){
  if(error)throw Error('Family safety settings are unavailable. Try again shortly.');
  return data;
 }
-export async function familyGuard(server:any,user:string,input:any){
+export async function familyGuard(server:any,user:string,input:any,allowLegacyUnknown=false){
  const account=await familyAccount(server,user);
- enforceFamily(account,input);
+ enforceFamily(account,input,{allowLegacyUnknown});
  if(account.age_band==='under_13'&&['create','join'].includes(input.command))input.name=account.alias;
  if(account.age_band==='under_13'&&input.command==='preferences'&&!familyPermissions(account).rematches)input.allowRematches=false;
  return account;

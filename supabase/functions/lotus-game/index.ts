@@ -26,7 +26,7 @@ Deno.serve(async req=>{
   if(authError||!auth.user)return respond({error:'Your guest session expired. Reconnect to play.'},401);
   const user=auth.user.id,raw=await req.text();if(raw.length>4096)return respond({error:'Request is too large.'},413);
   const input=JSON.parse(raw);
-  await familyGuard(server,user,input);
+  await familyGuard(server,user,input,true);
   const {error:limit}=await server.rpc('lotus_gate',{p_user:user});if(limit)return respond({error:limit.message},429);
   if(input.command==='track'){
    // Client-driven analytics only: the session heartbeat, and solo game_start/
@@ -57,7 +57,7 @@ Deno.serve(async req=>{
    if(record.data.receipts.some((r:any)=>r.user===user&&r.id===input.actionId))return respond(await safePacket(server,user,playerPacket(record,user,[],true)));
    if(input.command==='action'&&input.version!==record.version)return respond({error:'The table moved. Try again.',packet:await safePacket(server,user,playerPacket(record,user,[],true))},409);
    if(['rematch','rematch_request','rematch_accept'].includes(input.command)){
-    for(const member of record.data.members){const f=await familyAccount(server,member.id);if(!familyPermissions(f).rematches)throw Error('A player has disabled rematches.');}
+    for(const member of record.data.members){const f=await familyAccount(server,member.id),permissions=familyPermissions(f);if(permissions.known&&!permissions.rematches)throw Error('A player has disabled rematches.');}
    }
    const {room,events}=applyIntent(record.data,user,input);
    room.receipts.push({user,id:input.actionId});room.receipts=room.receipts.slice(-128);

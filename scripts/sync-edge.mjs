@@ -7,3 +7,5 @@ mkdirSync('supabase/functions/_shared',{recursive:true});
 copyFileSync('lib/family-policy.mjs','supabase/functions/_shared/family-policy.mjs');
 mkdirSync('supabase/functions/lotus-family',{recursive:true});
 for(const file of ['family-policy.mjs','family-consent.mjs'])copyFileSync(`lib/${file}`,`supabase/functions/lotus-family/${file}`);
+mkdirSync('supabase/functions/lotus-ranked-worker',{recursive:true});
+for(const file of ['engine.mjs','multiplayer-rules.mjs','ranked-config.mjs','ranked-room.mjs','ranked-runtime.mjs','ranked-worker.mjs','rival-personality.mjs'])copyFileSync(`lib/${file}`,`supabase/functions/lotus-ranked-worker/${file}`);

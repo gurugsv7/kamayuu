@@ -389,3 +389,7 @@ verify_jwt = false
 
 [functions.lotus-family]
 verify_jwt = false
+
+# Narrow scoped worker token is verified by the handler and a service-only RPC.
+[functions.lotus-ranked-worker]
+verify_jwt = false
