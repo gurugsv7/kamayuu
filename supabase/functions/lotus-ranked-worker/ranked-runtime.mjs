@@ -70,11 +70,11 @@ export function planRankedJob(room, participants, now = Date.now(), previousJob 
     const signature = `${key}:${JSON.stringify(decision)}`;
     // A hold/recover must not restart an already-sampled bot observation delay.
     const saved=plans[p.seat];
-    const due = saved?.signature===signature ? saved.due : previousJob?.payload?.signature===signature ? previousJob.due : now+delay;
+    const due = Math.max(room.presentationUntil||0,saved?.signature===signature ? saved.due : previousJob?.payload?.signature===signature ? previousJob.due : Math.max(now,room.presentationUntil||0)+delay);
     plans[p.seat]={signature,due};
     if (due < next.due) next = {due,payload:{type:'bot',seat:p.seat,...decision,signature}};
   }
-  if(ranked.pendingSocial && ranked.pendingSocial.due<next.due)next={due:ranked.pendingSocial.due,payload:{type:'social'}};
+  if(ranked.pendingSocial){const due=Math.max(ranked.pendingSocial.due,room.presentationUntil||0);if(due<next.due)next={due,payload:{type:'social'}};}
   return next;
 }
 

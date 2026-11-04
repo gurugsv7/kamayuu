@@ -23,6 +23,13 @@ test('metadata and social updates do not replay a game version; closed transport
  table.closed=true;table.receive({packet:packet('game',2)});assert.equal(table.version,1);
 });
 
+test('polling across an acknowledgment recovers a transition once and does not replay it',()=>{
+ const received=[];const table=new RankedTable('game',p=>received.push(p),()=>{},()=>{});table.receive({packet:packet('game',1)});
+ const recovered={...packet('game',3),room:{...packet('game',3).room,presentationId:1},events:[{type:'discard',p:1}],recover:true,presentationReplay:true};
+ table.receive({packet:structuredClone(recovered)});assert.equal(received.at(-1).recover,false);assert.equal(received.at(-1).events.length,1);
+ table.receive({packet:structuredClone(recovered)});assert.equal(received.at(-1).events.length,0);assert.equal(received.at(-1).metaOnly,true);
+});
+
 test('leaving closes packet delivery before its delayed rematch response arrives',async()=>{
  const priorWindow=globalThis.window,priorDocument=globalThis.document;
  globalThis.window={removeEventListener(){}};globalThis.document={removeEventListener(){}};

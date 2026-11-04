@@ -23,7 +23,7 @@ export async function handleRanked(rpc, userId, input, now = Date.now()) {
     if(typeof input.allowRematches!=='boolean')throw new RankedError('Invalid preference');
     await rpc('ranked_preferences',{p_user:userId,p_allow:input.allowRematches});return {ok:true};
   }
-  if (!['recover','remember','hold','action','leave','emote','message','rematch'].includes(input.command)) throw new RankedError('Unsupported ranked command');
+  if (!['recover','remember','hold','presented','action','leave','emote','message','rematch'].includes(input.command)) throw new RankedError('Unsupported ranked command');
   if (typeof input.matchId !== 'string') throw new RankedError('Match ID is required');
   for(let attempt=0;attempt<4;attempt++) {
     const record = await rpc('ranked_load_match',{p_match:input.matchId});

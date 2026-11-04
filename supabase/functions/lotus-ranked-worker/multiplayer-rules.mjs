@@ -2,9 +2,10 @@
 import {createGame, transition, canTakeDiscard} from './engine.mjs';
 
 import {DRAW_MS,PLAY_MS,phaseDuration} from './turn-timing.mjs';
+import {pauseForPresentation,completePresentation} from './turn-presentation.mjs';
 export const TURN_MS = PLAY_MS;
 export const AFK_MS = DRAW_MS;
-function openClock(room,now,duration){room.clockStartedAt=now;room.clockDurationMs=duration;room.deadline=now+duration;}
+function openClock(room,now,duration){room.clockStartedAt=now;room.clockDurationMs=duration;room.deadline=now+duration;room.presentationUntil=null;room.presentationEvents=[];room.presentationAt=0;}
 export const STRIKE_LIMIT = 2;
 export function cleanName(name) {
   const result=String(name||'').normalize('NFKC').replace(/[^\p{L}\p{N} _-]/gu,'').trim().slice(0,16);
@@ -95,6 +96,8 @@ export function applyIntent(before,userId,input,now=Date.now()) {
     // Compatibility with cached clients: presence never refills a gameplay clock.
     if(!s||['finished','memory','lastCall'].includes(s.phase)||p!==s.active)return {room,events};
     if(room.strikes?.[userId]){const cleared={...room.strikes};delete cleared[userId];room.strikes=cleared;}
+  }else if(input.command==='presented'){
+    completePresentation(room,userId,input.presentationId,now);
   }else if(input.command==='timeout'){
     if(!s||!room.deadline||now<room.deadline||s.phase==='finished')throw Error('The turn is still open.');
     if(s.phase==='lastCall'){const r=transition(s,{type:'finish'});room.state=r.state;events=r.events;}
@@ -147,6 +150,7 @@ export function applyIntent(before,userId,input,now=Date.now()) {
   // be stalled indefinitely by anything that touched the room, not just a real match.
   if(['action','timeout'].includes(input.command)&&room.state?.phase==='lastCall')openClock(room,now,5_000);
   if(room.state?.phase==='finished')room.deadline=null;
+  pauseForPresentation(room,events,now);
   return {room,events};
 }
 
@@ -154,8 +158,10 @@ export function playerPacket(record,userId,events=[],recover=false) {
   const room=record.data,seat=room.members.findIndex(m=>m.id===userId);
   if(seat<0)throw Error('You are not a member of this room.');
   const n=room.members.length,rotate=p=>p==null?null:(p-seat+n)%n,order=Array.from({length:n},(_,i)=>(seat+i)%n),s=room.state;
-  const metadata={id:record.id,code:record.code,version:record.version,host:room.host,me:userId,members:room.members,matchId:room.matchId,deadline:room.deadline,serverTime:Date.now(),clockPhase:s?.phase,clockStartedAt:room.clockStartedAt??null,clockDurationMs:room.clockDurationMs||phaseDuration(s?.phase),rematch:room.rematch||null};
+  const metadata={id:record.id,code:record.code,version:record.version,host:room.host,me:userId,members:room.members,matchId:room.matchId,deadline:room.deadline,serverTime:Date.now(),presentationId:room.presentationId||0,presentationUntil:room.presentationUntil||null,clockPhase:s?.phase,clockStartedAt:room.clockStartedAt??null,clockDurationMs:room.clockDurationMs||phaseDuration(s?.phase),rematch:room.rematch||null};
   if(!s)return {room:metadata,state:null,events:[],recover};
+  const presentationReplay=!events.length&&!!room.presentationEvents?.length&&Date.now()-(room.presentationAt||0)<10000&&!['memory','finished'].includes(s.phase);
+  if(presentationReplay)events=room.presentationEvents;
   const top=s.discard.at(-1),showHeld=s.active===seat||s.source==='discard'||['peek','swap','swapConfirm'].includes(s.phase);
   const state={phase:s.phase,active:rotate(s.active),turn:s.turn,round:s.round,caller:rotate(s.caller),remaining:s.remaining.map(rotate),source:s.source,
     pending:s.pending?{target:rotate(s.pending.target),i:s.pending.i}:null,
@@ -175,5 +181,5 @@ export function playerPacket(record,userId,events=[],recover=false) {
     if('p' in out)out.p=rotate(out.p);if('target' in out)out.target=rotate(out.target);if(out.totals)out.totals=state.totals;
     return out;
   });
-  return {room:metadata,state,events:visible,recover};
+  return {room:metadata,state,events:visible,recover,presentationReplay};
 }

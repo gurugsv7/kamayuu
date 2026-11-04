@@ -143,7 +143,8 @@ test('A buzz from the finisher (a non-active player) reaches the engine, but an 
  // The buzz itself must reset the turn clock even though turn/active/phase are all
  // numerically unchanged by it (only `caller`/`remaining` change) — otherwise the
  // final round would inherit whatever was left of the pre-buzz timer.
- assert.equal(room.deadline,before+1+AFK_MS);
+ assert.equal(room.deadline-room.clockStartedAt,AFK_MS);
+ assert.ok(room.clockStartedAt>before+1,'the draw clock starts after the buzz animation');
  // An eliminated player can never buzz, regardless of action-type gating.
  r.state.players[0].eliminated=true;
  assert.throws(()=>applyIntent(r,'a',{command:'action',action:{type:'buzz'}}),/not your turn/);

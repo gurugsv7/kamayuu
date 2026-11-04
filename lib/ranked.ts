@@ -15,7 +15,7 @@ export type RankedStanding = {
 export type RankedLeaderboard = {season:string;entries:RankedStanding[];total:number;offset:number};
 type RankedTableRoom={id:string;version:number;me:string;members:{id:string}[];[key:string]:unknown};
 type RankedTableState={phase:string;active:number;turn:number;[key:string]:unknown};
-type RankedPacket={room:RankedTableRoom;state:RankedTableState|null;events:unknown[];[key:string]:unknown};
+type RankedPacket={room:RankedTableRoom;state:RankedTableState|null;events:unknown[];presentationReplay?:boolean;recover?:boolean;[key:string]:unknown};
 type RankedResponse={packet?:RankedPacket;nextMatchId?:string|null;rematch?:Record<string,unknown>;pending?:boolean};
 
 // Transport foundation; the ranked UI must show status.disclosureText before
@@ -59,7 +59,7 @@ export class RankedService {
 // server authority; settings/dialogs never pause the server's opponent clock.
 export class RankedTable {
   client=new RankedService();room:RankedTableRoom|null=null;version=-1;closed=false;matchId:string;timer:ReturnType<typeof setTimeout>|undefined;
-  pollBusy=false;lastHoldKey='';
+  pollBusy=false;lastHoldKey='';presentationSeen=0;
   holdTimer:ReturnType<typeof setTimeout>|undefined;
   constructor(matchId:string,public onPacket:(p:RankedPacket)=>void,public onConnection:(s:string)=>void,public onPresence:(ids:string[])=>void){this.matchId=matchId;}
   async enter(){
@@ -69,14 +69,18 @@ export class RankedTable {
   }
   receive(result:RankedResponse){
     if(this.closed)return;
-    if(result.nextMatchId && result.nextMatchId!==this.matchId){this.matchId=result.nextMatchId;this.version=-1;this.lastHoldKey='';return;}
+    if(result.nextMatchId && result.nextMatchId!==this.matchId){this.matchId=result.nextMatchId;this.version=-1;this.lastHoldKey='';this.presentationSeen=0;return;}
     const p=result.packet;if(!p)return;
     if(p.room.id!==this.matchId)return;
     if(this.room?.id===p.room.id && p.room.version<this.version)return;
     const unchanged=this.room?.id===p.room.id && p.room.version===this.version;
+    const presentationId=Number(p.room.presentationId)||0;
+    if(p.presentationReplay){if(presentationId<=this.presentationSeen)p.events=[];else if(this.room)p.recover=false;}
+    const newPresentation=p.events.length>0&&presentationId>this.presentationSeen;
+    if(p.events.length&&presentationId)this.presentationSeen=Math.max(this.presentationSeen,presentationId);
     this.lastState=p.state;
     this.room={...p.room,receivedAt:Date.now(),rematch:result.rematch||null};this.version=p.room.version;
-    this.onPacket({...p,room:this.room,metaOnly:unchanged});this.onConnection('Connected');
+    this.onPacket({...p,room:this.room,metaOnly:unchanged&&!newPresentation});this.onConnection('Connected');
     // Presence represents connected humans only, never fictitious bot activity.
     this.onPresence([p.room.me]);
   }

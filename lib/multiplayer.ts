@@ -38,11 +38,16 @@ export class MultiplayerService {
    throw error;
   }
  }
+ presentationSeen=0;
  receive(packet:any){
   if(this.closed||!packet.room)return;
   const previous=this.version,sameRoom=this.room?.id===packet.room.id;
   if(sameRoom&&packet.room.version<=previous)return;
-  if(sameRoom&&previous>=0&&packet.room.version>previous+1)packet={...packet,recover:true,events:[]};
+  if(!sameRoom)this.presentationSeen=0;
+  const id=Number(packet.room.presentationId)||0;
+  if(packet.presentationReplay){if(id<=this.presentationSeen)packet={...packet,events:[]};else if(sameRoom)packet={...packet,recover:false};}
+  if(sameRoom&&previous>=0&&packet.room.version>previous+1&&!packet.presentationReplay)packet={...packet,recover:true,events:[]};
+  if(packet.events?.length&&id)this.presentationSeen=Math.max(this.presentationSeen,id);
   this.version=packet.room.version;this.room=packet.room;this.myTurn=packet.state?.active===0;
   packet.room.receivedAt=Date.now();this.onPacket(packet);this.scheduleDeadline();
  }

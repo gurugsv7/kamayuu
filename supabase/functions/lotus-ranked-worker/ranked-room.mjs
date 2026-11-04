@@ -25,7 +25,7 @@ export function createRankedRoom(participants, now = Date.now()) {
 export function rankedHumanIntent(room, participants, userId, input, now = Date.now()) {
   const participant = participants.find(p => p.kind === 'human' && p.user_id === userId);
   if (!participant) throw Error('You are not a player in this match.');
-  if (!['remember', 'hold', 'action', 'leave', 'timeout','emote','message'].includes(input.command)) throw Error('Unsupported ranked command');
+  if (!['remember', 'hold', 'presented', 'action', 'leave', 'timeout','emote','message'].includes(input.command)) throw Error('Unsupported ranked command');
   if(input.command==='emote' && !EMOTES.includes(input.name) || input.command==='message' && !QUICK_MESSAGES.includes(input.text))throw Error('Unknown reaction');
   if(['emote','message'].includes(input.command)) {
     const last=room.ranked?.socialFeed?.findLast(e=>e.p===participant.seat);
