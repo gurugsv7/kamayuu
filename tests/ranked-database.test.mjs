@@ -25,6 +25,7 @@ async function database() {
     grant usage on schema auth to service_role; grant select on auth.users,public.profiles to service_role;`);
   await db.exec(migration);
   await db.exec(rivalsMigration);
+  await db.exec(readFileSync(new URL('../supabase/migrations/20261104050547_ranked_rematches_social_preferences.sql',import.meta.url),'utf8'));
   await db.exec(`insert into auth.users select ('00000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid from generate_series(1,20) n;`);
   return db;
 }
@@ -41,6 +42,90 @@ async function enter(db, n) {
 async function age(db, n, seconds=13) {
   await db.query(`update lotus_ranked.tickets set joined_at=now()-make_interval(secs=>$1), expires_at=now()+interval '30 seconds' where user_id=$2`,[seconds,uid(n)]);
 }
+
+async function finishedMatch(db,bot=false,plan={offer:false,accept:true,offerDelayMs:4000,replyDelayMs:3000}){
+ await db.exec('update lotus_ranked.settings set enabled=true');
+ await enter(db,1);if(bot)await age(db,1);else await enter(db,2);
+ const match=await rpc(db,'ranked_pair',['ap-south-1']);
+ await rpc(db,'ranked_commit',[match,0,{ranked:{openingSeat:0},state:{phase:'finished',winners:[0],totals:[10,14]}},null,{}]);
+ await rpc(db,'ranked_prepare_rematch',[match,plan]);return match;
+}
+
+test('mutual human rematch creates exactly one new game, rotates opening and snapshots current ratings',async()=>{
+ const db=await database();try{
+  const match=await finishedMatch(db);
+  const offered=await rpc(db,'ranked_rematch',[uid(1),match,'request']);assert.equal(offered.status,'offered');
+  assert.equal((await rpc(db,'ranked_status',[uid(1)])).played,1);
+  assert.equal((await rpc(db,'ranked_rematch',[uid(2),match,'status'])).fromSeat,1);
+  const accepted=await rpc(db,'ranked_rematch',[uid(2),match,'accept']);assert.equal(accepted.status,'accepted');
+  assert.equal((await rpc(db,'ranked_rematch',[uid(2),match,'accept'])).nextMatchId,accepted.nextMatchId);
+  const next=await rpc(db,'ranked_load_match',[accepted.nextMatchId]);
+  assert.equal(next.parent_match_id,match);assert.equal(next.opening_seat,1);assert.equal(next.series_index,2);
+  assert.equal(next.participants[0].rating_before,616);
+  assert.equal((await rpc(db,'ranked_status',[uid(1)])).played,1);
+  const transport=async(name,args={})=>{
+   const entries=Object.entries(args);
+   return (await db.query(`select public.${name}(${entries.map(([key],i)=>`${key}=>$${i+1}`).join(',')}) as value`,entries.map(([,v])=>v))).rows[0].value;
+  };
+  const job=await rpc(db,'ranked_claim_job');
+  assert.equal(await processRankedJob(transport,job),true);
+  const opened=await rpc(db,'ranked_load_match',[next.id]);assert.equal(opened.data.state.active,1);assert.deepEqual(opened.data.memorySeen,[]);
+  await handleRanked(transport,uid(1),{command:'leave',matchId:next.id,actionId:uid(999)});
+  assert.equal((await rpc(db,'ranked_status',[uid(1)])).played,2);
+  assert.equal((await rpc(db,'ranked_status',[uid(2)])).played,2);
+ }finally{await db.close();}
+});
+
+test('bot rematch response is delayed and fixed, preserves rival identity and ability',async()=>{
+ const db=await database();try{
+  const match=await finishedMatch(db,true);
+  const original=await rpc(db,'ranked_load_match',[match]);
+  const request=await rpc(db,'ranked_rematch',[uid(1),match,'request']);assert.equal(request.status,'offered');
+  assert.equal((await rpc(db,'ranked_rematch',[uid(1),match,'status'])).nextMatchId,null);
+  // A second prepare cannot reroll a stored decision.
+  await rpc(db,'ranked_prepare_rematch',[match,{offer:false,accept:false,offerDelayMs:4000,replyDelayMs:2000}]);
+  await db.query("update lotus_ranked.rematches set response_at=now()-interval '1 second' where match_id=$1",[match]);
+  const accepted=await rpc(db,'ranked_rematch',[uid(1),match,'status']);assert.equal(accepted.status,'accepted');
+  const next=await rpc(db,'ranked_load_match',[accepted.nextMatchId]);
+  assert.equal(next.participants[1].bot_identity_id,original.participants[1].bot_identity_id);
+  assert.deepEqual(next.participants[1].bot_config,original.participants[1].bot_config);
+ }finally{await db.close();}
+});
+
+test('proactive bot offers, refusal, expiry and rematch preferences are respected',async()=>{
+ const db=await database();try{
+  const match=await finishedMatch(db,true,{offer:true,accept:false,offerDelayMs:3000,replyDelayMs:2000});
+  assert.equal((await rpc(db,'ranked_rematch',[uid(1),match,'status'])).status,'scheduled');
+  await db.query("update lotus_ranked.rematches set offer_at=now()-interval '1 second' where match_id=$1",[match]);
+  assert.equal((await rpc(db,'ranked_rematch',[uid(1),match,'status'])).fromSeat,1);
+  await rpc(db,'ranked_preferences',[uid(1),false]);
+  assert.equal((await rpc(db,'ranked_rematch',[uid(1),match,'status'])).status,'declined');
+  await assert.rejects(rpc(db,'ranked_rematch',[uid(2),match,'accept']),/not found/);
+ }finally{await db.close();}
+ const other=await database();try{
+  const match=await finishedMatch(other,true,{offer:false,accept:false,offerDelayMs:3000,replyDelayMs:2000});
+  await rpc(other,'ranked_rematch',[uid(1),match,'request']);
+  await other.query("update lotus_ranked.rematches set response_at=now()-interval '1 second' where match_id=$1",[match]);
+  assert.equal((await rpc(other,'ranked_rematch',[uid(1),match,'status'])).status,'declined');
+ }finally{await other.close();}
+});
+
+test('old rematch cannot steal a competitor from a fresh queue and expired offers cannot start games',async()=>{
+ const db=await database();try{
+  const match=await finishedMatch(db);
+  await rpc(db,'ranked_rematch',[uid(1),match,'request']);
+  await enter(db,2);
+  const r=await rpc(db,'ranked_rematch',[uid(2),match,'accept']);assert.equal(r.status,'declined');
+  assert.equal(r.nextMatchId,null);
+  assert.equal((await rpc(db,'ranked_status',[uid(2)])).ticket.status,'waiting');
+ }finally{await db.close();}
+ const expired=await database();try{
+  const match=await finishedMatch(expired);
+  await rpc(expired,'ranked_rematch',[uid(1),match,'request']);
+  await expired.query("update lotus_ranked.rematches set expires_at=now()-interval '1 second' where match_id=$1",[match]);
+  await assert.rejects(rpc(expired,'ranked_rematch',[uid(2),match,'accept']),/No incoming/);
+ }finally{await expired.close();}
+});
 
 test('migration compiles, roster matches policy configuration, private RPCs reject clients', async () => {
   const db = await database();

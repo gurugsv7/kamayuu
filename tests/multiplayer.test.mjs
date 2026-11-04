@@ -3,6 +3,34 @@ import assert from 'node:assert/strict';
 import {newRoom,applyIntent,playerPacket,secureGame,TURN_MS,AFK_MS} from '../lib/multiplayer-rules.mjs';
 import {assertState,transition} from '../lib/engine.mjs';
 const users=['a','b','c','d'];
+
+test('either 1v1 player can offer a rematch; mutual acceptance makes a fresh rotating deal',()=>{
+ let r=newRoom('a','Alice',0);r=applyIntent(r,'b',{command:'join',name:'Bob'},0).room;
+ for(const u of ['a','b'])r=applyIntent(r,u,{command:'ready',ready:true},0).room;
+ r=applyIntent(r,'a',{command:'start'},0).room;
+ for(const u of ['a','b'])r=applyIntent(r,u,{command:'remember'},1).room;
+ r=applyIntent(r,'a',{command:'leave'},2).room;
+ // A forfeit means someone departed, so it must not silently reseat them.
+ assert.throws(()=>applyIntent(r,'b',{command:'rematch_request'},3),/both players/);
+ r.departed=[];const old=r.matchId,starter=r.state.active;
+ r=applyIntent(r,'b',{command:'rematch_request'},3).room;
+ assert.equal(r.rematch.from,'b');
+ const next=applyIntent(r,'a',{command:'rematch_accept'},4).room;
+ assert.notEqual(next.matchId,old);assert.equal(next.state.phase,'memory');
+ assert.equal(next.state.active,1);assert.notEqual(next.state.active,r.starter);
+ assert.ok(Number.isInteger(starter));
+});
+
+test('private rematch offers expire, decline, and respect incoming-request preferences',()=>{
+ let r=newRoom('a','A',0);r=applyIntent(r,'b',{command:'join',name:'B'},0).room;
+ for(const u of ['a','b'])r=applyIntent(r,u,{command:'ready',ready:true},0).room;
+ r=applyIntent(r,'a',{command:'start'},0).room;r.state.phase='finished';
+ r=applyIntent(r,'a',{command:'rematch_request'},1).room;
+ assert.throws(()=>applyIntent(r,'b',{command:'rematch_accept'},16000),/expired/);
+ r=applyIntent(r,'b',{command:'preferences',allowRematches:false},2).room;
+ assert.equal(r.rematch.status,'declined');
+ r=applyIntent(r,'a',{command:'rematch_request'},3).room;assert.equal(r.rematch.status,'declined');
+});
 function started(n=4){let r=newRoom('a','Alice',0);for(let p=1;p<n;p++)r=applyIntent(r,users[p],{command:'join',name:'Player '+p},0).room;for(const user of users.slice(0,n))r=applyIntent(r,user,{command:'ready',ready:true},0).room;return applyIntent(r,'a',{command:'start'},0);}
 function ready(n=4){let r=started(n).room;for(const user of users.slice(0,n))r=applyIntent(r,user,{command:'remember'},10).room;return r;}
 function packet(r,p,events=[]){return playerPacket({id:'room',code:'ABC123',version:5,data:r},users[p],events);}

@@ -32,7 +32,7 @@ test('nonmembers cannot recover private state or worker jobs',async()=>{
 });
 
 test('deployed module copies match the tested source',()=>{
-  for(const file of ['engine.mjs','multiplayer-rules.mjs','ranked-config.mjs','ranked-room.mjs','ranked-runtime.mjs','ranked-service.mjs']) {
+  for(const file of ['engine.mjs','multiplayer-rules.mjs','ranked-config.mjs','ranked-room.mjs','ranked-runtime.mjs','ranked-service.mjs','rival-personality.mjs']) {
     assert.equal(readFileSync(new URL(`../lib/${file}`,import.meta.url),'utf8'),readFileSync(new URL(`../supabase/functions/lotus-ranked/${file}`,import.meta.url),'utf8'));
   }
 });

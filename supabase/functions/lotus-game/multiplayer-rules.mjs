@@ -57,13 +57,30 @@ export function applyIntent(before,userId,input,now=Date.now()) {
       if(room.host===userId){const heir=room.members.find(m=>m.id!==userId&&!room.departed.includes(m.id));if(heir)room.host=heir.id;}
       if(s.phase!=='finished'&&!s.players[p].eliminated){const r=transition(s,{type:'forfeit',player:p});room.state=r.state;events=r.events;room.deadline=now+AFK_MS;}
     }
+  }else if(input.command==='preferences'){
+    room.members[p].allowRematches=input.allowRematches!==false;
+    if(input.allowRematches===false&&room.rematch?.status==='offered'&&room.rematch.from!==userId)room.rematch={status:'declined'};
+  }else if(['rematch_request','rematch_accept','rematch_decline','rematch_cancel'].includes(input.command)){
+    if(s?.phase!=='finished'||room.members.length!==2||(room.departed||[]).length)throw Error('A rematch needs both players at the finished table.');
+    const offer=room.rematch;
+    if(input.command==='rematch_decline'||input.command==='rematch_cancel')room.rematch={status:'declined'};
+    else if(input.command==='rematch_request'&&!(offer?.status==='offered'&&offer.from!==userId&&offer.expiresAt>now)){
+      if(offer?.status==='offered'&&offer.from===userId&&offer.expiresAt>now)return {room,events};
+      if(room.members.some(m=>m.id!==userId&&m.allowRematches===false))room.rematch={status:'declined'};
+      else room.rematch={status:'offered',from:userId,expiresAt:now+15000};
+    }else{
+      if(offer?.status!=='offered'||offer.from===userId||offer.expiresAt<=now)throw Error('This rematch offer has expired.');
+      let reset=applyIntent(room,room.host,{command:'rematch'},now).room;
+      for(const member of reset.members)reset=applyIntent(reset,member.id,{command:'ready',ready:true},now).room;
+      return applyIntent(reset,reset.host,{command:'start'},now);
+    }
   }else if(input.command==='rematch'){
     if(!s)return {room,events};
     if(s.phase!=='finished')throw Error('The match is still in play.');
     if(room.host!==userId)throw Error('Only the host can start a rematch.');
     room.state=null;room.matchId=null;room.memorySeen=[];room.deadline=null;
     room.members=room.members.filter(m=>!(room.departed||[]).includes(m.id));
-    room.departed=[];room.strikes={};room.members.forEach(m=>{m.ready=false;});
+    room.departed=[];room.strikes={};delete room.rematch;room.members.forEach(m=>{m.ready=false;});
     if(!room.members.some(m=>m.id===room.host))room.host=room.members[0]?.id||null;
   }else if(input.command==='emote'){
     // Purely decorative: no state to mutate, just an event for everyone else's client to play.
@@ -143,7 +160,7 @@ export function playerPacket(record,userId,events=[],recover=false) {
   const room=record.data,seat=room.members.findIndex(m=>m.id===userId);
   if(seat<0)throw Error('You are not a member of this room.');
   const n=room.members.length,rotate=p=>p==null?null:(p-seat+n)%n,order=Array.from({length:n},(_,i)=>(seat+i)%n),s=room.state;
-  const metadata={id:record.id,code:record.code,version:record.version,host:room.host,me:userId,members:room.members,matchId:room.matchId,deadline:room.deadline,serverTime:Date.now()};
+  const metadata={id:record.id,code:record.code,version:record.version,host:room.host,me:userId,members:room.members,matchId:room.matchId,deadline:room.deadline,serverTime:Date.now(),rematch:room.rematch||null};
   if(!s)return {room:metadata,state:null,events:[],recover};
   const top=s.discard.at(-1),showHeld=s.active===seat||s.source==='discard'||['peek','swap','swapConfirm'].includes(s.phase);
   const state={phase:s.phase,active:rotate(s.active),turn:s.turn,round:s.round,caller:rotate(s.caller),remaining:s.remaining.map(rotate),source:s.source,

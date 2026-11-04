@@ -1,7 +1,8 @@
 # Ranked infrastructure, version 1
 
-This change builds a single human-first 1v1 ladder. It does not enable the ranked
-button, apply a production migration, deploy an Edge function, or start a worker.
+This change builds a single human-first 1v1 ladder. The ranked entry and table
+transport are connected locally, but no production migration, Edge deployment,
+or production worker has been started.
 The database feature flag starts disabled. Existing private tables are unchanged.
 
 ## Ladder and roster
@@ -134,9 +135,52 @@ extend the same phase. Human request retries retain their action ID and receive
 the previously committed state instead of applying twice.
 
 The foundation uses filtered HTTP recovery, not new Realtime channel policies.
-The ranked table UI still needs an adapter, clock/reconnect handling, and either
-bounded recovery polling or dedicated per-seat Realtime delivery. Do not point
-the existing private-table transport at raw ranked database records.
+`RankedTable` adapts it to the shared game screen with two-second recovery,
+version checks, old-match response rejection, reconnect handling, and delayed
+turn claiming to avoid racing the player's move. Sequential versions can animate
+the last action; gaps repaint authoritative state. Cosmetic events have a bounded
+sequence feed, age checks, and local deduplication. Dedicated per-seat Realtime
+delivery remains a future improvement. The legacy leaderboard screen still needs
+connection to the real leaderboard API; it is not verified by this UI work.
+
+## Rematches, rival pace, and preferences
+
+Ranked rematches are durable offers, not host resets. Either human can request;
+the other must accept. A bot's fixed style, match result, score gap and series
+length select one stored acceptance decision and an optional proactive offer.
+Requests appear after 3–6 seconds; replies take 2–5 seconds. Offers expire after
+15 seconds. Polling realizes scheduled replies without keeping an Edge timer
+alive. A duplicate accept returns the same new match. The new match has a fresh
+deal, a distinct result ID, current rating snapshots and the opposite opening
+seat, while retaining the rival's identity, configuration and policy seed.
+Accepting an old offer cannot steal a participant from a fresh match or queue.
+Turning off ranked or changing seasons prevents new rematches. Offer/request
+actions never change rating; only completed games do. Repeated-opponent farming
+limits remain required before a public rewards rollout.
+
+Private 1v1 tables use the same request/accept/decline/cancel controls. Two to four
+player group tables keep their host-and-ready lobby flow. A player who departed
+cannot be silently reseated by an opponent's request.
+
+Rivals study initial cards for roughly 4–9 seconds, take 1–3 seconds for routine
+moves, and spend longer on replacements, Queen decisions and buzzing. Style
+changes pace; higher rank does not uniformly accelerate every move. Reaction
+timings still follow tier parameters. Plans persist their sampled deadlines, so
+emotes and settings do not restart or pause an opponent's decision.
+
+Social behavior uses existing emote art and preset messages only, reacts to public
+match/swap/final events, and is capped at four reactions per game with a 15-second
+cooldown. It never changes cards, strength or outcome. Human reactions have a
+2.5-second cooldown and a server allowlist in ranked. Messages and bot parameters
+are not accepted as arbitrary client text.
+
+Sound, haptics, shorter movements, opponent-emote mute and opponent-message mute
+persist on the device. Saved values are normalized, including old settings.
+Haptics work independently of the audio switch. Incoming-rematch preference is
+also synchronized to the server account. Disabling requests declines an existing
+incoming offer. Offline settings dialogs pause local practice as before; online
+opponent scheduling remains server-driven. Reduced animation time never changes
+server thinking delays. Physical vibration still depends on device support.
 
 ## Verification
 
@@ -165,7 +209,8 @@ Supabase Auth/Realtime, Deno execution, and worker load tests in staging.
    and verify service-only permissions against the real Data API.
 2. Deploy `lotus-ranked`, start the trusted worker near Mumbai, and monitor job
    lag, retry counts, RPC volume, pairing rate, waiting time, and completion rate.
-3. Connect the first-entry notice, queue, ladder, and table UI. Enable only a test
+3. Verify the connected first-entry notice, queue, and table UI against staging;
+   finish the real leaderboard screen. Enable only a test
    cohort first. Turning `settings.enabled` off stops new entries and pairings;
    existing matches can still finish.
 4. Calibrate the bot rating anchors and tier ordering against human results.

@@ -1,6 +1,7 @@
 // Trusted adapter only. Public packets must still pass through playerPacket.
 import {newRoom, applyIntent, playerPacket} from './multiplayer-rules.mjs';
 import {transition} from './engine.mjs';
+import {EMOTES,QUICK_MESSAGES} from './rival-personality.mjs';
 
 export function createRankedRoom(participants, now = Date.now()) {
   if (participants.length !== 2 || participants[0].seat !== 0 || participants[1].seat !== 1 ||
@@ -24,7 +25,12 @@ export function createRankedRoom(participants, now = Date.now()) {
 export function rankedHumanIntent(room, participants, userId, input, now = Date.now()) {
   const participant = participants.find(p => p.kind === 'human' && p.user_id === userId);
   if (!participant) throw Error('You are not a player in this match.');
-  if (!['remember', 'hold', 'action', 'leave', 'timeout'].includes(input.command)) throw Error('Unsupported ranked command');
+  if (!['remember', 'hold', 'action', 'leave', 'timeout','emote','message'].includes(input.command)) throw Error('Unsupported ranked command');
+  if(input.command==='emote' && !EMOTES.includes(input.name) || input.command==='message' && !QUICK_MESSAGES.includes(input.text))throw Error('Unknown reaction');
+  if(['emote','message'].includes(input.command)) {
+    const last=room.ranked?.socialFeed?.findLast(e=>e.p===participant.seat);
+    if(last && now-last.at<2500)throw Error('Wait a moment before reacting again.');
+  }
   if (input.command==='leave' && room.state?.phase==='memory') {
     const next=structuredClone(room);
     const remembered=transition(next.state,{type:'remember'});
@@ -38,5 +44,8 @@ export function rankedHumanIntent(room, participants, userId, input, now = Date.
 export function rankedHumanPacket(record, participants, userId, events = [], recover = false) {
   const participant = participants.find(p => p.kind === 'human' && p.user_id === userId);
   if (!participant) throw Error('You are not a player in this match.');
-  return playerPacket(record, participant.id, events, recover);
+  const packet=playerPacket(record, participant.id, events, recover);
+  packet.room.mode='ranked';
+  packet.social=(record.data.ranked?.socialFeed||[]).map(e=>({...e,p:(e.p-participant.seat+2)%2}));
+  return packet;
 }

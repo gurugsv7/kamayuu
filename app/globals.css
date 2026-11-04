@@ -2254,3 +2254,4 @@ html,body,#root { background: #090f15; }
    edge, so on a narrow phone the first one landed on the discard. Mirror the
    left seat instead: anchor to that grid's right edge and fan inward. */
 .player-3 .penalty-slot{left:auto;right:calc((var(--extra-column) * 2 + var(--extra-row)) * 17px)}
+.rematch-status{display:block;margin:.75rem 0;line-height:1.5}

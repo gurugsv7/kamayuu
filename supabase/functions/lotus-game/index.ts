@@ -62,7 +62,7 @@ Deno.serve(async req=>{
    const was=record.data;
    const quiet=!events.length&&room.deadline===was.deadline&&room.host===was.host
     &&(room.state?.phase||null)===(was.state?.phase||null)
-    &&JSON.stringify(room.members)===JSON.stringify(was.members);
+    &&JSON.stringify(room.members)===JSON.stringify(was.members)&&JSON.stringify(room.rematch)===JSON.stringify(was.rematch);
    const packets=quiet?[]:room.members.filter((m:any)=>m.id!==user).map((m:any)=>({user_id:m.id,payload:playerPacket(next,m.id,events)}));
    const {data:committed,error:commitError}=await server.rpc('lotus_commit',{p_id:record.id,p_version:record.version,p_data:room,p_packets:packets});
    if(commitError)throw Error(commitError.message);

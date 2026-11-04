@@ -76,3 +76,14 @@ test('inactive human cannot reset another player claim; leaving during memory fo
   r.data=applyRankedHuman(r,'user-a',{command:'hold'},1000).room;
   assert.equal(r.data.deadline,deadline);
 });
+
+test('emotes preserve the bot decision timer, obey cooldowns, and cannot smuggle arbitrary chat',()=>{
+ const r=record();r.data=bootstrapRanked(r,0).room;r.data.state.phase='ready';r.data.state.active=1;r.data.deadline=20000;
+ const before=planRankedJob(r.data,r.participants,0);
+ const changed=applyRankedHuman(r,'user-a',{command:'emote',name:'cool'},1000,before);
+ assert.equal(changed.room.deadline,20000);assert.equal(changed.next.due,before.due);
+ assert.equal(changed.room.ranked.socialFeed[0].name,'cool');
+ r.data=changed.room;
+ assert.throws(()=>applyRankedHuman(r,'user-a',{command:'emote',name:'angry'},1500),/Wait/);
+ assert.throws(()=>applyRankedHuman(r,'user-a',{command:'message',text:'arbitrary chat'},5000),/Unknown/);
+});
