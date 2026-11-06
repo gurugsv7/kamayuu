@@ -49,7 +49,8 @@ expiry and error handling.
 Validation: 158 tests passed, TypeScript passed, mobile build passed, and
 Capacitor Android asset sync completed. Existing bundle-size and mixed
 static/dynamic Google-auth import warnings remain. No new signed APK/AAB was
-built, no device install was performed, and nothing was pushed or published.
+built during that initial review. The subsequent signed Android 0.4.0 internal
+release and website publication are recorded in `play-release-0.4.0.md`.
 
 ## Table exit and contextual settings
 

@@ -1,6 +1,7 @@
 # Kamayuu loader artwork
 
-Release candidate, 6 November 2026. Owner requested publishing this update.
+Published to the website and Android internal testing on 6 November 2026.
+See `play-release-0.4.0.md` for deployment and verification details.
 
 ## Current artwork
 
@@ -14,12 +15,12 @@ Matchmaking v3 uses exactly one large card on each side, with a gentle opposing 
 - `public/loaders/matchmaking-duel-v3.webp` / `.gif`: same duration and dimensions.
 - `*-still.png`: immediate posters, reduced-motion mode and error fallback.
 - `opening-scene.webp` and `kamayuu-wordmark.webp`: 304.5 KiB combined.
-- `ensembles-manifest.json`: exact export sizes and durations.
+- `ensembles-manifest.json` and `duel-manifest.json`: export sizes and durations.
 
 ImageGen originals and prompts are retained under `assets-src/loaders/`, including
 `upgrade-prompts.json`. `scripts/render-loader-ensembles.py` choreographs generated
 layers and uses FFmpeg to encode the loops. They have real alpha; no chroma key is
-needed. Original v1 exports remain available; runtime animation uses v2.
+needed. Earlier exports remain available; runtime uses opening v2 and matchmaking v3.
 
 The existing two-second opening gate, real asset progress, matchmaking cadence,
 card-play movement, reveal holds and turn clocks are preserved. The decorative
@@ -37,8 +38,8 @@ is warmed next. Native does not install a redundant service worker cache.
 The web production build emits `artwork-sw.js` and `artwork-manifest.json` from
 actual file hashes. The worker caches only 25 allowlisted public artwork/font
 paths, with automatic version changes when those files change. Normal WebP
-assets are precached (approximately 4.27 MiB); GIF fallbacks are cached on demand
-(up to 8.08 MiB for this artwork set). Only obsolete `kamayuu-artwork-` caches are
+assets are precached (approximately 5.25 MiB); GIF fallbacks are cached on demand
+(up to 10.58 MiB for this artwork set). Only obsolete `kamayuu-artwork-` caches are
 removed. HTML, app code, API calls, authentication, account data and external
 requests are never intercepted. Errors/quota failures fall back gracefully.
 Browser artwork needs a first successful download and remains subject to browser
@@ -63,5 +64,6 @@ packet cancellation, offline artwork reads, cache upgrade isolation, HTML fallba
 rejection, quota failure and bounded startup warmup. TypeScript and the mobile
 build passed; Capacitor Android asset sync completed. All 25 manifest assets were
 byte-checked against the Android bundle. Existing bundle-size and mixed
-static/dynamic Google-auth import warnings remain. No APK/AAB was rebuilt or
-installed, and nothing was pushed or published.
+static/dynamic Google-auth import warnings remain. Android 0.4.0 was subsequently
+built, signed and released to internal testers, and the website was published.
+Physical-device verification remains outstanding; see the release record.
