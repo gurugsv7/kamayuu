@@ -443,8 +443,9 @@ html:has(.onboarding-viewport, .identity-viewport, .home-viewport) {
   opacity: 0.001;
   overflow: hidden;
   cursor: pointer;
-  pointer-events: auto;
+  pointer-events: none;
 }
+.gis-overlay.active { pointer-events: auto; }
 .gis-overlay > div,
 .gis-overlay iframe {
   width: 100% !important;

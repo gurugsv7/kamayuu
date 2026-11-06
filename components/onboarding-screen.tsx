@@ -168,8 +168,8 @@ export default function OnboardingScreen({
               </div>
             </button>
 
-            {/* Invisible Google GIS host iframe over the button for 1-click native popup */}
-            {googleConfigured && (
+            {/* Browser GIS owns its click; Android uses the native button directly. */}
+            {!isNative() && googleConfigured && (
               <div
                 ref={googleSlotRef}
                 className={`gis-overlay ${googleInitialized ? 'active' : ''}`}
