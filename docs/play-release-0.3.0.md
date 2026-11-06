@@ -1,6 +1,8 @@
 # Android 0.3.0 release preparation — 6 November 2026
 
-Status: signed candidate prepared; not uploaded or approved for public release.
+Status: 0.3.0 is active and available to the two approved internal testers.
+Google Play Android OAuth registration is complete; device sign-in verification
+is pending. The app is not publicly released.
 Package `in.builtbygsv.kamayuu`, versionCode 3, versionName 0.3.0,
 minimum API 24, target/compile API 36. Existing upload key retained.
 
@@ -19,17 +21,30 @@ APK size is 28,752,493 bytes. Hardware execution is not yet verified.
 ## Console evidence
 
 BuiltbyGSV account 8505523695270508859 is a personal account, signed in as
-builtbygsv@gmail.com. Identity verification succeeded. No existing apps were
-listed. Create-app form is prepared for Kamayuu / English (US) / Game / Free;
-the package ID is available. Legal declarations await owner confirmation.
+builtbygsv@gmail.com. Identity verification succeeded. The owner approved legal
+declarations and Kamayuu was created as English (US) / Game / Free, app ID
+4974823385656892350. Internal track 4699091978083630110, release 1 contains
+the accepted 0.3.0 bundle. The owner testing list contains the two approved
+accounts; the release was rolled out and visibly confirmed Active / Available
+to internal testers. No deobfuscation file warning remains expected because
+minifyEnabled is false. No blocking bundle error appeared.
+The dashboard confirms 12 closed testers continuously opted in for 14 days before
+applying for production access. Internal testing does not count toward that gate.
+Internal test opt-in: https://play.google.com/apps/internaltest/4699091978083630110
+
+On 6 November, Google Cloud project kamayuu accepted the Android client
+"Kamayuu Android — Google Play signing". Its saved package and SHA-1 were
+verified against in.builtbygsv.kamayuu and the owner's supplied Play signing
+fingerprint. Public fingerprints and client IDs are in mobile-signing-public.json;
+the existing upload/local signing entries are preserved. The app continues to
+use its existing web client ID as the server audience. No app rebuild was needed
+for this registration. Google indicates propagation may take 5 minutes to a few
+hours. Successful login on the actual Play-installed build is not yet verified.
 Console also requests trader status by February 2027; owner status must be
 established truthfully rather than inferred from the account's personal type.
 
 ## Remaining release gates
 
-- Create app after approval of Play Signing terms and policy/export declarations.
-- Upload candidate to testing, enable Play App Signing, record its signing SHA-1,
-  and register that certificate for Android OAuth in the existing Google project.
 - Test native Google login on the Play-signed build; verify secure session restore,
   logout, account deletion, offline cold launch, background/resume, cutouts,
   keyboard, reconnect, ranked matches, leaderboard and rematches on Android.

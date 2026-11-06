@@ -5,5 +5,9 @@
   "sha256": "5F:D4:47:73:D4:55:B7:E3:E7:4B:03:9F:9A:2A:D4:77:F9:E1:8D:39:83:08:26:A1:95:CD:06:63:5F:F8:9B:9E",
   "serverWebClientId": "694818732271-fqepel4ocs9eoog19pvj9o4suagkv954.apps.googleusercontent.com",
   "androidLocalReleaseClientId": "694818732271-fgrgj925halm4tfcjc873gamt0lo14sl.apps.googleusercontent.com",
-  "androidRegistrationDate": "2026-11-04"
+  "androidRegistrationDate": "2026-11-04",
+  "playSigningSha1": "11:6E:F3:2E:D4:14:22:28:E5:4D:60:50:A8:F7:A5:A4:82:7E:35:B7",
+  "playSigningSha256": "23:5A:B8:05:F8:22:05:EC:94:2A:F5:A9:09:0E:F0:65:46:F3:A6:61:F6:A3:C3:38:C7:34:A3:32:83:DC:08:8D",
+  "androidPlayClientId": "694818732271-11p2t425tcd1otn96d5blsvtlmc5l0lj.apps.googleusercontent.com",
+  "androidPlayRegistrationDate": "2026-11-06"
 }
