@@ -1,5 +1,9 @@
 # Android 0.3.0 release preparation — 6 November 2026
 
+Follow-up: [release audit and fourteen day plan](release-audit-2026-11-06.md)
+records post-0.3.0 source fixes, current gaps and the public-release timeline.
+Those fixes require a new bundle; the active 0.3.0 release is unchanged.
+
 Status: 0.3.0 is active and available to the two approved internal testers.
 Google Play Android OAuth registration is complete; device sign-in verification
 is pending. The app is not publicly released.

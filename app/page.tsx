@@ -29,7 +29,7 @@ import FamilyGate from '@/components/family-gate';
 import {storedAge,familyState,familyRequest} from '@/lib/family';
 import './family.css';
 import ConnectionStatus from '@/components/connection-status';
-import {backAction,soloCanAdvance} from '@/lib/mobile-policy.mjs';
+import {backAction,soloCanAdvance,roomShareUrl} from '@/lib/mobile-policy.mjs';
 import {isNative,nativeVibrate,connectionAvailable,nativeBack,minimizeNative} from '@/lib/native';
 const PRELOAD_IMAGES=['/onboarding-bg.webp','/onboarding-identity-bg.webp','/card-art-quickmatch.png','/card-art-privatetable.png','/card-art-practice.png'];
 // Only 'haha' has real art (sprite sheet + icon) so far. The rest are placeholders in
@@ -378,7 +378,11 @@ function GameHome(){
   if(remote.current)await remote.current.close();
   game.current=null;setS(null);setLobby(null);lobbyRef.current=null;memorized.current=false;seenSocial.current.clear();queue.current=Promise.resolve();
   const service=new RankedTable(matchId,(p:any)=>packetHandler.current(p),setConnection,setPresence);remote.current=service;
-  await service.enter();setOnline('room');setMenu(false);
+  try{await service.enter();if(remote.current!==service||service.closed)return;setOnline('room');setMenu(false);}
+  catch{
+   if(remote.current!==service)return;
+   remote.current=null;setOnline(null);setConnection('');setMenu(true);setPanel('ranked');
+  }
  },[]);
  async function copyRoomCode(code:string){
   try{await navigator.clipboard.writeText(code);}
@@ -392,7 +396,7 @@ function GameHome(){
   setCodeCopied(true);clearTimeout(codeCopyTimer.current);codeCopyTimer.current=setTimeout(()=>setCodeCopied(false),1800);
  }
  function shareRoomCode(code:string){
-  const text=`Join my Kamayuu table — code ${code}`,url=typeof window!=='undefined'?window.location.origin:'';
+  const text=`Join my Kamayuu table — code ${code}`,url=roomShareUrl(isNative(),typeof window!=='undefined'?window.location.origin:'');
   if(typeof navigator!=='undefined'&&(navigator as any).share){(navigator as any).share({title:'Kamayuu',text,url}).catch(()=>{});return;}
   // No native share sheet (most desktop browsers) — WhatsApp Web link is the
   // closest thing to a universal "share" fallback for a table code.

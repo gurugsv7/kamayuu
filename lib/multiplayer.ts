@@ -27,14 +27,20 @@ export class MultiplayerService {
   // rematch...) back to this tab's engagement session, so "games per session"
   // isn't limited to solo play, which is the only mode the client tracks directly.
   const body={command,roomId:this.room?.id,actionId:crypto.randomUUID(),session:getSessionId(),...extra};
-  const call=async()=>{
-   const response=await fetch(`${URL}/functions/v1/lotus-game`,{method:'POST',headers:{apikey:KEY,Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
+  const call=async(accessToken=session.access_token)=>{
+   const response=await fetch(`${URL}/functions/v1/lotus-game`,{method:'POST',headers:{apikey:KEY,Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
    const data: any=await response.json();if(data.packet)this.receive(data.packet);
    if(!response.ok)throw Object.assign(Error(data.error||'Could not reach the table.'),{status:response.status});return data;
   };
   try{return await call();}catch(error:any){
-   if(error.status===401&&retry){await this.client.auth.signOut({scope:'local'}).catch(()=>{});return await this.request(command,extra,false);}
-   if(!error.status&&retry){this.onConnection('Reconnecting…');return await call();}
+   if(error.status===401&&retry&&!this.closed){
+    // Preserve the user's account and the idempotency key. Signing out here
+    // could silently replace a web player's identity with a new guest.
+    const refreshed=await this.client.auth.refreshSession();
+    if(refreshed.error||!refreshed.data.session)throw error;
+    return await call(refreshed.data.session.access_token);
+   }
+   if(!error.status&&retry){if(!this.closed)this.onConnection('Reconnecting…');return await call();}
    throw error;
   }
  }
@@ -93,7 +99,7 @@ export class MultiplayerService {
    });
   })));
  }
- async recover(){if(!this.room||this.closed)return;try{const packet=await this.request('recover');this.receive(packet);this.onConnection('Connected');}catch{this.onConnection('Reconnecting…');}}
+ async recover(){if(!this.room||this.closed)return;try{const packet=await this.request('recover');this.receive(packet);if(!this.closed)this.onConnection('Connected');}catch{if(!this.closed)this.onConnection('Reconnecting…');}}
  // Tab switching must not turn into an unbounded stream of edge invocations.
  resume=()=>{if(this.closed||this.reconnecting||!this.room||Date.now()-this.lastRecover<5000)return;this.lastRecover=Date.now();this.reconnecting=true;this.recover().finally(()=>{this.reconnecting=false;});};
  visibility=()=>{if(!document.hidden)this.resume();};
@@ -104,6 +110,10 @@ export class MultiplayerService {
   if(intent.target!==undefined)intent.target=(intent.target+seat)%n;
   return this.command('action',{action:intent,version:version??this.room.version});
  }
- async leave(){await this.request('leave');localStorage.removeItem('lotus-room');await this.close();}
+ async leave(){
+  // Detach immediately: a slow/failed leave must not deliver old game packets
+  // into the home screen or another table opened in the meantime.
+  localStorage.removeItem('lotus-room');await this.close();await this.request('leave');
+ }
  async close(){this.closed=true;clearTimeout(this.deadline);window.removeEventListener('online',this.resume);document.removeEventListener('visibilitychange',this.visibility);document.removeEventListener('pointerdown',this.interact);document.removeEventListener('keydown',this.interact);await Promise.all(this.channels.map(c=>this.client.removeChannel(c)));this.channels=[];}
 }

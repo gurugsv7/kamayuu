@@ -1,5 +1,9 @@
 # India-first release status — 4 November 2026
 
+Historical snapshot. Android 0.3.0 has since reached internal testing and Play
+OAuth registration is complete. See [the current release audit](release-audit-2026-11-06.md)
+for the remaining gates; the older build/upload statements below describe 4 November.
+
 The owner selected India first and then deferred child online play. Under-13 users
 receive local practice only. KWS and parent-verification onboarding are deferred;
 no KWS account or agreement is required for this version.

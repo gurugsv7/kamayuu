@@ -65,7 +65,8 @@ export class RankedTable {
   async enter(){
     window.addEventListener('online',this.resume);document.addEventListener('visibilitychange',this.resume);
     document.addEventListener('pointerdown',this.interact);document.addEventListener('keydown',this.interact);
-    await this.recover();this.schedule();
+    // Initial failure must return to entry, not open an empty game surface.
+    try{await this.recover(true);this.schedule();}catch(error){await this.close();throw error;}
   }
   receive(result:RankedResponse){
     if(this.closed)return;
@@ -85,7 +86,7 @@ export class RankedTable {
     this.onPresence([p.room.me]);
   }
   schedule(){clearTimeout(this.timer);if(!this.closed)this.timer=setTimeout(async()=>{await this.recover();this.schedule();},1000);}
-  async recover(){if(this.closed||this.pollBusy)return;this.pollBusy=true;try{this.receive(await this.client.recover(this.matchId,this.version));}catch{this.onConnection('Reconnecting…');}finally{this.pollBusy=false;}}
+  async recover(rethrow=false){if(this.closed||this.pollBusy)return;this.pollBusy=true;try{this.receive(await this.client.recover(this.matchId,this.version));}catch(error){if(!this.closed)this.onConnection('Reconnecting…');if(rethrow)throw error;}finally{this.pollBusy=false;}}
   resume=()=>{if(!document.hidden)void this.recover();};
   interact=()=>{}; // Cached hold support is server-side only; taps do not buy time.
   lastState:RankedTableState|null=null;

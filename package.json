@@ -6,7 +6,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "test": "node --test tests/engine.test.mjs tests/multiplayer.test.mjs tests/ranked.test.mjs tests/ranked-runtime.test.mjs tests/ranked-service.test.mjs tests/rival-personality.test.mjs tests/ranked-transport.test.mjs tests/family.test.mjs tests/mobile.test.mjs tests/turn-timing.test.mjs tests/ranked-feedback.test.mjs tests/turn-motion.test.mjs",
+    "test": "node --test tests/engine.test.mjs tests/multiplayer.test.mjs tests/multiplayer-transport.test.mjs tests/ranked.test.mjs tests/ranked-runtime.test.mjs tests/ranked-service.test.mjs tests/rival-personality.test.mjs tests/ranked-transport.test.mjs tests/family.test.mjs tests/mobile.test.mjs tests/turn-timing.test.mjs tests/ranked-feedback.test.mjs tests/turn-motion.test.mjs",
     "test:family:db": "node --test tests/family-database.test.mjs",
     "test:ranked:db": "node --test tests/ranked-database.test.mjs tests/ranked-worker-auth.test.mjs",
     "sync:edge": "node scripts/sync-edge.mjs",

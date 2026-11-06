@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {backAction,soloCanAdvance,secureAuthStorage} from '../lib/mobile-policy.mjs';
+import {backAction,soloCanAdvance,secureAuthStorage,roomShareUrl} from '../lib/mobile-policy.mjs';
+
+test('native room invitations use the public website instead of the bundled localhost origin',()=>{
+ assert.equal(roomShareUrl(true,'https://localhost'),'https://kamayuu.builtbygsv.in');
+ assert.equal(roomShareUrl(false,'https://kamayuu.builtbygsv.in'),'https://kamayuu.builtbygsv.in');
+});
 test('Android back dismisses transient UI before touching a game and minimizes only at the home menu',()=>{
  assert.equal(backAction({panel:'settings',tutorial:true,menu:false,online:'room'}),'close-panel');
  assert.equal(backAction({tutorial:true,menu:false}),'close-tutorial');

@@ -42,3 +42,25 @@ test('leaving closes packet delivery before its delayed rematch response arrives
   assert.equal(received.length,1);assert.equal(table.version,5);assert.equal(table.matchId,'old');
  }finally{globalThis.window=priorWindow;globalThis.document=priorDocument;}
 });
+
+test('failed initial ranked recovery rejects entry and removes listeners without polling an empty table',async()=>{
+ const priorWindow=globalThis.window,priorDocument=globalThis.document;
+ const listeners=new Set();
+ const target={addEventListener(name,fn){listeners.add(fn);},removeEventListener(name,fn){listeners.delete(fn);}};
+ globalThis.window=target;globalThis.document=target;
+ const table=new RankedTable('game',()=>{},()=>{},()=>{});
+ table.client.recover=async()=>{throw Error('Session expired');};
+ try{
+  await assert.rejects(table.enter(),/Session expired/);
+  assert.equal(table.closed,true);assert.equal(listeners.size,0);assert.equal(table.timer,undefined);
+ }finally{await table.close();globalThis.window=priorWindow;globalThis.document=priorDocument;}
+});
+
+test('an in-flight failed recovery cannot change connection status after ranked table closes',async()=>{
+ const priorWindow=globalThis.window,priorDocument=globalThis.document;
+ globalThis.window={removeEventListener(){}};globalThis.document={removeEventListener(){}};
+ const statuses=[];const table=new RankedTable('game',()=>{},s=>statuses.push(s),()=>{});
+ let reject;table.client.recover=()=>new Promise((_,no)=>{reject=no;});
+ try{const pending=table.recover();await table.close();reject(Error('offline'));await pending;assert.deepEqual(statuses,[]);}
+ finally{globalThis.window=priorWindow;globalThis.document=priorDocument;}
+});
