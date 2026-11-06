@@ -1,0 +1,16 @@
+{
+  "generator": "Built-in image_gen",
+  "reference": "public/onboarding-identity-bg.webp",
+  "prompts": [
+    {
+      "key": "wordmark",
+      "transparent_background": true,
+      "prompt": "Use case: background-extraction / logo-brand. Reference image is the actual Kamayuu homepage; preserve its existing identity. Recreate ONLY the large word KAMAYUU from the reference as a polished standalone transparent raster wordmark for the same game's opening screen. Exact spelling K A M A Y U U, seven uppercase letters. Match the reference's expressive hand-painted brush lettering, especially the large sweeping jagged K, narrow aggressive angular A and Y, rough brush cuts and tapered strokes. Warm pale gold at top, copper amber at bottom, very subtle metallic grain, crisp silhouette. Horizontal landscape canvas approximately 3:1, tight but generous transparent margin around all strokes, lettering fills 90% width. NO compass, no tagline, no ornament, no underline, no background, no glow cloud. This is a production PNG overlay; genuinely transparent background and legible at 280px wide. Do not substitute a formal serif font or generic esports badge."
+    },
+    {
+      "key": "opening-scene",
+      "transparent_background": false,
+      "prompt": "Use case: stylized-concept. Create a richly detailed cinematic portrait background for the opening of Kamayuu, matching the supplied actual homepage's world, palette and material richness. This is a background asset with NO text, NO lettering, NO logos and NO UI. Inside a mysterious lakeside Indian palace at twilight: intricately carved dark brass and black wood arch rising along both edges and across the very top; billowing translucent navy curtains at edges; distant lit palace windows and fine palm silhouettes across a deep blue lake on the right; vivid warm amber oil lantern at lower left, a smaller lantern at lower right; a luxurious worn black lacquer gaming table fills the bottom quarter with elegant engraved gold compass lines and a small neat sapphire-and-brass deck at its far right edge. Foreground is intimate and tactile: map paper corner, warm light on brass trim, a few drifting dust sparks. CENTER 60% MUST stay comparatively quiet deep navy for a live animated compass/card ensemble and title overlay, but not flat black; subtle misty blue depth and amber reflected light. Moonlit sapphire blues vs warm gold flame, cinematic depth of field, painterly realism like the reference, dramatic contrast, premium crafted mobile game art, ornate but controlled. Do not depict lotus flowers, crowns, people, playing-card faces, floating central symbols, any central text, or a title. 9:16 full-bleed portrait, beautifully resolved at phone scale."
+    }
+  ]
+}

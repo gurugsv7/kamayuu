@@ -1,0 +1,24 @@
+[
+  {
+    "name": "opening-deal-v2",
+    "frames": 72,
+    "fps": 24,
+    "durationMs": 3000,
+    "width": 384,
+    "height": 320,
+    "transparent": true,
+    "gifBytes": 2239064,
+    "webpBytes": 1896558
+  },
+  {
+    "name": "matchmaking-hands-v2",
+    "frames": 72,
+    "fps": 24,
+    "durationMs": 3000,
+    "width": 384,
+    "height": 320,
+    "transparent": true,
+    "gifBytes": 1754616,
+    "webpBytes": 1207580
+  }
+]

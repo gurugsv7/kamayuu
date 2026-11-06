@@ -14,6 +14,7 @@ import tailwindcss from '@tailwindcss/postcss';
 import path from 'node:path';
 import mobilePublic from './config/mobile-public.json';
 import { defineConfig, loadEnv } from 'vite';
+import artworkCachePlugin from './scripts/artwork-cache-plugin.mjs';
 
 export default defineConfig(({ mode }) => {
   // Vite only exposes env vars prefixed with VITE_ via import.meta.env by
@@ -24,8 +25,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     root: '.',
+    // Generated source artwork is not imported. Windows can lock it during
+    // image writes, so leave it out of the live-reload watcher.
+    server: {watch: {ignored: ['**/assets-src/**']}},
     css: { postcss: { plugins: [tailwindcss()] } },
-    plugins: [react()],
+    plugins: [react(),artworkCachePlugin()],
     resolve: {
       alias: { '@': path.resolve(__dirname, '.') },
     },

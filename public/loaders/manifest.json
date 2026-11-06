@@ -1,0 +1,24 @@
+[
+  {
+    "name": "opening-compass",
+    "frames": 40,
+    "fps": 20,
+    "durationMs": 2000,
+    "width": 256,
+    "height": 224,
+    "gifBytes": 498468,
+    "webpBytes": 537692,
+    "transparent": true
+  },
+  {
+    "name": "matchmaking-cut",
+    "frames": 60,
+    "fps": 20,
+    "durationMs": 3000,
+    "width": 256,
+    "height": 224,
+    "gifBytes": 851206,
+    "webpBytes": 766864,
+    "transparent": true
+  }
+]

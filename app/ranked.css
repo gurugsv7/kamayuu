@@ -1,0 +1,112 @@
+/* Imagegen concept: midnight palace, engraved brass, compass/crescent crests.
+   Scoped to competitive menus and the shared result card; no table timing. */
+.game-dialog.ranked-dialog,.results.ledger .ledger-sheet{color:#f6e7c9!important;background:linear-gradient(#050d16a6,#050d1670),url('/ranks/palace.webp') center/cover!important;border:1px solid #b28b50!important;border-radius:14px!important;box-shadow:inset 0 0 0 5px #07121bd9,inset 0 0 0 6px #b28b504d,0 24px 80px #000c!important;scrollbar-width:thin;scrollbar-color:#a8864d #09131e}
+.game-dialog.ranked-dialog{translate:none!important;transform:translate(-50%,-50%)!important;width:440px;max-width:calc(100% - 24px)!important;max-height:calc(100svh - 28px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))!important;padding:24px 24px 20px!important;gap:0;overscroll-behavior:contain;animation:ranked-arrive .28s ease-out}
+.ranked-brand{display:flex;justify-content:center;align-items:center;gap:2px;margin:-9px 0 15px;color:#d7b276;font:600 15px/1 'Cinzel',Georgia,serif;letter-spacing:5px;text-transform:uppercase}
+.ranked-brand img{width:42px;height:auto;object-fit:contain}
+.game-dialog.ranked-dialog [data-slot=dialog-title]{margin:0 25px;text-align:center;color:#f1dfbb;font:500 24px/1.2 'Cinzel',Georgia,serif;letter-spacing:.5px;text-wrap:balance}
+.game-dialog.ranked-dialog [data-slot=dialog-description]{text-align:center;color:#baab91;margin:7px 0 20px;font:italic 17px/1.3 'Cormorant Garamond',Georgia,serif;letter-spacing:.2px}
+.game-dialog.ranked-dialog [data-slot=dialog-close]{position:absolute;top:12px;right:12px;border:1px solid #b28b5070;background:#07111de6;color:#dfc18b;border-radius:50%;width:36px;height:36px;min-width:36px}
+.game-dialog.ranked-dialog p{color:#c6b99f}
+.ranked-entry{display:flex;flex-direction:column;gap:16px}
+.rank-standing{text-align:center;min-width:0}
+.tier-badge{display:block;width:48px;height:48px;object-fit:contain;flex:none}
+.rank-hero{position:relative;display:flex;align-items:center;flex-direction:column}
+.rank-hero:before{content:'';position:absolute;top:0;width:220px;height:170px;background:radial-gradient(ellipse,#c68d2824,transparent 68%);pointer-events:none}
+.rank-hero>.tier-badge{position:relative;width:142px;height:142px;filter:drop-shadow(0 8px 9px #0008)}
+.rank-tier-name{position:relative;min-width:126px;margin:-7px 0 9px;padding:5px 18px;border-block:1px solid #ba955a88;background:linear-gradient(90deg,transparent,#1f2630 25%,#1f2630 75%,transparent);font:600 18px/1.2 'Cinzel',Georgia,serif;letter-spacing:2px;text-transform:uppercase;color:#e5bd7e}
+.rank-rating{display:flex;align-items:baseline;justify-content:center;gap:8px;color:#cbbd9f}
+.rank-rating strong{font:500 31px/1 'Cormorant Garamond',Georgia,serif;color:#fff0d5;font-variant-numeric:tabular-nums}
+.rank-rating>span{font:13px Georgia,serif}
+.rank-progress{height:6px;background:#101c2c;border:1px solid #8b703e7a;border-radius:10px;margin:14px 10px 0;overflow:hidden}
+.rank-progress>span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#94632c,#efce8a);box-shadow:0 0 9px #e6ba6d55}
+.rank-standing .rank-progress-caption{display:flex;justify-content:space-between;margin:7px 10px 13px;font:11px/1.4 Arial,sans-serif;color:#bfb092}
+.rank-progress-caption b{font-weight:400;color:#efd092}
+.rank-tier-rail{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;list-style:none;margin:0;padding:8px 0 12px;border-bottom:1px solid #a8874b44}
+.rank-tier-rail li{display:flex;align-items:center;flex-direction:column;gap:4px;color:#ae9d80;position:relative}
+.rank-tier-rail .tier-badge{width:42px;height:42px}
+.rank-tier-rail span{font:9px/1.2 'Cinzel',Georgia,serif;letter-spacing:.1px}
+.rank-tier-rail [aria-current=step]{color:#f3d69a}
+.rank-tier-rail [aria-current=step]:after{content:'◆';position:absolute;bottom:-17px;font-size:8px;background:#0c1520;padding:0 5px;color:#ddb16c}
+.ranked-entry .ranked-entry-note{font:italic 16px/1.4 'Cormorant Garamond',Georgia,serif;color:#cebb94}
+.ranked-entry .ranked-footnote{text-align:center;font:10px/1.5 Arial,sans-serif;color:#ad9c80;margin:1px 0 0}
+.ranked-entry .ranked-search{border:1px solid #a987494d;border-radius:10px;background:linear-gradient(150deg,#1022348c,#060d16b8);padding:8px 10px 16px;gap:5px;box-shadow:inset 0 1px #dfb97810}
+.ranked-search .kamayuu-animated-loader{width:146px;margin:-10px 0 -17px;filter:drop-shadow(0 6px 10px #0009)}
+.ranked-search strong{font:500 21px/1.2 'Cormorant Garamond',Georgia,serif;color:#f3dfb6}
+.ranked-search p{font:12px/1.5 Arial,sans-serif}
+.ranked-dialog .primary.action-button,.results.ledger .primary.action-button{width:100%;min-height:48px;border-radius:6px!important;box-shadow:inset 0 1px 0 #fff4d9,0 2px 0 #705025,0 5px 14px #0006!important}
+.ranked-dialog .primary .action-button-label,.results.ledger .primary .action-button-label{margin-left:0}
+.ranked-dialog .primary.action-button.action-secondary,.results.ledger .primary.action-button.action-secondary{background:linear-gradient(140deg,#162434c9,#060e18d9)!important;color:#e3c796!important;border:1px solid #b28b506b!important;box-shadow:inset 0 1px #dfb97810!important}
+.ranked-dialog button:focus-visible,.results.ledger button:focus-visible{outline:2px solid #f7d99d;outline-offset:3px}
+.ranked-dialog .ranked-notice{display:flex;flex-direction:column;align-items:center;text-align:center;padding:25px 17px;gap:14px;border:1px solid #b28b5055;border-radius:10px;background:#091624b8}
+.ranked-notice h3{font:500 25px/1.2 'Cormorant Garamond',Georgia,serif;color:#f0d7a9;margin:0}
+.ranked-notice svg{color:#d3ac68}
+.ranked-dialog .ranked-recovery{background:linear-gradient(150deg,#152436,#09121e);border-color:#a8874b66;padding:24px 16px;color:#f0dab4}
+.ranked-dialog .feedback-emblem{background:#0a1725;color:#d9b87e;border-color:#a8874b88;box-shadow:inset 0 0 0 4px #d9b87e0c}
+.ranked-dialog .ranked-unavailable{padding:14px;border:1px solid #a8874b66;border-radius:8px;background:#101c2b}
+.ranked-dialog .action-status{color:#e0c699}
+
+/* Standings: readable names, real ratings, and a bounded list for small phones. */
+.leaderboard-content{min-width:0;display:flex;flex-direction:column;gap:12px}
+.leaderboard-season{display:flex;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid #a8874b66;border-radius:5px;background:linear-gradient(100deg,#61462240,#0a1724bf);color:#dfc18d;font:11px/1.4 'Cinzel',Georgia,serif;letter-spacing:1px}
+.leaderboard-season small{font:11px/1.4 Arial,sans-serif;letter-spacing:0;color:#baab8f}
+.leaderboard-columns{display:grid;grid-template-columns:38px 1fr 58px;gap:8px;padding:2px 10px;color:#b6a181;text-transform:uppercase;font:9px/1.4 'Cinzel',Georgia,serif;letter-spacing:1px}
+.leaderboard-columns>span:last-child{text-align:right}
+.honor-roll{display:flex;flex-direction:column;gap:6px;list-style:none;margin:0;padding:0 2px 2px;max-height:min(420px,49svh);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#a8864d transparent}
+.honor-row{display:grid;grid-template-columns:23px 44px minmax(0,1fr) 48px;align-items:center;gap:7px;min-height:66px;padding:9px 10px;border:1px solid #a8874b22;border-radius:7px;background:#08142385}
+.honor-row.honor-top{border-color:#b28b5066;background:linear-gradient(100deg,#1c2d3cdd,#0a1726bb);box-shadow:inset 0 1px #f1ce9210}
+.honor-position{font:500 17px 'Cormorant Garamond',Georgia,serif;color:#c1ac87;text-align:center}
+.honor-top .honor-position{color:#f3d39a}
+.honor-row .tier-badge{width:44px;height:44px}
+.honor-player{min-width:0;display:flex;flex-direction:column;gap:4px}
+.honor-player strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 18px/1.1 'Cormorant Garamond',Georgia,serif;color:#f2dfbd}
+.honor-player small{font:10px/1.4 Arial,sans-serif;color:#b8a88c}
+.honor-rating{text-align:right;font:500 17px/1 'Cormorant Garamond',Georgia,serif;color:#efd49d;font-variant-numeric:tabular-nums}
+.ranked-dialog .leaderboard-key{margin:0;text-align:center;font:10px/1.5 Arial,sans-serif;color:#b2a387}
+.leaderboard-pagination{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:9px}
+.leaderboard-pagination .primary.action-button{padding:9px 7px;min-height:44px}
+.leaderboard-pagination .action-button-label{font-size:9px;letter-spacing:0;gap:0}
+.leaderboard-pagination>span{font:10px Arial,sans-serif;color:#c0ae8e;font-variant-numeric:tabular-nums}
+.leaderboard-updating{display:flex;gap:9px;justify-content:center;font:12px Arial,sans-serif;color:#d2b67f}
+.leaderboard-empty{text-align:center;padding:28px 10px}
+
+/* Completed hands and rematch invitations. Keep all real scores and expiry. */
+.results.ledger .ledger-wrap{max-width:420px}
+.results.ledger .ledger-sheet{padding:26px 23px 20px;clip-path:none;max-height:calc(100svh - 36px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));text-align:center}
+.results.ledger .ledger-sheet:before{display:none}
+.results.ledger .ledger-eyebrow{font:500 11px/1.4 'Cinzel',Georgia,serif;letter-spacing:3px;color:#d0ac70}
+.ledger-compass{display:block;width:104px;height:auto;margin:-3px auto -9px;object-fit:contain;filter:drop-shadow(0 3px 7px #0008)}
+.results.ledger h2.ledger-headline{margin:0;color:#f7e6c5;font:500 32px/1.06 'Cormorant Garamond',Georgia,serif;text-wrap:balance;overflow-wrap:anywhere}
+.results.ledger .ledger-headline em{font-style:normal;color:#f5d093}
+.results.ledger .ledger-sub{color:#c5b28f;font:italic 16px/1.4 'Cormorant Garamond',Georgia,serif;margin:8px 0 17px}
+.results.ledger .ledger-rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:0;border:0;text-align:center}
+.results.ledger .ledger-row{display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:8px;padding:13px 9px 14px;border:1px solid #a8874b55;border-radius:8px;background:linear-gradient(140deg,#152739d9,#08131ed9)}
+.results.ledger .ledger-row.is-winner{border-color:#ccaa69aa;background:linear-gradient(145deg,#53412850,#102131d9)}
+.results.ledger .ledger-name{min-width:0;width:100%;display:block;overflow-wrap:anywhere;white-space:normal;color:#e8d6b6;font:500 19px/1.15 'Cormorant Garamond',Georgia,serif;background:none}
+.results.ledger .ledger-name i{display:inline;margin-left:6px;color:#cbb183}
+.results.ledger .ledger-name small{display:block;margin-top:5px;color:#b6a589;font:10px/1.4 Arial,sans-serif}
+.results.ledger .ledger-leader{display:none}
+.results.ledger .ledger-total{color:#f4d9a4;font:500 34px/1 'Cormorant Garamond',Georgia,serif;text-align:center}
+.results.ledger .ledger-row.is-out .ledger-total{font-size:18px}
+.results.ledger .ledger-note{color:#ccb997;line-height:1.4}
+.results.ledger .ledger-actions{border-top:1px solid #a8874b44;padding-top:16px;margin-top:16px;gap:10px}
+.results.ledger .ledger-actions>.text-action{color:#d9bd89;min-height:44px;background:none;font:500 13px/1.3 'Cormorant Garamond',Georgia,serif}
+.results.ledger .ledger-actions>.text-action:first-of-type{background:#0a1725c9;border:1px solid #aa854c66;font:500 11px/1.4 'Cinzel',Georgia,serif;letter-spacing:.5px}
+.rematch-panel{background:linear-gradient(140deg,#132539dc,#07121ddc);border-color:#ac864b66;border-radius:9px;padding:17px 15px;gap:12px;box-shadow:inset 0 1px #f1ce9215}
+.rematch-panel[data-state=incoming],.rematch-panel[data-state=outgoing]{text-align:center}
+.rematch-panel[data-state=incoming] .feedback-emblem,.rematch-panel[data-state=outgoing] .feedback-emblem{display:none}
+.rematch-heading h3{font-size:24px}
+.rematch-heading small{color:#bba075;font-size:8px;letter-spacing:2.5px}
+.rematch-heading .rematch-expiry{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 47px;width:47px;height:47px;padding:0;border:1px solid #d0ad6988;outline:3px solid #d0ad6910;border-radius:50%;color:#f5d59c;font:500 20px/1 'Cormorant Garamond',Georgia,serif}
+.rematch-expiry small{font:8px Arial,sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#b9a37e}
+.rematch-card-art{display:block;width:130px;height:auto;object-fit:contain;margin:-19px auto -20px;filter:drop-shadow(0 4px 8px #0009)}
+.rematch-panel .rematch-description{font:14px/1.4 'Cormorant Garamond',Georgia,serif;color:#d2c2a2}
+.rematch-panel:is([data-state=incoming],[data-state=outgoing]) .rematch-description{justify-content:center}
+.rematch-panel .rematch-buttons{gap:9px}
+.rematch-panel[data-state=incoming] .rematch-buttons{flex-direction:column}
+.rematch-panel .action-button-label{margin-left:0}
+@keyframes ranked-arrive{from{opacity:0;scale:.98}to{opacity:1;scale:1}}
+@media(max-width:370px){.game-dialog.ranked-dialog{padding:23px 17px 18px!important}.game-dialog.ranked-dialog [data-slot=dialog-title]{font-size:21px}.rank-tier-rail span{font-size:8px}.honor-row{grid-template-columns:19px 36px minmax(0,1fr) 43px;gap:5px;padding:8px}.honor-row .tier-badge{width:36px;height:36px}.honor-player strong{font-size:17px}.results.ledger .ledger-sheet{padding:23px 18px 17px}}
+@media(max-height:740px){.ranked-brand{margin-bottom:10px}.rank-hero>.tier-badge{width:112px;height:112px}.rank-tier-rail .tier-badge{width:35px;height:35px}.ranked-entry{gap:12px}.ranked-search .kamayuu-animated-loader{width:115px;margin:-10px 0 -16px}.ledger-compass{width:85px}.results.ledger .ledger-sheet{padding-top:20px}.results.ledger .ledger-row{padding:10px 8px}.rematch-card-art{width:112px}.game-dialog.ranked-dialog [data-slot=dialog-description]{margin-bottom:14px}}
+@media(prefers-reduced-motion:reduce){.game-dialog.ranked-dialog{animation:none}.results.ledger .ledger-sheet{animation:none}}
+.game-shell[data-short-motion=true] .ranked-dialog,.game-shell[data-short-motion=true] .ledger-sheet{animation:none}

@@ -2326,6 +2326,14 @@ html.home-open,html.home-open body{overflow:hidden;overscroll-behavior:none}
 .game-shell[data-short-motion=true] .activity-mark,.game-shell[data-short-motion=true] .search-orbit:before{animation:none!important}
 .game-shell[data-short-motion=true] .action-button:before{display:none}
 
+/* Generated Kamayuu compass/crescent artwork, with GIF fallback and static
+   reduced-motion sources. Intrinsic dimensions prevent loader layout shifts. */
+.kamayuu-animated-loader{display:block;flex:none;pointer-events:none;user-select:none;aspect-ratio:320/280}
+.kamayuu-animated-loader picture,.kamayuu-animated-loader img{display:block;width:100%;height:100%;object-fit:contain}
+.kamayuu-animated-loader-opening{width:clamp(170px,45vw,220px);margin-bottom:4px;filter:drop-shadow(0 8px 18px #0007)}
+.kamayuu-animated-loader-matchmaking{width:170px;margin:-14px 0 -18px;filter:drop-shadow(0 7px 9px #49300e24)}
+@media(max-height:620px){.kamayuu-animated-loader-opening{width:150px}.kamayuu-animated-loader-matchmaking{width:140px}}
+
 .game-dialog.parchment .primary.action-button,.results.ledger .primary.action-button{background:linear-gradient(135deg,#f7dfac,#d7aa62 60%,#bc8744)!important;color:#25180e!important;border:1px solid #b98b48!important;border-radius:9px!important;clip-path:none;box-shadow:inset 0 1px 0 #fff4d9,0 3px 0 #785126,0 6px 16px #0003!important;filter:none}
 .game-dialog.parchment .primary.action-button.action-secondary,.results.ledger .primary.action-button.action-secondary{background:transparent!important;color:inherit!important;box-shadow:none!important}
 

@@ -19,19 +19,16 @@ interface ScoreLedgerProps {
   children?: ReactNode;
 }
 
-// The end-of-hand tally, drawn as a parchment scorekeeper's sheet laid on the
-// table: a brass rod along the top, a wax seal for the winner, dotted leaders
-// between each name and its total. Shared by the live game and the tutorial.
+// Shared live-game/tutorial tally, styled with the home's palace and brass.
 export default function ScoreLedger({players, winnerNames, winningTotal, note, children}: ScoreLedgerProps) {
   const shared = winnerNames.length > 1;
   const verb = shared ? 'share' : winnerNames[0] === 'You' ? 'take' : 'takes';
   return (
     <section className="results ledger" aria-label="Match results">
       <div className="ledger-wrap">
-      {/* The seal sits outside the sheet so the sheet's torn-edge clip-path can't cut it off. */}
-      <div className="ledger-seal" aria-hidden="true"><span>♛</span></div>
       <div className="ledger-sheet">
-        <p className="ledger-eyebrow">{shared ? 'Shared victory' : 'The tally'}</p>
+        <p className="ledger-eyebrow">{shared ? 'Shared victory' : 'Hand complete'}</p>
+        <img className="ledger-compass" src="/loaders/opening-compass-still.png" width={256} height={224} alt=""/>
         <h2 className="ledger-headline"><em>{winnerNames.join(' & ')}</em> {verb} the hand</h2>
         <p className="ledger-sub">{winningTotal} points · lowest at the table</p>
         <ol className="ledger-rows">
