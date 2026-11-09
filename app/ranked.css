@@ -1,7 +1,7 @@
 /* Imagegen concept: midnight palace, engraved brass, compass/crescent crests.
    Scoped to competitive menus and the shared result card; no table timing. */
 .game-dialog.ranked-dialog,.results.ledger .ledger-sheet{color:#f6e7c9!important;background:linear-gradient(#050d16a6,#050d1670),url('/ranks/palace.webp') center/cover!important;border:1px solid #b28b50!important;border-radius:14px!important;box-shadow:inset 0 0 0 5px #07121bd9,inset 0 0 0 6px #b28b504d,0 24px 80px #000c!important;scrollbar-width:thin;scrollbar-color:#a8864d #09131e}
-.game-dialog.ranked-dialog{inset:0!important;margin:auto!important;height:fit-content;translate:none!important;transform:none!important;width:440px;max-width:calc(100% - 24px)!important;max-height:calc(100svh - 28px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))!important;padding:24px 24px 20px!important;gap:0;overscroll-behavior:contain;animation:ranked-arrive .28s ease-out}
+.game-dialog.ranked-dialog{inset:0!important;margin:auto!important;height:fit-content;grid-template-columns:minmax(0,1fr);--tw-translate-x:0px!important;--tw-translate-y:0px!important;translate:0px 0px!important;transform:none!important;width:440px;max-width:calc(100% - 24px)!important;max-height:calc(100svh - 28px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))!important;padding:24px 24px 20px!important;gap:0;overscroll-behavior:contain;animation:ranked-arrive .28s ease-out}
 .ranked-brand{display:flex;justify-content:center;align-items:center;gap:2px;margin:-9px 0 15px;color:#d7b276;font:600 15px/1 'Cinzel',Georgia,serif;letter-spacing:5px;text-transform:uppercase}
 .ranked-brand img{width:42px;height:auto;object-fit:contain}
 .game-dialog.ranked-dialog [data-slot=dialog-title]{margin:0 25px;text-align:center;color:#f1dfbb;font:500 24px/1.2 'Cinzel',Georgia,serif;letter-spacing:.5px;text-wrap:balance}
@@ -110,3 +110,24 @@
 @media(max-height:740px){.ranked-brand{margin-bottom:10px}.rank-hero>.tier-badge{width:112px;height:112px}.rank-tier-rail .tier-badge{width:35px;height:35px}.ranked-entry{gap:12px}.ranked-search .kamayuu-animated-loader{width:115px;margin:-10px 0 -16px}.ledger-compass{width:85px}.results.ledger .ledger-sheet{padding-top:20px}.results.ledger .ledger-row{padding:10px 8px}.rematch-card-art{width:112px}.game-dialog.ranked-dialog [data-slot=dialog-description]{margin-bottom:14px}}
 @media(prefers-reduced-motion:reduce){.game-dialog.ranked-dialog{animation:none}.results.ledger .ledger-sheet{animation:none}}
 .game-shell[data-short-motion=true] .ranked-dialog,.game-shell[data-short-motion=true] .ledger-sheet{animation:none}
+
+.game-dialog.ranked-dialog > *{min-width:0}
+
+/* Midnight ledger: compact standings, inspired by the generated design board. */
+.results.ledger .ledger-sheet{background:radial-gradient(ellipse at top,#193345bb,transparent 55%),linear-gradient(#07131ff5,#040c14f7)!important;padding:22px 20px 18px;text-align:left;border-radius:12px!important}
+.results.ledger .ledger-eyebrow{text-align:center;margin:0 0 8px;font-size:9px;letter-spacing:3px}
+.results.ledger .ledger-compass{width:58px;height:58px;margin:0 auto 8px;object-fit:contain}
+.results.ledger h2.ledger-headline{text-align:center;font-size:30px}
+.results.ledger .ledger-sub{text-align:center;margin:7px 0 20px;font-size:15px}
+.ledger-columns{display:flex;justify-content:space-between;padding:0 12px 9px 43px;color:#bca77e;font:9px 'Cinzel',Georgia,serif;letter-spacing:2px;border-bottom:1px solid #b58b4866}
+.results.ledger .ledger-rows{display:flex;flex-direction:column;gap:0;text-align:left;margin:0}
+.results.ledger .ledger-row{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:59px;padding:10px 12px;border:0;border-bottom:1px solid #b58b4833;border-radius:0;background:none}
+.results.ledger .ledger-row.is-winner{background:linear-gradient(90deg,#b58b4828,transparent);box-shadow:inset 2px 0 #d2ad6b;border-color:#b58b4855}
+.ledger-place{color:#bfa06a;font:12px 'Cinzel',Georgia,serif;font-variant-numeric:tabular-nums}
+.results.ledger .ledger-name{font-size:19px;line-height:1.15}
+.results.ledger .ledger-name small{margin-top:3px;font-size:10px;color:#b5b8ba}
+.results.ledger .ledger-total{font-size:29px;text-align:right;min-width:40px;font-variant-numeric:tabular-nums}
+.results.ledger .ledger-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:0;border:0}
+.results.ledger .ledger-actions>.primary{flex:1 1 100%;min-height:46px;background:linear-gradient(110deg,#d3ad6d,#b98b48)!important;color:#15100a!important;border:1px solid #e4c58a!important;clip-path:none;border-radius:5px!important}
+.results.ledger .ledger-actions>.text-action{flex:1 1 40%;border:1px solid #b58b4855!important;border-radius:5px;background:#0b1a27!important;text-decoration:none;min-height:44px;color:#e1cda7;font:12px 'Cormorant Garamond',Georgia,serif}
+.results.ledger .ledger-actions>.rematch-panel{flex:1 1 100%;min-width:0}

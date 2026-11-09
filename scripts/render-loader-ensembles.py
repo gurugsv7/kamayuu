@@ -61,23 +61,25 @@ def opening(t):
  shine(f,240,163,.4+.5*math.sin(phase)**4,8)
  return f
 def matchmaking(t):
+ # Two seats around a readable compass, with a deal / hold / gather rhythm.
  f=canvas();phase=math.tau*t
- glow(f,240,267,340,50,23)
- place(f,ring,240,262,400,105,alpha=.75)
- place(f,needle,240,262,400,105,angle=0,alpha=.4)
- # Exactly one large card for each seat; keep both visible throughout the loop.
- spread=.88+.12*math.sin(phase)
+ spread=path(t,[(0,0),(.12,0),(.36,1),(.72,1),(.96,0),(1,0)])
+ glow(f,240,214,300,230,18)
+ place(f,ring,240,210,355,320,alpha=.8)
+ place(f,needle,240,210,355,320,angle=-90*ease(t),alpha=.65)
+ # A quiet arc of light links the seats; the compass never spins as a spinner.
+ d=ImageDraw.Draw(f)
  for side in [-1,1]:
-  x=240+side*(108+12*math.sin(phase))
-  y=178+side*10*math.sin(phase)
-  place(f,card,x,y,142,216,angle=-side*(7+3*math.sin(phase)))
-  shine(f,x-side*52,y-94,.3+.5*max(0,math.cos(phase+side))**8,5)
- # The opposing light routes trace both seats, never implying an online count.
+  x=240+side*(13+111*spread);y=210+side*21*spread
+  glow(f,x,y+70,90,16,round(12+15*spread))
+  place(f,card,x,y,86,132,angle=-side*(3+9*spread))
+  sparkle=max(0,math.cos(phase-2.8-side*.3))**18*spread
+  shine(f,x-side*32,y-54,sparkle,5)
+ shine(f,240,210,.25+.6*spread,9)
  for side in [-1,1]:
-  a=phase+(0 if side==1 else math.pi)
-  shine(f,240+190*math.cos(a),262+42*math.sin(a),.85,7)
- shine(f,240,197,max(0,1-spread)*.7,9)
+  shine(f,240+side*170,210,.35+.3*spread,5)
  return f
+
 def export(name,render,count,poster):
  folder=args.work/name;folder.mkdir(exist_ok=True);frames=[]
  for i in range(count):
@@ -94,5 +96,5 @@ def export(name,render,count,poster):
   im=Image.open(OUT/f'{name}.{ext}');assert im.n_frames==count
   for i in range(count):im.seek(i);im.load()
  return dict(name=name,frames=count,fps=FPS,durationMs=round(count/FPS*1000),width=SIZE[0],height=SIZE[1],transparent=True,gifBytes=(OUT/f'{name}.gif').stat().st_size,webpBytes=(OUT/f'{name}.webp').stat().st_size)
-result=[export('matchmaking-duel-v3',matchmaking,72,18)]
+result=[export('matchmaking-table-v4',matchmaking,96,48)]
 (OUT/'duel-manifest.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))

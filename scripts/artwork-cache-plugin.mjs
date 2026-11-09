@@ -42,7 +42,7 @@ export default function artworkCachePlugin(){
   async generateBundle(){
    const publicDir=path.resolve('public');
    const paths=[...OPENING_ART,...MATCHMAKING_ART,
-    '/loaders/opening-deal-v2.gif','/loaders/matchmaking-duel-v3.gif',
+    '/loaders/opening-deal-v2.gif','/loaders/matchmaking-table-v4.gif',
     '/loaders/opening-compass-still.png','/loaders/matchmaking-cut-still.png',
     '/onboarding-bg.webp','/onboarding-identity-bg.webp',
     '/card-art-quickmatch.png','/card-art-privatetable.png','/card-art-practice.png'];

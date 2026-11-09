@@ -1,13 +1,13 @@
 [
   {
-    "name": "matchmaking-duel-v3",
-    "frames": 72,
+    "name": "matchmaking-table-v4",
+    "frames": 96,
     "fps": 24,
-    "durationMs": 3000,
+    "durationMs": 4000,
     "width": 384,
     "height": 320,
     "transparent": true,
-    "gifBytes": 3349872,
-    "webpBytes": 2179110
+    "gifBytes": 3140717,
+    "webpBytes": 1697256
   }
 ]

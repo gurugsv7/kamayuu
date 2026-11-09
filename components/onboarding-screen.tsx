@@ -6,6 +6,7 @@ import {isNative,nativeVibrate} from '@/lib/native';
 interface OnboardingScreenProps {
   onContinueWithGoogle?: () => void;
   onContinueAsGuest: () => void;
+  onReviewerSignIn?: () => void;
   authBusy?: string;
   authError?: string;
   googleConfigured?: boolean;
@@ -19,6 +20,7 @@ interface OnboardingScreenProps {
 export default function OnboardingScreen({
   onContinueWithGoogle,
   onContinueAsGuest,
+  onReviewerSignIn,
   authBusy = '',
   authError = '',
   googleConfigured = false,
@@ -224,6 +226,7 @@ export default function OnboardingScreen({
           </div>
         </div>
 
+        {onReviewerSignIn&&<button type="button" className="reviewer-entry" disabled={!!authBusy} onClick={onReviewerSignIn}>Reviewer sign-in</button>}
         <p className="onboarding-footer-tagline">
           Built by <a href="https://builtbygsv.in" target="_blank" rel="noopener noreferrer">builtbygsv</a>
         </p>

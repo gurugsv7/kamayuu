@@ -30,12 +30,12 @@ export function LeaderboardContent({data,error='',loading=false,onRetry,onPage}:
     return <li className={'honor-row'+(entry.rank<=3?' honor-top':'')} key={entry.entry_id}>
      <span className="honor-position" aria-label={`Rank ${entry.rank}`}>{entry.rank}</span>
      <TierBadge tier={tier.id}/>
-     <div className="honor-player"><strong title={entry.name}>{entry.name}</strong><small>{entry.kind==='bot'?'AI benchmark':`${entry.wins} wins · ${entry.played} played`}</small></div>
+     <div className="honor-player"><strong title={entry.name}>{entry.name}</strong><small>{entry.wins} wins · {entry.played} played</small></div>
      <span className="honor-rating">{entry.rating.toLocaleString()}</span>
     </li>;
    })}</ol>
-   {!data.entries.length&&<p className="leaderboard-empty">The first places are waiting.<br/>Play a ranked hand to join the standings.</p>}
-   <p className="leaderboard-key">Player ratings change with results. AI rivals hold fixed benchmark ratings.</p>
+   {!data.entries.length&&<p className="leaderboard-empty">No ranked results yet.<br/>Finish a ranked match to appear here.</p>}
+   <p className="leaderboard-key">Ratings change with completed matches. Equal ratings are ordered by wins.</p>
    {(data.offset>0||data.offset+data.entries.length<data.total)&&<nav className="leaderboard-pagination" aria-label="Leaderboard pages">
     <ActionButton className="action-secondary" disabled={loading||data.offset===0} onAction={()=>onPage(Math.max(0,data.offset-50))}>← Previous</ActionButton>
     <span>{data.entries.length?`${data.offset+1}–${data.offset+data.entries.length}`:'0'} of {data.total}</span>

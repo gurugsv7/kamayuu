@@ -5,7 +5,7 @@ import '@/app/loaders.css';
 /** Decorative only: the surrounding status text owns the accessible message. */
 export default function AnimatedLoader({kind,motionShort=false}:{kind:'opening'|'matchmaking';motionShort?:boolean}){
  const [failed,setFailed]=useState(''),[loaded,setLoaded]=useState('');
- const name=kind==='opening'?'opening-deal-v2':'matchmaking-duel-v3';
+ const name=kind==='opening'?'opening-deal-v2':'matchmaking-table-v4';
  const base=`/loaders/${name}`;
  const ready=loaded===base;
  return <span className={`kamayuu-animated-loader kamayuu-animated-loader-${kind} loader-ensemble`} aria-hidden="true">

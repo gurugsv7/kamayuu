@@ -27,6 +27,7 @@ async function database() {
   await db.exec(rivalsMigration);
   await db.exec(readFileSync(new URL('../supabase/migrations/20261104050547_ranked_rematches_social_preferences.sql',import.meta.url),'utf8'));
   await db.exec(readFileSync(new URL('../supabase/migrations/20261104115847_ranked_rematch_confirmation_delay.sql',import.meta.url),'utf8'));
+  await db.exec(readFileSync(new URL('../supabase/migrations/20261109222213_shared_rival_standings.sql',import.meta.url),'utf8'));
   await db.exec(`insert into auth.users select ('00000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid from generate_series(1,20) n;`);
   return db;
 }
@@ -132,7 +133,7 @@ test('migration compiles, roster matches policy configuration, private RPCs reje
   const db = await database();
   try {
     assert.ok(migration.endsWith(rosterSql()));
-    assert.ok(rivalsMigration.endsWith(identityRosterSql()));
+    assert.deepEqual((await db.query('select id,name from lotus_ranked.bot_identities order by id')).rows,BOT_IDENTITIES.map(p=>({id:p.id,name:p.name})));
     assert.equal((await db.query('select count(*)::int as n from lotus_ranked.bot_identities')).rows[0].n,180);
     assert.equal((await db.query('select count(*)::int as n from lotus_ranked.bot_profiles')).rows[0].n,15);
     await db.exec('set role authenticated');
@@ -221,7 +222,7 @@ test('public admission pairs 15 entrants into seven human matches with one fast 
   } finally {await db.close();}
 });
 
-test('leaderboard includes named benchmark rivals and genuine human results without fabricated wins or auth IDs',async()=>{
+test('shared leaderboard uses real results and varied, evolving rival ratings without auth IDs',async()=>{
   const db=await database();
   try {
     await assert.rejects(rpc(db,'ranked_leaderboard',[uid(1),50,0]),/acknowledge/);
@@ -231,18 +232,41 @@ test('leaderboard includes named benchmark rivals and genuine human results with
     const record=await rpc(db,'ranked_load_match',[match]);
     const initial=await rpc(db,'ranked_leaderboard',[uid(1),100,0]);
     assert.equal(initial.total,180);
-    assert.ok(initial.entries.every(p=>p.kind==='bot' && p.rating_type==='benchmark' && p.wins===0 && p.played===0));
+    assert.equal(new Set(initial.entries.map(p=>p.rating)).size,100);
+    assert.ok(initial.entries.every(p=>p.kind==='bot'&&p.played===0&&p.wins===0));
+    const before=Number((await db.query('select lotus_ranked.rival_rating($1,(select season from lotus_ranked.settings)) as rating',[record.participants[1].bot_identity_id])).rows[0].rating);
     await rpc(db,'ranked_commit',[match,0,{state:{phase:'finished',winners:[1],totals:[20,10]}},null,{}]);
     const pages=[await rpc(db,'ranked_leaderboard',[uid(1),100,0]),await rpc(db,'ranked_leaderboard',[uid(1),100,100])];
     const entries=pages.flatMap(p=>p.entries);
     const rival=entries.find(p=>p.entry_id===record.participants[1].bot_identity_id);
     assert.equal(rival.name,record.participants[1].name);
-    assert.equal(rival.played,1);assert.equal(rival.wins,1);
+    assert.equal(rival.played,1);assert.equal(rival.wins,1);assert.ok(rival.rating>before);
+    assert.ok(entries.every(p=>p.rating_type==='competitive'));
     assert.equal(entries.find(p=>p.kind==='human').played,1);
     assert.equal(pages[0].total,181);
     assert.equal(JSON.stringify(entries).includes(uid(1)),false);
     await assert.rejects(rpc(db,'ranked_leaderboard',[uid(1),101,0]),/Invalid/);
   } finally {await db.close();}
+});
+
+test('player leaderboard breaks ties consistently and paginates without duplicate positions',async()=>{
+ const db=await database();try{
+  await rpc(db,'ranked_acknowledge',[uid(1),'ranked-ai-v1']);
+  await db.query(`insert into lotus_ranked.ratings(user_id,season,rating,played,wins)
+   select id,(select season from lotus_ranked.settings),900,4,2 from auth.users
+   on conflict(user_id,season) do update set rating=900,played=4,wins=2`);
+  await db.query('update lotus_ranked.ratings set wins=3 where user_id=$1',[uid(2)]);
+  await db.query('update lotus_ranked.ratings set played=0,wins=0 where user_id=$1',[uid(3)]);
+  const first=await rpc(db,'ranked_leaderboard',[uid(1),100,0]);
+  const next=await rpc(db,'ranked_leaderboard',[uid(1),100,100]);
+  const all=[...first.entries,...next.entries];
+  assert.equal(first.total,199);assert.equal(next.total,199);
+  assert.deepEqual(all.map(x=>x.rank),Array.from({length:199},(_,i)=>i+1));
+  assert.equal(new Set(all.map(x=>x.entry_id)).size,199);
+  const humans=all.filter(x=>x.kind==='human');assert.equal(humans[0].wins,3);
+  assert.ok(humans.every(x=>x.rating===900));
+  assert.deepEqual(await rpc(db,'ranked_leaderboard',[uid(1),100,0]),first);
+ }finally{await db.close();}
 });
 
 test('first-entry acknowledgment persists, enqueue is idempotent, cancel wins before pairing', async () => {

@@ -14,20 +14,28 @@ let widget: string | null = null;
 function load(): Promise<any> {
   if (loading) return loading;
   loading = new Promise((resolve, reject) => {
-    const existing = (window as any).hcaptcha;
-    if (existing) return resolve(existing);
     const script = document.createElement('script');
-    script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit';
+    // Script load precedes SDK initialization. Resolve only from its ready callback.
+    const callback = 'kamayuuCaptchaReady';
+    let timer: ReturnType<typeof setTimeout>;
+    const fail = () => {
+      clearTimeout(timer);
+      delete (window as any)[callback];
+      script.remove();
+      loading = null;
+      reject(Error('Could not load the verification check. Check your connection and try again.'));
+    };
+    (window as any)[callback] = () => {
+      clearTimeout(timer);
+      delete (window as any)[callback];
+      const api = (window as any).hcaptcha;
+      api ? resolve(api) : fail();
+    };
+    script.src = `https://js.hcaptcha.com/1/api.js?render=explicit&onload=${callback}`;
     script.async = true;
     script.defer = true;
-    script.onload = () => {
-      const api = (window as any).hcaptcha;
-      api ? resolve(api) : reject(Error('The CAPTCHA failed to start.'));
-    };
-    script.onerror = () => {
-      loading = null; // let a later attempt retry the network
-      reject(Error('Could not load the CAPTCHA. Check your connection or ad blocker.'));
-    };
+    script.onerror = fail;
+    timer = setTimeout(fail,20000);
     document.head.appendChild(script);
   });
   return loading;

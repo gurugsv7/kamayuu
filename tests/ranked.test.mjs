@@ -47,7 +47,7 @@ test('180 fictional rivals have unique display-safe names and balanced stable ti
   assert.equal(new Set(BOT_IDENTITIES.map(p=>p.id)).size,180);
   assert.equal(new Set(BOT_IDENTITIES.map(p=>p.name)).size,180);
   for(const p of BOT_IDENTITIES) {
-    assert.ok(p.name.length<=16 && /^[A-Za-z ]+$/.test(p.name));
+    assert.ok(p.name.length<=16 && /^[A-Za-z0-9_.]+$/.test(p.name));
     assert.ok(BOT_PROFILES.some(profile=>profile.id===p.profileId));
     assert.ok(Object.isFrozen(p));
   }

@@ -68,6 +68,26 @@ export async function signInWithGoogle(token: string, nonce: string) {
   return data.session;
 }
 
+/** Standard Supabase password auth; no reviewer role, bypass, or embedded credentials. */
+export async function signInReviewer(email:string,password:string){
+ const age=storedAge();
+ if(!age||age==='under_13')throw Error('Online play is available for ages 13 and above. Practice is available without signing in.');
+ if(!connectionAvailable())throw Error('You are offline. Reconnect to sign in, or return to offline practice.');
+ if(!email.trim()||!password)throw Error('Enter your email and password.');
+ const captcha=await captchaToken();
+ const {data,error}=await auth().auth.signInWithPassword({email:email.trim(),password,...(captcha?{options:{captchaToken:captcha}}:{})});
+ if(error){
+  if(error.status===429)throw Error('Too many attempts. Please wait before trying again.');
+  if(error.code==='invalid_credentials')throw Error('Check your email and password.');
+  if(error.code==='captcha_failed')throw Error('The verification check did not finish. Please try again.');
+  throw Error('Could not sign in. Check your connection and account details, then try again.');
+ }
+ if(!data.session)throw Error('Sign-in did not finish. Please try again.');
+ clearFamilyState();
+ try{await setupAge(age);}catch(e){await signOut();throw e;}
+ return data.session;
+}
+
 /** Anonymous fallback. Supabase enforces CAPTCHA on this endpoint. */
 export async function signInAsGuest() {
   if(!connectionAvailable())throw Error('You are offline. Practice is available without signing in.');
@@ -115,7 +135,8 @@ export async function linkGoogle() {
 export async function loadProfile(): Promise<Profile | null> {
   const session = await currentSession();
   if (!session) return null;
-  const age=storedAge();if(age&&age!=='under_13')await setupAge(age);else await refreshFamily();
+  // Reading the signed-in name must not depend on a separate edge-function
+  // request. Sign-in registers age; onlineSession checks family permissions.
   const {data, error} = await auth().from('profiles').select('*').eq('id', session.user.id).maybeSingle();
   if (error) throw Error(error.message);
   return (data as Profile) ?? null;
