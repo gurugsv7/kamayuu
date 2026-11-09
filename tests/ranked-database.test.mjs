@@ -28,6 +28,7 @@ async function database() {
   await db.exec(readFileSync(new URL('../supabase/migrations/20261104050547_ranked_rematches_social_preferences.sql',import.meta.url),'utf8'));
   await db.exec(readFileSync(new URL('../supabase/migrations/20261104115847_ranked_rematch_confirmation_delay.sql',import.meta.url),'utf8'));
   await db.exec(readFileSync(new URL('../supabase/migrations/20261109222213_shared_rival_standings.sql',import.meta.url),'utf8'));
+  await db.exec(readFileSync(new URL('../supabase/migrations/20261109224447_ranked_progression_and_rival_motion.sql',import.meta.url),'utf8'));
   await db.exec(`insert into auth.users select ('00000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid from generate_series(1,20) n;`);
   return db;
 }
@@ -35,6 +36,42 @@ async function rpc(db, name, args = []) {
   const r = await db.query(`select public.${name}(${args.map((_,i)=>`$${i+1}`).join(',')}) as value`, args);
   return r.rows[0].value;
 }
+
+test('database and client progression agree across tiers, caps and opponent gaps',async()=>{
+ const db=await database();try{
+  for(const rating of [0,600,899,900,1199,1200,1499,1500,1799,1800,3999,4000]) {
+   for(const opponent of [0,600,1500,4000])for(const score of [0,0.5,1]) {
+    const got=(await db.query('select lotus_ranked.progression_delta($1,$2,$3) as delta',[rating,opponent,score])).rows[0].delta;
+    assert.equal(got,ratingChange(rating,opponent,score),`${rating}/${opponent}/${score}`);
+   }
+  }
+  await assert.rejects(db.query('select lotus_ranked.progression_delta(-1,600,1)'),/Invalid/);
+ }finally{await db.close();}
+});
+
+test('rival movement waits six hours, is bounded and idempotent, and creates no games or wins',async()=>{
+ const db=await database();try{
+  await db.exec('update lotus_ranked.settings set enabled=true');
+  assert.equal((await db.query('select lotus_ranked.refresh_rival_motion() n')).rows[0].n,0);
+  await db.exec("update lotus_ranked.rival_motion set adjusted_at=now()-interval '7 hours'");
+  assert.equal((await db.query('select lotus_ranked.refresh_rival_motion() n')).rows[0].n,180);
+  const moved=(await db.query('select identity_id,adjustment,adjusted_at from lotus_ranked.rival_motion order by identity_id')).rows;
+  assert.ok(moved.every(x=>Math.abs(x.adjustment)<=12));
+  assert.ok(new Set(moved.map(x=>x.adjustment)).size>2);
+  assert.equal((await db.query('select lotus_ranked.refresh_rival_motion() n')).rows[0].n,0);
+  assert.deepEqual((await db.query('select identity_id,adjustment,adjusted_at from lotus_ranked.rival_motion order by identity_id')).rows,moved);
+  for(let n=0;n<15;n++) {
+   await db.exec("update lotus_ranked.rival_motion set adjusted_at=now()-interval '7 hours'");
+   await db.query('select lotus_ranked.refresh_rival_motion()');
+  }
+  assert.ok((await db.query('select max(abs(adjustment)) n from lotus_ranked.rival_motion')).rows[0].n<=120);
+  for(const table of ['matches','results','rating_events','ratings'])assert.equal((await db.query(`select count(*)::int n from lotus_ranked.${table}`)).rows[0].n,0);
+  await db.exec("update lotus_ranked.settings set enabled=false; update lotus_ranked.rival_motion set adjusted_at=now()-interval '7 hours'");
+  assert.equal((await db.query('select lotus_ranked.refresh_rival_motion() n')).rows[0].n,0);
+  await db.exec('set role authenticated');
+  await assert.rejects(db.query('select lotus_ranked.refresh_rival_motion()'),/permission denied/);
+ }finally{await db.close();}
+});
 async function enter(db, n) {
   await rpc(db,'ranked_acknowledge',[uid(n),'ranked-ai-v1']);
   // Stage tickets explicitly when testing the pairer's individual transactions.
@@ -63,7 +100,7 @@ test('mutual human rematch creates exactly one new game, rotates opening and sna
   assert.equal((await rpc(db,'ranked_rematch',[uid(2),match,'accept'])).nextMatchId,accepted.nextMatchId);
   const next=await rpc(db,'ranked_load_match',[accepted.nextMatchId]);
   assert.equal(next.parent_match_id,match);assert.equal(next.opening_seat,1);assert.equal(next.series_index,2);
-  assert.equal(next.participants[0].rating_before,616);
+  assert.equal(next.participants[0].rating_before,635);
   assert.equal((await rpc(db,'ranked_status',[uid(1)])).played,1);
   const transport=async(name,args={})=>{
    const entries=Object.entries(args);
@@ -352,13 +389,13 @@ test('job leases recover, stale workers cannot commit, terminal result updates r
     assert.equal(await rpc(db,'ranked_commit',[match,0,data,null,{},second.id,second.claim_token]),true);
     assert.equal(await rpc(db,'ranked_commit',[match,0,data,null,{},second.id,second.claim_token]),false);
     const ratings=(await db.query('select rating,played from lotus_ranked.ratings order by user_id')).rows;
-    assert.deepEqual(ratings,[{rating:616,played:1},{rating:584,played:1}]);
+    assert.deepEqual(ratings,[{rating:635,played:1},{rating:591,played:1}]);
     assert.equal((await rpc(db,'ranked_status',[uid(1)])).activeMatchId,null);
     assert.equal(await rpc(db,'ranked_abort',[match]),false);
   } finally {await db.close();}
 });
 
-test('bot result uses shared ladder with symmetric half weight; abort has no rating effect', async () => {
+test('bot result uses normal progression; abort has no rating effect', async () => {
   const db = await database();
   try {
     await db.exec('update lotus_ranked.settings set enabled=true');

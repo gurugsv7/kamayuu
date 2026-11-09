@@ -13,12 +13,16 @@ test('tier boundaries are contiguous, stable, and independent of labels', () => 
   assert.throws(() => { TIERS[0].label = 'Changed'; });
 });
 
-test('rating rewards are symmetric, bounded, and half weighted for bots', () => {
-  assert.equal(ratingChange(1200, 1200, 1), 16);
-  assert.equal(ratingChange(1200, 1200, 0), -16);
+test('early progression tapers toward Diamond with no opponent-type penalty', () => {
+  for(const [rating,win,loss] of [[600,35,-9],[900,31,-12],[1200,27,-15],[1500,23,-18],[1800,16,-16]]) {
+    for(const kind of ['human','bot']) {
+      assert.equal(ratingChange(rating,rating,1,kind),win);
+      assert.equal(ratingChange(rating,rating,0,kind),loss);
+    }
+  }
   assert.equal(ratingChange(1200, 1200, 0.5), 0);
-  assert.equal(ratingChange(1200, 1200, 1, 'bot'), 8);
-  assert.equal(ratingChange(1200, 1200, 0, 'bot'), -8);
+  assert.ok(ratingChange(600,0,1,'bot')>=30);
+  assert.ok(ratingChange(600,1200,1)>ratingChange(600,0,1));
   assert.equal(ratingChange(0, 0, 0), 0);
   assert.equal(ratingChange(4000, 4000, 1), 0);
   assert.throws(() => ratingChange(600, 600, 2));
