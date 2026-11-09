@@ -29,6 +29,7 @@ async function database() {
   await db.exec(readFileSync(new URL('../supabase/migrations/20261104115847_ranked_rematch_confirmation_delay.sql',import.meta.url),'utf8'));
   await db.exec(readFileSync(new URL('../supabase/migrations/20261109222213_shared_rival_standings.sql',import.meta.url),'utf8'));
   await db.exec(readFileSync(new URL('../supabase/migrations/20261109224447_ranked_progression_and_rival_motion.sql',import.meta.url),'utf8'));
+  await db.exec(readFileSync(new URL('../supabase/migrations/20261109225218_leaderboard_search.sql',import.meta.url),'utf8'));
   await db.exec(`insert into auth.users select ('00000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid from generate_series(1,20) n;`);
   return db;
 }
@@ -36,6 +37,27 @@ async function rpc(db, name, args = []) {
   const r = await db.query(`select public.${name}(${args.map((_,i)=>`$${i+1}`).join(',')}) as value`, args);
   return r.rows[0].value;
 }
+
+test('leaderboard search spans every page, preserves global ranks and treats wildcard input literally',async()=>{
+ const db=await database();try{
+  await assert.rejects(rpc(db,'ranked_search_leaderboard',[uid(1),'a',50,0]),/acknowledge/);
+  await rpc(db,'ranked_acknowledge',[uid(1),'ranked-ai-v1']);
+  await db.query('insert into public.profiles(id,display_name) values($1,$2)',[uid(2),'Needle_%']);
+  await db.query("insert into lotus_ranked.ratings(user_id,season,rating,played,wins) values($1,'launch-v1',20,1,0)",[uid(2)]);
+  const target=await rpc(db,'ranked_search_leaderboard',[uid(1),' needle_ ',50,0]);
+  assert.equal(target.total,1);assert.equal(target.entries[0].name,'Needle_%');assert.equal(target.entries[0].rank,181);
+  assert.equal((await rpc(db,'ranked_search_leaderboard',[uid(1),'%',50,0])).total,1);
+  assert.equal((await rpc(db,'ranked_search_leaderboard',[uid(1),"';select",50,0])).total,0);
+  assert.deepEqual(await rpc(db,'ranked_search_leaderboard',[uid(1),' ',50,100]),await rpc(db,'ranked_leaderboard',[uid(1),50,100]));
+  const first=await rpc(db,'ranked_search_leaderboard',[uid(1),'a',50,0]);
+  const next=await rpc(db,'ranked_search_leaderboard',[uid(1),'A',50,50]);
+  assert.ok(first.total>50);assert.equal(first.total,next.total);
+  assert.equal(new Set([...first.entries,...next.entries].map(x=>x.entry_id)).size,first.entries.length+next.entries.length);
+  await assert.rejects(rpc(db,'ranked_search_leaderboard',[uid(1),'a'.repeat(41),50,0]),/Invalid search/);
+  await db.exec('set role authenticated');
+  await assert.rejects(rpc(db,'ranked_search_leaderboard',[uid(1),'a',50,0]),/permission denied/);
+ }finally{await db.close();}
+});
 
 test('database and client progression agree across tiers, caps and opponent gaps',async()=>{
  const db=await database();try{

@@ -50,6 +50,14 @@
 .leaderboard-content{min-width:0;display:flex;flex-direction:column;gap:12px}
 .leaderboard-season{display:flex;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid #a8874b66;border-radius:5px;background:linear-gradient(100deg,#61462240,#0a1724bf);color:#dfc18d;font:11px/1.4 'Cinzel',Georgia,serif;letter-spacing:1px}
 .leaderboard-season small{font:11px/1.4 Arial,sans-serif;letter-spacing:0;color:#baab8f}
+.leaderboard-search{display:flex;align-items:center;gap:9px;min-height:44px;padding:0 12px;border:1px solid #a8874b66;border-radius:5px;background:#06131de6;color:#ccb17a}
+.leaderboard-search:focus-within{border-color:#d8b773;box-shadow:0 0 0 2px #c89b4420}
+.leaderboard-search input{min-width:0;flex:1;width:100%;padding:10px 0;border:0;outline:none;background:transparent;color:#eddbb5;font:14px/1.4 Georgia,serif;box-shadow:none}
+.leaderboard-search input::placeholder{color:#a99b83}
+.leaderboard-search input::-webkit-search-cancel-button{display:none}
+.leaderboard-search button{display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;padding:0;border:0;border-radius:4px;background:transparent;color:#d6bb82}
+.leaderboard-search button:focus-visible{outline:2px solid #d8b773;outline-offset:0}
+.leaderboard-content[aria-busy=true] .honor-roll{opacity:.45}
 .leaderboard-columns{display:grid;grid-template-columns:38px 1fr 58px;gap:8px;padding:2px 10px;color:#b6a181;text-transform:uppercase;font:9px/1.4 'Cinzel',Georgia,serif;letter-spacing:1px}
 .leaderboard-columns>span:last-child{text-align:right}
 .honor-roll{display:flex;flex-direction:column;gap:6px;list-style:none;margin:0;padding:0 2px 2px;max-height:min(420px,49svh);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#a8864d transparent}

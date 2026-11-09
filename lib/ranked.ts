@@ -44,7 +44,7 @@ export class RankedService {
     }
   }
   status():Promise<RankedStatus>{return this.request<RankedStatus>('status');}
-  leaderboard(offset=0):Promise<RankedLeaderboard>{return this.request<RankedLeaderboard>('leaderboard',{offset});}
+  leaderboard(offset=0,search=''):Promise<RankedLeaderboard>{return this.request<RankedLeaderboard>('leaderboard',{offset,search});}
   acknowledge(version:string):Promise<RankedStatus>{return this.request<RankedStatus>('acknowledge',{version});}
   enqueue(region='ap-south-1'):Promise<RankedStatus>{return this.request<RankedStatus>('enqueue',{region});}
   cancel():Promise<RankedStatus>{return this.request<RankedStatus>('cancel');}

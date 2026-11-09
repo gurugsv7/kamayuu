@@ -26,6 +26,14 @@ test('leaderboard uses authenticated identity and bounded page size',async()=>{
   assert.deepEqual(calls,[{name:'ranked_leaderboard',args:{p_user:'actual-user',p_limit:50,p_offset:50}}]);
 });
 
+test('leaderboard search validates text and keeps verified identity and bounded pages',async()=>{
+ const calls=[];const rpc=async(name,args)=>{calls.push({name,args});return {};};
+ await handleRanked(rpc,'actual-user',{command:'leaderboard',search:'  Sai  ',offset:50,userId:'forged'});
+ assert.deepEqual(calls,[{name:'ranked_search_leaderboard',args:{p_user:'actual-user',p_search:'Sai',p_limit:50,p_offset:50}}]);
+ for(const search of [null,{},42,'x'.repeat(41)])await assert.rejects(handleRanked(rpc,'actual-user',{command:'leaderboard',search}),/40 characters/);
+ assert.equal(calls.length,1);
+});
+
 test('nonmembers cannot recover private state or worker jobs',async()=>{
   const rpc=async()=>({participants:[{kind:'human',user_id:'other'}],data:{secret:'hidden'}});
   await assert.rejects(handleRanked(rpc,'user',{command:'recover',matchId:'match'}),/not found/);

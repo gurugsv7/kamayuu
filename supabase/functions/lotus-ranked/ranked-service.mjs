@@ -12,7 +12,12 @@ export async function handleRanked(rpc, userId, input, now = Date.now()) {
   if (!userId) throw new RankedError('Sign in to play.',401);
   const status = () => rpc('ranked_status',{p_user:userId});
   if (input.command === 'status') return status();
-  if (input.command === 'leaderboard') return rpc('ranked_leaderboard',{p_user:userId,p_limit:50,p_offset:input.offset ?? 0});
+  if (input.command === 'leaderboard') {
+    if(input.search!==undefined && (typeof input.search!=='string'||input.search.length>40))throw new RankedError('Search must be 40 characters or fewer.');
+    const search=(input.search??'').trim();
+    return rpc(search?'ranked_search_leaderboard':'ranked_leaderboard',{
+      p_user:userId,...(search?{p_search:search}:{}),p_limit:50,p_offset:input.offset??0});
+  }
   if (input.command === 'acknowledge') {
     await rpc('ranked_acknowledge',{p_user:userId,p_version:input.version});
     return status();
