@@ -6,3 +6,6 @@
 - When a change is already requested or approved, proceed without asking again.
 - Keep the owner informed about visible effects and verify that related working
   interactions remain intact.
+- Bot memory should fade only after multiple personal turns, not immediately
+  after opening views, replacements or power reveals. Preserve imperfect memory;
+  consult docs/game-rules-and-bot-memory.md before future bot/rule changes.

@@ -10,41 +10,85 @@ function roll(seed, key) {
   return (h >>> 0) / 4294967296;
 }
 
-// Policy gets only aiView, never the engine state. Frozen configuration is a
-// provisional policy v1: recall models missed observations, not secret knowledge.
+// Ages are counted in this rival's completed turns, never polls or animations.
+// Forgotten cards stay unknown until a legitimate reveal refreshes the memory.
+export function rankedBotObservation(room,participant) {
+  const s=room.state,seat=participant.seat,cfg=participant.bot_config;
+  const v={...aiView(s,seat),isTurn:s.active===seat,locked:s.players[seat].locked};
+  const ranked=room.ranked||={},turn=(ranked.botTurns||{})[seat]||0;
+  const all=ranked.botMemory||={},memory=all[seat]||=[];
+  const grace={bronze:3,silver:4,gold:5,platinum:7,diamond:9}[cfg.tierId]||3;
+  for(let p=0;p<v.players.length;p++) {
+    const row=memory[p]||=[];
+    for(let i=0;i<v.players[p].slots.length;i++) {
+      const slot=v.players[p].slots[i];
+      if(!slot.known){row[i]=null;continue;}
+      let entry=row[i];
+      if(!entry||entry.id!==slot.known.id)entry=row[i]={id:slot.known.id,learnedAt:turn,checkedAt:turn,forgotten:false};
+      const own=p===seat,protectedTurns=own?grace+(value(slot.known)<=2?2:0):1;
+      if(turn-entry.learnedAt>=protectedTurns&&entry.checkedAt<turn) {
+        entry.checkedAt=turn;
+        const chance=(1-cfg.recall)*(own?0.35:1);
+        if(roll(cfg.seed,`forget:${p}:${i}:${entry.id}:${turn}`)<chance)entry.forgotten=true;
+      }
+      if(entry.forgotten)slot.known=null;
+    }
+  }
+  return v;
+}
+
+function recordRivalLearning(room,participants,events,before) {
+  const ranked=room.ranked||={},turns=ranked.botTurns||={};
+  for(const p of participants.filter(p=>p.kind==='bot')) {
+    if(before.active===p.seat&&room.state.turn>before.turn)turns[p.seat]=(turns[p.seat]||0)+1;
+    for(const e of events)if(e.p===p.seat&&['peek','inspect'].includes(e.type)) {
+      const positions=e.type==='peek'?[[p.seat,e.i]]:[[p.seat,e.i],[e.target,e.i]];
+      for(const [owner,i] of positions) {
+        const memory=ranked.botMemory?.[p.seat]?.[owner]?.[i];
+        if(memory){memory.learnedAt=turns[p.seat]||0;memory.checkedAt=memory.learnedAt;memory.forgotten=false;}
+      }
+    }
+  }
+}
+
+// This policy only receives legally observed, recency-filtered cards.
 export function chooseRankedBot(observation, config, key) {
   if (['memory','finished'].includes(observation.phase)) return null;
   const v = structuredClone(observation);
-  for (let p = 0; p < v.players.length; p++) for (let i = 0; i < v.players[p].slots.length; i++) {
-    const slot = v.players[p].slots[i];
-    if (slot.known && roll(config.seed, `memory:${p}:${i}:${slot.known.id}`) > config.recall) slot.known = null;
-  }
   v.difficulty = ['bronze','silver'].includes(config.tierId) ? 'easy' : config.tierId === 'gold' ? 'medium' : 'hard';
-  for (const slot of v.players[v.active].slots) {
+  // Matching restrictions must not erase knowledge used for replacements.
+  const reactionView=structuredClone(v);
+  for (const slot of reactionView.players[v.active].slots) {
     if (v.locked && slot.known?.id===v.locked.card && v.discard?.id===v.locked.against) slot.known=null;
   }
-  const reaction = chooseReaction(v);
+  const reaction = chooseReaction(reactionView);
   if (reaction && roll(config.seed, `react:${key}`) < config.reactionChance) return {action: reaction, reaction: true};
   if (!observation.isTurn || v.phase === 'lastCall') return null;
   const own = v.players[v.active].slots.filter(s => s.occupied);
   const estimate = own.reduce((n,s) => n + (s.known ? value(s.known) : 6.8), v.players[v.active].penalty);
-  if (v.phase === 'ready' && v.caller === null && v.turn >= v.players.length && estimate <= 10 + config.buzzOffset) {
+  if (v.phase === 'ready' && v.caller === null && (!own.length || v.turn>160 || v.turn >= v.players.length && estimate <= 10 + config.buzzOffset)) {
     return {action: {type: 'buzz'}, reaction: false};
   }
-  if (v.phase === 'decision' && v.source === 'deck') {
-    const slots = v.players[v.active].slots.flatMap((s,i) => s.occupied ? [{i, score:s.known ? value(s.known) : 6.8}] : []);
-    slots.sort((a,b) => b.score - a.score);
-    return {action: slots[0] && value(v.held) < slots[0].score - config.replaceMargin
-      ? {type:'replace',i:slots[0].i} : {type:'discard'}, reaction:false};
+  const slots = v.players[v.active].slots.flatMap((s,i) => s.occupied ? [{i,known:!!s.known,score:s.known ? value(s.known) : 6.8}] : []);
+  const cardId=v.held?.id||v.discard?.id||'';
+  slots.sort((a,b)=>b.score-a.score || roll(config.seed,`slot:${v.turn}:${cardId}:${a.i}`)-roll(config.seed,`slot:${v.turn}:${cardId}:${b.i}`));
+  const worst=slots[0];
+  // A known 3 -> 2 is useful. Unseen slots use a cautious estimate, never truth.
+  const margin=worst?.known ? Math.min(config.replaceMargin,0.6) : config.replaceMargin;
+  if(v.phase==='ready') {
+    return {action:v.canTakeDiscard&&v.discard&&worst&&value(v.discard)<worst.score-margin
+      ? {type:'take'} : {type:'draw'},reaction:false};
   }
-  // chooseAction normally matches immediately; honor a sampled missed reaction
-  // by omitting the matching observation for this ready-phase decision.
-  if (reaction && v.phase === 'ready') for (const slot of v.players[v.active].slots) {
-    if (slot.known?.rank === v.discard?.rank) slot.known = null;
+  if(v.phase==='decision') {
+    return {action:worst&&(v.source==='discard'||value(v.held)<worst.score-margin)
+      ? {type:'replace',i:worst.i} : {type:'discard'},reaction:false};
   }
-  let action=chooseAction(v,()=>roll(config.seed,`choice:${key}`));
-  if (v.phase==='ready' && action.type==='buzz' && own.length && v.turn<160 && estimate>10+config.buzzOffset) action={type:'draw'};
-  return {action,reaction:false};
+  if(v.phase==='peek'&&slots.every(s=>s.known))return {action:{type:'skip'},reaction:false};
+  if(v.phase==='swapConfirm') {
+    const mine=v.players[v.active].slots[v.pending.i],theirs=v.players[v.pending.target].slots[v.pending.i];
+    return {action:{type:!v.players[v.pending.target].eliminated&&mine?.occupied&&theirs?.occupied&&mine.known&&theirs.known&&value(mine.known)>value(theirs.known)?'swap':'skip'},reaction:false};
+  }
+  return {action:chooseAction(v,()=>roll(config.seed,`choice:${key}`)),reaction:false};
 }
 
 export function planRankedJob(room, participants, now = Date.now(), previousJob = null) {
@@ -55,13 +99,13 @@ export function planRankedJob(room, participants, now = Date.now(), previousJob 
   const plans=ranked.botPlans ||= {};
   for (const p of participants.filter(p => p.kind === 'bot' && !s.players[p.seat].eliminated)) {
     let decision;
+    const observation=rankedBotObservation(room,p);
     const key = `${s.turn}:${s.phase}:${s.discard.at(-1)?.id || ''}:${p.seat}`;
     if (s.phase === 'memory') {
       if(room.memorySeen.includes(p.id))continue;
       decision = {action:null,reaction:false,command:'remember'};
     }
     else {
-      const observation = {...aiView(s,p.seat),isTurn:s.active===p.seat,locked:s.players[p.seat].locked};
       decision = chooseRankedBot(observation,p.bot_config,key);
     }
     if (!decision) continue;
@@ -103,6 +147,7 @@ export function advanceRanked(record, job, now = Date.now()) {
   } else {
     r = applyIntent(record.data,record.participants[0].id,{command:'timeout'},now);
   }
+  recordRivalLearning(r.room,record.participants,r.events,record.data.state);
   queueRivalSocial(r.room,record.participants,r.events,now);
   r.room.ranked.lastEvents=r.events;
   return {...r,next:planRankedJob(r.room,record.participants,now)};
@@ -110,6 +155,7 @@ export function advanceRanked(record, job, now = Date.now()) {
 
 export function applyRankedHuman(record, userId, input, now = Date.now(), previousJob = null) {
   const r = rankedHumanIntent(record.data,record.participants,userId,input,now);
+  recordRivalLearning(r.room,record.participants,r.events,record.data.state);
   queueRivalSocial(r.room,record.participants,r.events,now);
   if(['emote','message'].includes(input.command)) {
     const event=r.events[0];
