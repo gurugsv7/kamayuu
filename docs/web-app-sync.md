@@ -19,3 +19,17 @@ target, allowing direct checks against the published website and mobile bundle.
 This synchronization does not change Play Console releases or unfinished native
 release configuration. Device-specific sign-in, navigation and offline behavior
 still require Android verification when those native components change.
+
+## Public homepage indexing
+
+The first-visit web screen must describe the game and link to its rules before
+requiring an age choice. Google Inspection Tool's smartphone screenshot on
+12 November showed only the age form; crawl/index permission and fetch succeeded,
+and Search Console reported no manual actions or security issues. This established
+a content-access problem, not the precise internal reason Google withheld indexing.
+
+`lib/public-game-info.mjs` supplies both the visible web introduction and its
+build-time HTML in `scripts/client-release-plugin.mjs`. Keep them in sync and run
+`tests/public-entry.test.mjs` when changing the entry screen. Do not replace this
+with hidden text, a noscript-only description or bot-specific rendering. The age
+gate remains mandatory before gameplay, and the native welcome screen is retained.
