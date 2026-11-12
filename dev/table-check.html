@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kamayuu local table check</title>
+<style>body{margin:0;background:#080e17;color:#efdbb0;font:14px Georgia}header{padding:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}button,a{color:inherit;background:#192635;border:1px solid #806339;padding:8px;text-decoration:none}iframe{display:block;border:0;width:100%;height:calc(100dvh - 80px)}p{margin:0}</style></head><body>
+<header><button id="local-table">Start local online table</button><a href="/">Normal app</a><p role="status" id="status">Local transport only · no real match created</p></header>
+<iframe src="/" title="Game under test"></iframe>
+<script type="module">
+// Development-only entry, excluded from Vite's production build. Interact with
+// the real app through its existing dev hook and real multiplayer rules.
+const frame=document.querySelector('iframe'),status=document.querySelector('#status');
+document.querySelector('#local-table').onclick=async()=>{
+ try{
+  const qa=frame.contentWindow.__lotusQA;
+  if(!qa){status.textContent='Finish local onboarding, then try again.';return;}
+  await qa.online(2);status.textContent='Local online table ready. Start the hand, open Settings, and leave.';
+ }catch(error){status.textContent=error.message;}
+};
+</script></body></html>

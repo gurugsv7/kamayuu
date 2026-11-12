@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kamayuu</string>
+    <string name="title_activity_main">Kamayuu</string>
+    <string name="package_name">in.builtbygsv.kamayuu</string>
+    <string name="custom_url_scheme">in.builtbygsv.kamayuu</string>
+</resources>

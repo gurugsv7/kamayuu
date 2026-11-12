@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
+import {isNative,nativeVibrate} from '@/lib/native';
 
 interface OnboardingScreenProps {
   onContinueWithGoogle?: () => void;
   onContinueAsGuest: () => void;
+  onReviewerSignIn?: () => void;
   authBusy?: string;
   authError?: string;
   googleConfigured?: boolean;
@@ -18,6 +20,7 @@ interface OnboardingScreenProps {
 export default function OnboardingScreen({
   onContinueWithGoogle,
   onContinueAsGuest,
+  onReviewerSignIn,
   authBusy = '',
   authError = '',
   googleConfigured = false,
@@ -32,7 +35,7 @@ export default function OnboardingScreen({
 
   // Mount Google GIS invisible overlay button if GIS is available and configured
   useEffect(() => {
-    if (!googleConfigured || !googleSlotRef.current) return;
+    if (isNative() || !googleConfigured || !googleSlotRef.current) return;
     let active = true;
 
     async function setupGIS() {
@@ -63,6 +66,7 @@ export default function OnboardingScreen({
   }, [googleConfigured, onGoogleToken, onGoogleError, onContinueWithGoogle]);
 
   const handleGoogleClick = () => {
+    if(isNative()){nativeVibrate(10);onContinueWithGoogle?.();return;}
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try { navigator.vibrate(10); } catch {}
     }
@@ -77,6 +81,7 @@ export default function OnboardingScreen({
   };
 
   const handleGuestClick = () => {
+    if(isNative()){nativeVibrate(12);onContinueAsGuest();return;}
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try { navigator.vibrate(12); } catch {}
     }
@@ -165,8 +170,8 @@ export default function OnboardingScreen({
               </div>
             </button>
 
-            {/* Invisible Google GIS host iframe over the button for 1-click native popup */}
-            {googleConfigured && (
+            {/* Browser GIS owns its click; Android uses the native button directly. */}
+            {!isNative() && googleConfigured && (
               <div
                 ref={googleSlotRef}
                 className={`gis-overlay ${googleInitialized ? 'active' : ''}`}
@@ -175,7 +180,7 @@ export default function OnboardingScreen({
             )}
           </div>
 
-          {/* 2. Continue as Guest Button */}
+          {/* Offline play never waits for an account. */}
           <div className="onboarding-btn-wrapper guest-wrapper">
             <button
               type="button"
@@ -183,7 +188,7 @@ export default function OnboardingScreen({
               className="onboarding-btn btn-guest"
               onClick={handleGuestClick}
               disabled={!!authBusy}
-              aria-label="Continue as Guest"
+              aria-label={isNative()?'Play offline':'Continue as Guest'}
             >
               {/* Ornate Frame & Chamfered Polygon Borders */}
               <div className="btn-bg-layer" aria-hidden="true" />
@@ -208,7 +213,7 @@ export default function OnboardingScreen({
                   </svg>
                 </span>
 
-                <span className="btn-text">Continue as Guest</span>
+                <span className="btn-text">{isNative()?'Play offline':'Continue as Guest'}</span>
 
                 <span className="btn-arrow" aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -221,6 +226,7 @@ export default function OnboardingScreen({
           </div>
         </div>
 
+        {onReviewerSignIn&&<button type="button" className="reviewer-entry" disabled={!!authBusy} onClick={onReviewerSignIn}>Reviewer sign-in</button>}
         <div className="onboarding-footer-tagline onboarding-about">
           <h1>Kamayuu — a free card game of memory &amp; nerve</h1>
           <p>Play solo against AI or with friends.</p>

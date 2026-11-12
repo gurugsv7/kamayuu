@@ -1,0 +1,65 @@
+/* Lantern-table opening and animated card ensembles. */
+.kamayuu-animated-loader.loader-ensemble{position:relative;aspect-ratio:6/5}
+.loader-ensemble .loader-poster{position:absolute;inset:0;z-index:0}
+.loader-ensemble picture{position:relative;z-index:1}
+.loader-scene.kamayuu-loader{overflow:hidden;isolation:isolate;background:#030910;color:#f0d29c;container-type:size}
+.loader-scene .loader-backdrop{position:absolute;z-index:-4;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 50%;animation:lantern-scene-drift 16s ease-in-out infinite alternate}
+.loader-scene .loader-vignette{position:absolute;inset:0;z-index:-3;background:linear-gradient(180deg,#02091420,#02091400 15%,#02091410 55%,#0209146b 100%),radial-gradient(ellipse at 50% 42%,transparent 12%,#02091412 62%,#02091470 100%)}
+.loader-scene .loader-lantern-light{position:absolute;inset:0;z-index:-2;background:radial-gradient(ellipse at 8% 77%,#e58a1a20,transparent 43%);animation:lantern-light 3.4s ease-in-out infinite}
+.loader-scene .kamayuu-loader-body{width:min(100%,460px);min-height:0;box-sizing:border-box;padding:0 22px;gap:0;transform:translateY(-1%);text-align:center}
+.loader-scene .loader-eyebrow{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;margin:0 0 17px;font:500 9px/1.4 'Cinzel',Georgia,serif;letter-spacing:3.5px;text-transform:uppercase;color:#ead0a0;text-shadow:0 2px 8px #000}
+.loader-eyebrow span{height:1px;width:26px;background:linear-gradient(90deg,transparent,#e3bc7688)}
+.loader-eyebrow span:last-child{rotate:180deg}
+.loader-wordmark{width:100%;max-width:350px;filter:drop-shadow(0 5px 3px #000b);animation:lantern-title-arrive .65s ease-out both}
+.loader-wordmark img{display:block;width:100%;height:auto;object-fit:contain}
+.loader-scene .kamayuu-caption{margin:7px 0 0;opacity:1;animation:none;color:#ebd8b1;font:500 clamp(8px,2.1cqw,10px)/1.5 'Cinzel',Georgia,serif;letter-spacing:2.4px;text-shadow:0 2px 8px #000}
+.loader-deal-stage{display:flex;justify-content:center;align-items:center;width:100%;height:clamp(210px,35cqh,295px);margin:8px 0 0;position:relative}
+.loader-deal-stage:before{content:'';position:absolute;inset:10% 15% 8%;background:radial-gradient(ellipse,#081626a6,transparent 70%);filter:blur(12px)}
+.loader-scene .kamayuu-animated-loader-opening{width:min(360px,100%);margin:0;filter:drop-shadow(0 10px 9px #0009)}
+.loader-progress-panel{position:relative;width:min(270px,84%);margin:4px 0 0;padding:14px 16px 13px;border:1px solid #b88c3e55;border-radius:5px;background:linear-gradient(145deg,#091826e6,#040e1ae8);box-shadow:inset 0 1px #ffe5b01a,0 10px 30px #0005}
+.loader-progress-panel:before,.loader-progress-panel:after{content:'◆';position:absolute;top:calc(50% - 4px);font-size:7px;color:#d7ac65;line-height:1}
+.loader-progress-panel:before{left:-4px}.loader-progress-panel:after{right:-4px}
+.loader-progress-heading{display:flex;justify-content:space-between;align-items:baseline;gap:8px;width:100%;color:#e6d1a8}
+.loader-progress-heading>span{font:500 15px/1.2 'Cormorant Garamond',Georgia,serif;letter-spacing:.2px}
+.loader-progress-heading>b{font:500 19px/1 'Cormorant Garamond',Georgia,serif;font-variant-numeric:tabular-nums;color:#f2d295}
+.loader-progress-heading small{font:10px Arial,sans-serif;margin-left:1px;color:#bb9f6f}
+.loader-scene .kamayuu-progress{width:100%;margin:10px 0 0;opacity:1;animation:none}
+.loader-scene .kamayuu-progress-track{height:4px;background:#34506366;overflow:visible;border-radius:2px;box-shadow:0 1px #000b}
+.loader-scene .kamayuu-progress-fill{position:relative;background:linear-gradient(90deg,#a97935,#e7bb71 70%,#ffe5ad);box-shadow:0 0 10px #e7bb713b;transition:width .2s linear}
+.loader-scene .kamayuu-progress-fill:after{content:'';position:absolute;right:0;top:50%;width:6px;height:6px;background:#fff0b8;border:1px solid #cda159;transform:translate(50%,-50%) rotate(45deg);box-shadow:0 0 8px #ffe4a475}
+.loader-progress-stages{display:flex;justify-content:center;gap:14px;margin-top:12px}
+.loader-progress-stages span{width:4px;height:4px;rotate:45deg;background:#52606d;border:1px solid #8d826a80;transition:background .3s}
+.loader-progress-stages .is-lit{background:#e6bd79;border-color:#edcf97;box-shadow:0 0 5px #ddb16c70}
+.loader-scene .loader-signature{position:absolute;bottom:max(25px,calc(env(safe-area-inset-bottom,0px) + 18px));left:15px;right:15px;margin:0;text-align:center;font:500 8px/1.4 'Cinzel',Georgia,serif;letter-spacing:2.8px;text-transform:uppercase;color:#e8d1a9;text-shadow:0 2px 5px #000}
+.loader-motes{position:absolute;inset:0;z-index:-1;pointer-events:none}
+.loader-motes i{position:absolute;left:calc(12% + var(--mote)*15%);bottom:18%;width:2px;height:2px;border-radius:50%;background:#f7c571;box-shadow:0 0 5px #e9b762aa;opacity:0;animation:lantern-mote calc(5s + var(--mote)*.4s) linear calc(var(--mote)*-.9s) infinite}
+@keyframes lantern-mote{0%{translate:0 10px;opacity:0}20%,65%{opacity:.7}100%{translate:18px -180px;opacity:0}}
+@keyframes lantern-scene-drift{from{transform:scale(1.015)}to{transform:scale(1.045)}}
+@keyframes lantern-light{0%,100%{opacity:.6}40%{opacity:.95}65%{opacity:.75}}
+@keyframes lantern-title-arrive{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}
+
+/* Searching gives the animation center stage, with a compact live rank summary. */
+.ranked-entry.is-searching .rank-standing{display:grid;grid-template-columns:1fr auto;align-items:center;padding:7px 12px 0;border:1px solid #a9874944;border-radius:8px;background:#0916249e}
+.ranked-entry.is-searching .rank-hero{flex-direction:row;gap:6px}
+.ranked-entry.is-searching .rank-hero:before{width:90px;height:90px;top:-8px;left:-12px}
+.ranked-entry.is-searching .rank-hero>.tier-badge{width:63px;height:63px}
+.ranked-entry.is-searching .rank-tier-name{min-width:0;border:0;background:none;font-size:16px;letter-spacing:1px;padding:0;margin:0}
+.ranked-entry.is-searching .rank-rating{flex-direction:column;gap:3px;align-items:flex-end;padding-right:4px}
+.ranked-entry.is-searching .rank-rating strong{font-size:26px}
+.ranked-entry.is-searching .rank-rating>span{font-size:10px}
+.ranked-entry.is-searching .rank-progress{grid-column:1/-1;margin:3px 4px 0}
+.ranked-entry.is-searching .rank-progress-caption{grid-column:1/-1;margin:7px 4px 12px}
+.ranked-entry.is-searching .rank-tier-rail{display:none}
+.ranked-entry.is-searching .ranked-search{position:relative;isolation:isolate;overflow:hidden;min-height:246px;padding:0 10px 20px;gap:7px;border-color:#b5925466;background:radial-gradient(ellipse at 50% 42%,#183d5540,transparent 65%),linear-gradient(150deg,#0a1a29dd,#030c16e3);box-shadow:inset 0 1px #e6c18a18,0 6px 20px #0004}
+.ranked-entry.is-searching .ranked-search:before,.ranked-entry.is-searching .ranked-search:after{content:'';position:absolute;pointer-events:none;z-index:-1;width:60px;height:60px;border:1px solid #c59a5066}
+.ranked-entry.is-searching .ranked-search:before{top:7px;left:7px;border-right:0;border-bottom:0}.ranked-entry.is-searching .ranked-search:after{bottom:7px;right:7px;border-left:0;border-top:0}
+.ranked-entry .ranked-search .kamayuu-animated-loader.loader-ensemble{width:310px;max-width:100%;margin:-12px 0 -24px;filter:drop-shadow(0 5px 8px #0009)}
+.ranked-entry.is-searching .ranked-search strong{font-size:24px;line-height:1.1}
+.ranked-brand span{display:block;font-size:0;width:125px;height:42px;background:url('/loaders/kamayuu-wordmark.webp') center/contain no-repeat;letter-spacing:0}
+.ranked-brand img{width:35px}
+@container (max-height:650px){.loader-scene .kamayuu-loader-body{padding:0 22px}.loader-scene .loader-eyebrow{margin-bottom:8px}.loader-scene .loader-wordmark{max-width:270px}.loader-scene .loader-deal-stage{height:190px;margin-top:0}.loader-scene .kamayuu-animated-loader-opening{width:270px}.loader-scene .loader-progress-panel{padding-top:11px;padding-bottom:10px;margin-top:0}.loader-scene .loader-signature{bottom:15px}}
+@container (max-height:480px){.loader-scene .loader-eyebrow{display:none}.loader-scene .loader-wordmark{max-width:215px}.loader-scene .loader-deal-stage{height:130px}.loader-scene .kamayuu-animated-loader-opening{width:205px}.loader-scene .loader-signature{font-size:7px;bottom:8px}.loader-scene .loader-progress-panel{padding:8px 12px}.loader-progress-stages{display:none}}
+@media(max-height:740px){.ranked-entry .ranked-search .kamayuu-animated-loader.loader-ensemble{width:280px}.ranked-entry.is-searching .ranked-search{min-height:222px}.ranked-entry.is-searching .ranked-search strong{font-size:22px}}
+@media(prefers-reduced-motion:reduce){.loader-scene *{animation:none!important;transition:none!important}.loader-wordmark{opacity:1}.loader-scene.kamayuu-loader{transition:none}.loader-motes{display:none}}
+.loader-scene[data-short-motion=true] *{animation:none!important;transition:none!important}
+.loader-scene[data-short-motion=true] .loader-motes{display:none}

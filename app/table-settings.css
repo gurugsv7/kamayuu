@@ -1,0 +1,25 @@
+/* Table controls stay within a short drawer; account settings live at home. */
+.game-dialog.lacquer.in-match-settings {
+ width:calc(100% - 20px)!important;
+ max-width:390px!important;
+ bottom:max(10px,env(safe-area-inset-bottom))!important;
+ border:1px solid #c9a35a66!important;
+ border-radius:20px!important;
+ padding:30px 20px 18px!important;
+ max-height:calc(100svh - 28px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+ gap:16px;
+}
+.game-dialog.lacquer.in-match-settings [data-slot=dialog-title] {font-size:14px;letter-spacing:2.3px}
+.game-dialog.lacquer.in-match-settings [data-slot=dialog-description] {font:13px/1.5 Georgia,serif;max-width:290px;margin:0;color:#bfb098}
+.game-dialog.lacquer.in-match-settings [data-slot=dialog-close] {top:12px;right:12px;width:40px;height:40px}
+.game-dialog.lacquer.in-match-settings .settings-content label {min-height:44px;padding:8px 0;font:500 15px/1.3 Georgia,serif;gap:14px}
+.game-dialog.lacquer.in-match-settings [data-slot=switch] {flex-shrink:0}
+.game-dialog.lacquer .preference-group + .preference-group {margin-top:12px}
+.game-dialog.lacquer .table-exit {border-top:1px solid #a17b4044;margin-top:14px;padding-top:14px;text-align:center}
+.game-dialog.lacquer .table-exit .primary {margin:0;min-height:46px;font-size:12px;letter-spacing:1.5px}
+.game-dialog.lacquer .table-exit>span {display:block;margin-top:8px;font:11px/1.4 Georgia,serif;color:#bfb098}
+@media(max-height:600px){
+ .game-dialog.lacquer.in-match-settings {padding-top:26px!important;gap:10px}
+ .game-dialog.lacquer.in-match-settings .preference-group + .preference-group {margin-top:6px}
+ .game-dialog.lacquer.in-match-settings .table-exit {margin-top:10px;padding-top:10px}
+}

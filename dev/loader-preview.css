@@ -1,0 +1,11 @@
+body{margin:0;background:#050c14;color:#e9d2ac;overflow:auto}
+.loader-review{max-width:1060px;margin:auto;padding:26px 22px;font-family:Arial,sans-serif}
+.loader-review header{position:relative;margin-bottom:20px}.loader-review h1{font:28px Georgia,serif;margin:0 0 10px}.loader-review header p{font:12px/1.5 Arial;color:#b7a58a;margin:0 0 10px}.loader-review a{color:#ebc58b;font:12px Arial}
+.loader-review-controls{display:flex;flex-wrap:wrap;align-items:center;gap:15px;margin:24px 0;color:#c8b797;font-size:11px}.loader-review-controls label{display:flex;align-items:center;gap:6px}.loader-review-controls input{accent-color:#d3a860}.loader-review-controls button{min-height:40px;padding:9px 12px;border:1px solid #a7854955;border-radius:5px;background:#112033;color:#e8c993;font:11px Arial}
+.loader-review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,390px));align-items:center;justify-content:center;gap:30px}
+.opening-stage{height:690px;position:relative;border:1px solid #bb995f55;border-radius:16px;overflow:hidden;box-shadow:0 20px 50px #0005;background:#06101d}
+.opening-stage .kamayuu-loader{position:absolute}
+.loader-match-stage.game-dialog.ranked-dialog{position:relative!important;top:auto;left:auto;transform:none!important;max-width:none!important;width:100%;max-height:none!important}
+.preview-ready{position:absolute;inset:30% 20px auto;text-align:center;font:24px/1.4 Georgia;color:#dfc396}
+.full-review.loader-review{padding:0;margin:0;max-width:none}.full-review .loader-review-grid{display:block}.full-review .opening-stage{height:100dvh;border:0;border-radius:0}.loader-review-back{position:fixed;top:max(12px,env(safe-area-inset-top,0px));left:12px;z-index:220;background:#06101ccc;padding:7px 10px;border:1px solid #b6904c44;border-radius:3px;font-size:10px!important}
+@media(max-width:700px){.loader-review{padding:20px 12px}.loader-review-grid{grid-template-columns:minmax(0,390px);gap:24px}.opening-stage{height:min(740px,90svh)}.loader-review-controls{gap:12px}.loader-review h1{font-size:23px}}

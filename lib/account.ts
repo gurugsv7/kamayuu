@@ -4,6 +4,9 @@
 // actually goes online.
 import {createClient, type SupabaseClient} from '@supabase/supabase-js';
 import {captchaToken} from './captcha';
+import {storedAge,setupAge,refreshFamily,familyState,clearFamilyState} from './family';
+import {familyPermissions} from './family-policy.mjs';
+import {isNative,nativeAuthStorage,connectionAvailable,NativeIdentity} from './native';
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
@@ -42,26 +45,53 @@ export function auth(): SupabaseClient {
     if (!supabaseConfigured()) throw Error('Online play is not configured yet.');
     // Scoped per project so a session can never leak across Supabase projects.
     client = createClient(URL, KEY, {
-      auth: {storageKey: 'lotus-guest-' + REF, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false},
+      auth: {storageKey: 'lotus-guest-' + REF, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false,...(isNative()?{storage:nativeAuthStorage}:{})},
     });
   }
   return client;
 }
 
 export async function currentSession() {
+  if(!connectionAvailable())return null;
+  if (!storedAge()) return null;
+  if (storedAge()==='under_13') return null;
   if (!supabaseConfigured()) return null;
   const {data} = await auth().auth.getSession();
   return data.session ?? null;
 }
 
 export async function signInWithGoogle(token: string, nonce: string) {
+  const age=storedAge();if(!age||age==='under_13')throw Error('Online play is available for ages 13 and above. Practice is available without signing in.');
   const {data, error} = await auth().auth.signInWithIdToken({provider: 'google', token, nonce});
   if (error) throw Error(error.message);
+  await setupAge(age);
   return data.session;
+}
+
+/** Standard Supabase password auth; no reviewer role, bypass, or embedded credentials. */
+export async function signInReviewer(email:string,password:string){
+ const age=storedAge();
+ if(!age||age==='under_13')throw Error('Online play is available for ages 13 and above. Practice is available without signing in.');
+ if(!connectionAvailable())throw Error('You are offline. Reconnect to sign in, or return to offline practice.');
+ if(!email.trim()||!password)throw Error('Enter your email and password.');
+ const captcha=await captchaToken();
+ const {data,error}=await auth().auth.signInWithPassword({email:email.trim(),password,...(captcha?{options:{captchaToken:captcha}}:{})});
+ if(error){
+  if(error.status===429)throw Error('Too many attempts. Please wait before trying again.');
+  if(error.code==='invalid_credentials')throw Error('Check your email and password.');
+  if(error.code==='captcha_failed')throw Error('The verification check did not finish. Please try again.');
+  throw Error('Could not sign in. Check your connection and account details, then try again.');
+ }
+ if(!data.session)throw Error('Sign-in did not finish. Please try again.');
+ clearFamilyState();
+ try{await setupAge(age);}catch(e){await signOut();throw e;}
+ return data.session;
 }
 
 /** Anonymous fallback. Supabase enforces CAPTCHA on this endpoint. */
 export async function signInAsGuest() {
+  if(!connectionAvailable())throw Error('You are offline. Practice is available without signing in.');
+  const age=storedAge();if(!age||age==='under_13')throw Error('Online play is available for ages 13 and above. Practice is available without signing in.');
   const captcha = await captchaToken();
   const {data, error} = await auth().auth.signInAnonymously(
     captcha ? {options: {captchaToken: captcha}} : undefined,
@@ -74,11 +104,21 @@ export async function signInAsGuest() {
       : error.message,
     );
   }
+  await setupAge(age);
   return data.session;
 }
 
 export async function signOut() {
-  if (supabaseConfigured()) await auth().auth.signOut({scope: 'local'}).catch(() => {});
+  if(isNative()){
+    // Local logout must also work offline. Stop refresh before removing the
+    // persisted session, then discard the old client and its in-memory state.
+    await client?.auth.stopAutoRefresh();
+    await nativeAuthStorage.removeItem('lotus-guest-'+REF);
+    await nativeAuthStorage.removeItem('lotus-guest-'+REF+'-user');
+    client=null;
+  }else if (supabaseConfigured()) await auth().auth.signOut({scope: 'local'}).catch(() => {});
+  clearFamilyState();
+  if(isNative()&&storedAge()!=='under_13')await NativeIdentity.clearSignIn().catch(()=>{});
 }
 
 /** Upgrades the current anonymous account to Google, keeping the same id and stats. */
@@ -95,6 +135,8 @@ export async function linkGoogle() {
 export async function loadProfile(): Promise<Profile | null> {
   const session = await currentSession();
   if (!session) return null;
+  // Reading the signed-in name must not depend on a separate edge-function
+  // request. Sign-in registers age; onlineSession checks family permissions.
   const {data, error} = await auth().from('profiles').select('*').eq('id', session.user.id).maybeSingle();
   if (error) throw Error(error.message);
   return (data as Profile) ?? null;
@@ -104,6 +146,7 @@ export async function loadProfile(): Promise<Profile | null> {
 export async function saveProfile(display_name: string, avatar: string): Promise<Profile> {
   const session = await currentSession();
   if (!session) throw Error('Sign in before saving a profile.');
+  if(familyState()?.age_band==='under_13'){display_name=familyState()?.alias||'Player';avatar='lotus';}
   const {data, error} = await auth()
     .from('profiles')
     .upsert({id: session.user.id, display_name, avatar}, {onConflict: 'id'})
@@ -116,3 +159,12 @@ export async function saveProfile(display_name: string, avatar: string): Promise
 }
 
 export const isGuest = (session: any) => !!session?.user?.is_anonymous;
+export async function onlineSession(allowGuest=false){
+ if(!connectionAvailable())throw Error('You are offline. Play Practice while you reconnect.');
+ let session=await currentSession();
+ if(!session&&allowGuest&&!isNative())session=await signInAsGuest();
+ if(!session)throw Error('Sign in for online play. Practice works offline.');
+ const safety=familyState()||await refreshFamily();
+ if(!familyPermissions(safety).online)throw Error('Online play is available for ages 13 and above. Complete age setup first.');
+ return session;
+}

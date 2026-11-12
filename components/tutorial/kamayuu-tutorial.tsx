@@ -428,16 +428,16 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
     stage(2, 'initial_memory');
     await teach({
       eyebrow: 'Your hand',
-      title: 'Four cards. You only ever see two.',
-      body: 'Your cards stay face-down in four fixed positions all hand long. Right now you may look at your bottom two — for a few seconds. After that they turn back over, and nothing will remind you what they were. Fix them in your memory.',
-      cta: 'Show me my two',
+      title: 'Start with your bottom two cards',
+      body: 'You have six seconds to look at them. Remember each card and its position before they turn face down.',
+      cta: 'Look at my cards',
     }, epoch);
-    setCoach({title: 'Remember these two', body: 'They flip back over in 6', tone: 'brass'});
+    setCoach({title: 'Remember your cards', body: '6 seconds left', tone: 'lacquer'});
     await Promise.all([flip('p0-2', engineRef.current.players[0].slots[2], epoch), flip('p0-3', engineRef.current.players[0].slots[3], epoch)]);
     for (let n = 6; n > 0; n--) {
       guard(epoch);
       setMemoryCountdown(n);
-      setCoach({title: 'Remember these two', body: `They flip back over in ${n}`, tone: 'brass'});
+      setCoach({title: 'Remember your cards', body: `${n} ${n === 1 ? 'second' : 'seconds'} left`, tone: 'lacquer'});
       await wait(1000, epoch);
     }
     setMemoryCountdown(null);
@@ -743,7 +743,7 @@ export default function KamayuuTutorial({onExit, onPlayFirstGame, sound = true, 
         </div>
 
         {coach && (
-          <div className={'coach-toast ' + coach.tone} role="status" aria-live="polite">
+          <div className={'coach-toast ' + coach.tone + (memoryCountdown !== null ? ' memory-coach' : '')} role="status" aria-live="polite">
             <b>{coach.title}</b>
             {coach.body && <span>{coach.body}</span>}
           </div>

@@ -3,6 +3,7 @@
 // its own — by the time anything here fires, the app's own gate/onboarding flow
 // has already resolved a session, or there isn't one yet and we just stay quiet.
 import {currentSession, supabaseConfigured} from './account';
+import {analyticsAllowed} from './family';
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
@@ -16,7 +17,7 @@ export function getSessionId() {
 }
 
 async function send(body: Record<string, unknown>) {
-  if (!supabaseConfigured()) return;
+  if (!supabaseConfigured() || !analyticsAllowed()) return;
   try {
     const session = await currentSession();
     if (!session) return;

@@ -12,19 +12,25 @@
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/postcss';
 import path from 'node:path';
+import mobilePublic from './config/mobile-public.json';
 import { defineConfig, loadEnv } from 'vite';
+import artworkCachePlugin from './scripts/artwork-cache-plugin.mjs';
+import clientReleasePlugin from './scripts/client-release-plugin.mjs';
 
 export default defineConfig(({ mode }) => {
   // Vite only exposes env vars prefixed with VITE_ via import.meta.env by
   // default. This app reads process.env.NEXT_PUBLIC_* (Next.js convention),
   // so we explicitly load and inline those two public/non-secret vars via
   // `define`, matching what vinext/Next does at build time.
-  const env = loadEnv(mode, process.cwd(), 'NEXT_PUBLIC_');
+  const env = {...(mode==='mobile'?mobilePublic:{}),...loadEnv(mode, process.cwd(), 'NEXT_PUBLIC_')};
 
   return {
     root: '.',
+    // Generated source artwork is not imported. Windows can lock it during
+    // image writes, so leave it out of the live-reload watcher.
+    server: {watch: {ignored: ['**/assets-src/**']}},
     css: { postcss: { plugins: [tailwindcss()] } },
-    plugins: [react()],
+    plugins: [react(),artworkCachePlugin(),clientReleasePlugin(mode)],
     resolve: {
       alias: { '@': path.resolve(__dirname, '.') },
     },
@@ -45,7 +51,7 @@ export default defineConfig(({ mode }) => {
       ),
     },
     build: {
-      outDir: 'dist-vercel',
+      outDir: mode==='mobile'?'dist-mobile':'dist-vercel',
       emptyOutDir: true,
     },
   };

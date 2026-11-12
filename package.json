@@ -6,15 +6,31 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "test": "node --test tests/engine.test.mjs tests/multiplayer.test.mjs tests/multiplayer-transport.test.mjs tests/ranked.test.mjs tests/ranked-runtime.test.mjs tests/ranked-service.test.mjs tests/rival-personality.test.mjs tests/ranked-transport.test.mjs tests/family.test.mjs tests/mobile.test.mjs tests/turn-timing.test.mjs tests/ranked-feedback.test.mjs tests/turn-motion.test.mjs tests/rank-display.test.mjs tests/table-session.test.mjs tests/artwork-cache.test.mjs tests/reviewer-auth.test.mjs tests/captcha.test.mjs",
+    "test:family:db": "node --test tests/family-database.test.mjs",
+    "test:ranked:db": "node --test tests/ranked-database.test.mjs tests/ranked-worker-auth.test.mjs",
+    "sync:edge": "node scripts/sync-edge.mjs",
+    "worker:ranked": "node scripts/ranked-worker.mjs",
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "build:vercel": "vite build --config vite.config.vercel.ts",
     "lint": "oxlint",
-    "format": "oxfmt"
+    "format": "oxfmt",
+    "build:mobile": "vite build --config vite.config.vercel.ts --mode mobile",
+    "android:sync": "npm run build:mobile && cap sync android",
+    "dev:mobile": "vite --config vite.config.vercel.ts --mode mobile",
+    "preview:mobile": "vite preview --config vite.config.vercel.ts --mode mobile"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
+    "@capacitor/android": "8.6.0",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/network": "8.0.1",
+    "@capacitor/splash-screen": "8.0.2",
+    "@capacitor/status-bar": "8.0.4",
     "@shadcn/react": "0.3.0",
     "@supabase/supabase-js": "2.115.0",
     "class-variance-authority": "0.7.1",
@@ -36,8 +52,10 @@
     "vinext": "1.0.0-beta.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.6.0",
     "@cloudflare/vite-plugin": "1.37.1",
     "@cloudflare/workers-types": "4.20260515.1",
+    "@electric-sql/pglite": "0.3.14",
     "@openai/sites-vite-plugin": "0.2.0",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",

@@ -36,8 +36,8 @@ export interface HomeScreenProps {
 export default function HomeScreen({
   playerName = DEFAULT_NAME,
   playerPhoto = '',
-  playerRank = 'Gold II',
-  playerRating = 1248,
+  playerRank = 'Unranked',
+  playerRating = 0,
   aiDifficulty = 'medium',
   onDifficultyChange,
   playerCount = 4,
@@ -54,6 +54,11 @@ export default function HomeScreen({
 }: HomeScreenProps) {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>(aiDifficulty);
   const [selectedPlayers, setSelectedPlayers] = useState<number>(playerCount);
+
+  useEffect(() => {
+    document.documentElement.classList.add('home-open');
+    return () => document.documentElement.classList.remove('home-open');
+  }, []);
 
   // Follow both when they change elsewhere (restored settings, replay).
   useEffect(() => {
@@ -198,7 +203,7 @@ export default function HomeScreen({
                   </button>
                 </div>
 
-                <p className="mode-card-subtitle">Find players instantly</p>
+                <p className="mode-card-subtitle">Human-first matchmaking</p>
 
                 {/* Casual / Ranked Mode Segmented Switch */}
                 <div
@@ -225,7 +230,7 @@ export default function HomeScreen({
                   </button>
                 </div>
 
-                <p className="mode-card-footer">2 – 4 players · Fast games</p>
+                <p className="mode-card-footer">Ranked 1v1 · Bronze to Diamond</p>
               </div>
             </div>
           </article>
@@ -384,12 +389,10 @@ export default function HomeScreen({
           {/* ================================================================
               BOTTOM ORNAMENT DIVIDER
               ================================================================ */}
-          <div className="home-bottom-divider" aria-hidden="true">
-            <span className="divider-line" />
-            <span className="divider-diamond">◆</span>
-            <span className="divider-line" />
-          </div>
         </main>
+          <nav className="home-policy-links" aria-label="Kamayuu policies">
+            <a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/parents.html">For parents</a><a href="/delete-account.html">Delete data</a>
+          </nav>
       </div>
     </div>
   );

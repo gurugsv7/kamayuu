@@ -1,7 +1,8 @@
 'use client';
 import {useState,useRef,useEffect,useCallback} from 'react';
 import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
-import {Switch} from '@/components/ui/switch';
+import TablePreferences from '@/components/table-preferences';
+import {TableSession} from '@/lib/table-session.mjs';
 import {Settings,BookOpen,Volume2,VolumeX,RotateCcw,Copy,Share2,Check,MessageCircle} from 'lucide-react';
 import {createGame,transition,chooseAction,chooseReaction,aiView,canTakeDiscard,positionName,NAMES,value,label} from '@/lib/engine.mjs';
 import {TableAudio} from '@/lib/audio.mjs';
@@ -10,13 +11,32 @@ import KamayuuTutorial from '@/components/tutorial/kamayuu-tutorial';
 import ScoreLedger from '@/components/score-ledger';
 import DesktopGate from '@/components/desktop-gate';
 import {MultiplayerService} from '@/lib/multiplayer';
+import {RankedService,RankedTable,type RankedStatus} from '@/lib/ranked';
+import RankedEntry from '@/components/ranked-entry';
+import RankedLeaderboardView from '@/components/ranked-leaderboard';
+import RematchControls from '@/components/rematch-controls';
+import ActionButton from '@/components/action-button';
+import {turnClock} from '@/lib/turn-timing.mjs';
+import {turnFlights} from '@/lib/turn-motion.mjs';
+import {restoreSettings} from '@/lib/table-settings.mjs';
 import {DEFAULT_NAME,NAME_LIMIT,avatarForBadge,currentSession,isGuest,loadProfile,saveProfile,signInAsGuest,signInWithGoogle,signOut,supabaseConfigured,type Profile} from '@/lib/account';
-import {googleConfigured} from '@/lib/google-auth';
+import {googleConfigured,nativeGoogleSignIn} from '@/lib/google-auth';
 import {track,startHeartbeat} from '@/lib/analytics';
 import OnboardingScreen from '@/components/onboarding-screen';
+import ReviewerSignIn from '@/components/reviewer-sign-in';
+import './reviewer.css';
+import {signInReviewer} from '@/lib/account';
 import PlayerIdentityScreen, { type PlayerIdentityData } from '@/components/player-identity-screen';
 import HomeScreen from '@/components/home-screen';
 import LoadingScreen,{KAMAYUU_CYCLE_MS} from '@/components/loading-screen';
+import FamilyGate from '@/components/family-gate';
+import {storedAge,familyState,familyRequest} from '@/lib/family';
+import './family.css';
+import './ranked.css';
+import './table-settings.css';
+import ConnectionStatus from '@/components/connection-status';
+import {backAction,soloCanAdvance,roomShareUrl} from '@/lib/mobile-policy.mjs';
+import {isNative,nativeVibrate,connectionAvailable,nativeBack,minimizeNative} from '@/lib/native';
 const PRELOAD_IMAGES=['/onboarding-bg.webp','/onboarding-identity-bg.webp','/card-art-quickmatch.png','/card-art-privatetable.png','/card-art-practice.png'];
 // Only 'haha' has real art (sprite sheet + icon) so far. The rest are placeholders in
 // the picker until each one gets its own green-screen clip run through the same
@@ -35,16 +55,18 @@ const QUICK_MESSAGES=[
  {key:'well',icon:'👏',text:'Well played!'},
  {key:'turn',icon:'⏳',text:'Your turn!'},
 ];
-const LOTUS='<svg viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M40 49C22 39 27 21 40 9c13 12 18 30 0 40Z"/><path d="M40 49C18 50 9 33 9 23c19 0 28 10 31 26ZM40 49c22 1 31-16 31-26-19 0-28 10-31 26Z"/><path d="M40 49C23 60 9 49 3 39c14-5 25-1 37 10Zm0 0c17 11 31 0 37-10-14-5-25-1-37 10Z"/><path d="M40 19v23M24 57h32"/></svg>';
-function Lotus(){return <span className="lotus" dangerouslySetInnerHTML={{__html:LOTUS}}/>}
+function KamayuuMark(){return <img className="kamayuu-brand-mark" src="/brand/kamayuu-emblem.png" width={40} height={40} alt=""/>}
 const seatName=(p:number,st:any)=>st?.players?.[p]?.name||NAMES[p];
 const deckSize=(st:any)=>st?(st.remote?st.deckCount??0:st.deck.length):35;
 const takeable=(st:any)=>st?(st.remote?!!st.canTakeDiscard:canTakeDiscard(st,0)):false;
-const defaults={players:4,difficulty:'medium',sound:true,haptics:true,motion:false};
-export default function Home(){
+const defaults=restoreSettings(null);
+export default function Home(){return <><ConnectionStatus/><FamilyGate><GameHome/></FamilyGate></>;}
+function GameHome(){
+ const [standing,setStanding]=useState<RankedStatus|null>(null);
  const [settings,setSettings]=useState(defaults),[stats,setStats]=useState({played:0,won:0}),[hydrated,setHydrated]=useState(false),[menu,setMenu]=useState(true),[panel,setPanel]=useState<string|null>(null),[tutorial,setTutorial]=useState(false),[desktop,setDesktop]=useState(false);
- const [lobby,setLobby]=useState<any>(null),[connection,setConnection]=useState(''),[presence,setPresence]=useState<string[]>([]),[joinCode,setJoinCode]=useState(''),[playerName,setPlayerName]=useState(''),[online,setOnline]=useState<string|null>(null),[clock,setClock]=useState<number|null>(null),[clockTotal,setClockTotal]=useState(1),[joinError,setJoinError]=useState(''),[codeCopied,setCodeCopied]=useState(false);
- const [gate,setGate]=useState<'loading'|'signin'|'onboarding'|'ready'>('loading'),[profile,setProfile]=useState<Profile|null>(null),[guest,setGuest]=useState(false);
+ const [lobby,setLobby]=useState<any>(null),[connection,setConnection]=useState(''),[presence,setPresence]=useState<string[]>([]),[joinCode,setJoinCode]=useState(''),[playerName,setPlayerName]=useState(''),[online,setOnline]=useState<string|null>(null),[clock,setClock]=useState<number|null>(null),[clockProgress,setClockProgress]=useState(1),[joinError,setJoinError]=useState(''),[codeCopied,setCodeCopied]=useState(false);
+ const [gate,setGate]=useState<'loading'|'signin'|'reviewer'|'onboarding'|'ready'>('loading'),[profile,setProfile]=useState<Profile|null>(null),[guest,setGuest]=useState(false);
+ useEffect(()=>{let live=true;if(gate==='ready'&&menu)void new RankedService().status().then(s=>{if(live)setStanding(s);}).catch(()=>{});return()=>{live=false;};},[gate,menu]);
  const [assetProgress,setAssetProgress]=useState(0),[assetsDone,setAssetsDone]=useState(false),[minTimeElapsed,setMinTimeElapsed]=useState(false);
  const [authError,setAuthError]=useState(''),[authBusy,setAuthBusy]=useState(''),[draftName,setDraftName]=useState(''),[draftAvatar,setDraftAvatar]=useState('lotus'),[identityFrom,setIdentityFrom]=useState<'signin'|'ready'>('signin');
  const [s,setS]=useState<any>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('Less in your hand. More on your mind.'),[caption,setCaption]=useState('A GAME OF MEMORY & NERVE'),[revision,setRevision]=useState(0),[target,setTarget]=useState<number|null>(null),[swapSlot,setSwapSlot]=useState<number|null>(null),[memory,setMemory]=useState(false),[result,setResult]=useState(false),[countdown,setCountdown]=useState<number|null>(null),[queued,setQueued]=useState(false),[wake,setWake]=useState(0),[announce,setAnnounce]=useState<string|null>(null);
@@ -54,8 +76,11 @@ export default function Home(){
  // Quick-message chat bubbles, keyed by player the same way emotes are.
  const [bubbles,setBubbles]=useState<Record<number,{text:string;token:number}>>({});
  const [messagePicker,setMessagePicker]=useState(false);
- const remote=useRef<any>(null),queue=useRef<Promise<void>>(Promise.resolve()),lobbyRef=useRef<any>(null),game=useRef<any>(null),locked=useRef(false),epoch=useRef(0),config=useRef(settings),audio=useRef<any>(null),table=useRef<HTMLElement|null>(null),animations=useRef<Set<Animation>>(new Set()),activeAbort=useRef(new AbortController()),mounted=useRef(true),paused=useRef(false),qaHold=useRef(false),memorized=useRef(false),packetHandler=useRef<(p:any)=>void>(()=>{}),queuedMatch=useRef<any>(null),observedDiscard=useRef<string|null>(null),movingSlots=useRef(new Set<string>()),motionTarget=useRef<any>(null),announceTimer=useRef<any>(null),emoteTimers=useRef<Record<number,any>>({}),emoteTokens=useRef<Record<number,number>>({}),codeCopyTimer=useRef<any>(null),bubbleTimers=useRef<Record<number,any>>({}),bubbleTokens=useRef<Record<number,number>>({});
- useEffect(()=>{mounted.current=true;if(activeAbort.current.signal.aborted)activeAbort.current=new AbortController();audio.current=new TableAudio();preloadCardArt();new Image().src='/cards/back.png';new Image().src='/emotes-icon.png';for(const e of EMOTE_LIST)if(e.ready){new Image().src=`/${e.key}-emote-sprite.png`;new Image().src=e.icon;}try{const stored=JSON.parse(localStorage.getItem('lotus-settings')||'null');if(stored)setSettings({...defaults,...stored});const st=JSON.parse(localStorage.getItem('lotus-stats')||'null');if(st)setStats(st);setPlayerName(localStorage.getItem('lotus-name')||'');}catch{}setHydrated(true);return()=>{mounted.current=false;clearTimeout(announceTimer.current);clearTimeout(codeCopyTimer.current);Object.values(emoteTimers.current).forEach(clearTimeout);Object.values(bubbleTimers.current).forEach(clearTimeout);activeAbort.current.abort();animations.current.forEach(a=>a.cancel());audio.current?.ctx?.close();};},[]);
+ const nativeActive=useRef(true);
+ const remote=useRef<any>(null),queue=useRef(new TableSession()),lobbyRef=useRef<any>(null),game=useRef<any>(null),locked=useRef(false),epoch=useRef(0),config=useRef(settings),audio=useRef<any>(null),table=useRef<HTMLElement|null>(null),animations=useRef<Set<Animation>>(new Set()),activeAbort=useRef(new AbortController()),mounted=useRef(true),paused=useRef(false),qaHold=useRef(false),memorized=useRef(false),packetHandler=useRef<(p:any)=>void>(()=>{}),queuedMatch=useRef<any>(null),observedDiscard=useRef<string|null>(null),movingSlots=useRef(new Set<string>()),motionTarget=useRef<any>(null),announceTimer=useRef<any>(null),emoteTimers=useRef<Record<number,any>>({}),emoteTokens=useRef<Record<number,number>>({}),codeCopyTimer=useRef<any>(null),bubbleTimers=useRef<Record<number,any>>({}),bubbleTokens=useRef<Record<number,number>>({});
+ useEffect(()=>{mounted.current=true;if(activeAbort.current.signal.aborted)activeAbort.current=new AbortController();audio.current=new TableAudio({vibrate:nativeVibrate});preloadCardArt();new Image().src='/cards/back.png';new Image().src='/emotes-icon.png';for(const e of EMOTE_LIST)if(e.ready){new Image().src=`/${e.key}-emote-sprite.png`;new Image().src=e.icon;}try{const stored=JSON.parse(localStorage.getItem('lotus-settings')||'null');if(stored)setSettings(restoreSettings(stored));const st=JSON.parse(localStorage.getItem('lotus-stats')||'null');if(st)setStats(st);setPlayerName(localStorage.getItem('lotus-name')||'');}catch{}setHydrated(true);return()=>{mounted.current=false;clearTimeout(announceTimer.current);clearTimeout(codeCopyTimer.current);Object.values(emoteTimers.current).forEach(clearTimeout);Object.values(bubbleTimers.current).forEach(clearTimeout);activeAbort.current.abort();animations.current.forEach(a=>a.cancel());audio.current?.ctx?.close();};},[]);
+ useEffect(()=>{let disposed=false;let remove:(()=>void)|undefined;void nativeBack(()=>{if(gate==='reviewer'){if(!authBusy)setGate('signin');return;}const action=backAction({panel,tutorial,menu,online});if(action==='close-panel')setPanel(null);else if(action==='close-tutorial')setTutorial(false);else if(action==='settings')setPanel('settings');else minimizeNative();}).then(handle=>{if(disposed)void handle?.remove();else remove=()=>{void handle?.remove();};});return()=>{disposed=true;remove?.();};},[panel,tutorial,menu,online,gate,authBusy]);
+ useEffect(()=>{const state=(event:Event)=>{const active=(event as CustomEvent<{isActive:boolean}>).detail.isActive;nativeActive.current=active;if(!active)void audio.current?.ctx?.suspend();else{void audio.current?.ctx?.resume();setWake(v=>v+1);remote.current?.resume?.();}};window.addEventListener('kamayuu:app-state',state);return()=>window.removeEventListener('kamayuu:app-state',state);},[]);
  // Preloads every image the onboarding/identity/home screens paint, so the
  // loading screen's progress bar reflects real work — not a fake timer. A
  // 404 on any one image still counts as settled, and an 8s hard timeout
@@ -67,8 +92,8 @@ export default function Home(){
   const hardTimeout=setTimeout(finish,8000);
   return()=>clearTimeout(hardTimeout);
  },[]);
- // Keeps the loader up for one full lotus draw-in even when assets settle
- // almost instantly, so the animation never gets cut mid-petal — this is a
+ // Keeps the loader up for the existing opening cycle even when assets settle
+ // almost instantly, so the animation never gets cut mid-sequence — this is a
  // floor, not a ceiling, so a slow load is never held up any further than the
  // asset/auth gates already require. prefers-reduced-motion bypasses the
  // floor outright (that user asked for less motion, not a longer wait), and
@@ -85,22 +110,26 @@ export default function Home(){
  useEffect(()=>{let live=true;
   (async()=>{
    const seenOnboarding = localStorage.getItem('lotus-onboarded');
+   const localReady=isNative()&&!!seenOnboarding;
+   if(localReady&&live){setGuest(true);setGate('ready');}
+   if(!connectionAvailable()){setGuest(true);setGate(seenOnboarding||storedAge()==='under_13'?'ready':'signin');return;}
    if(!supabaseConfigured()){
      if(live){
-       if(!seenOnboarding) setGate('signin');
+       if(storedAge()==='under_13'){setGuest(true);setPlayerName('Player');setGate('ready');}
+       else if(!seenOnboarding) setGate('signin');
        else { setGuest(true); setGate('ready'); }
      }
      return;
    }
    try{
     const session=await currentSession();
-    if(!session){if(live)setGate('signin');return;}
+    if(!session){if(localReady)return;if(live){if(storedAge()==='under_13'){setGuest(true);setPlayerName('Player');setGate('ready');}else setGate('signin');}return;}
     if(live)setGuest(isGuest(session));
     const existing=await loadProfile();
     if(!live)return;
-    if(!existing){setDraftName(localStorage.getItem('lotus-name')||'');setIdentityFrom('signin');setGate('onboarding');return;}
+    if(!existing){if(localReady)return;setDraftName(localStorage.getItem('lotus-name')||'');setIdentityFrom('signin');setGate('onboarding');return;}
     setProfile(existing);setPlayerName(existing.display_name);setGate('ready');
-   }catch{if(live)setGate('signin');}
+   }catch{if(live&&!localReady)setGate('signin');}
   })();
   return()=>{live=false;};
  },[]);
@@ -119,7 +148,19 @@ export default function Home(){
   }catch(err:any){setAuthError(err?.message||'Google sign-in failed.');}
   finally{setAuthBusy('');}
  }
+ async function handleReviewerSignIn(email:string,password:string){
+  setAuthBusy('Signing in…');
+  try{
+  const session=await signInReviewer(email,password);
+  const existing=await loadProfile();
+  localStorage.setItem('lotus-onboarded','true');
+  setGuest(isGuest(session));setAuthError('');
+  if(existing){setProfile(existing);setPlayerName(existing.display_name);setGate('ready');}
+  else{setDraftName('');setIdentityFrom('signin');setGate('onboarding');}
+  }finally{setAuthBusy('');}
+ }
  async function handleGoogleClick(){
+  if(isNative()){setAuthError('');setAuthBusy('Opening Google Sign-In…');try{const result=await nativeGoogleSignIn();await handleGoogleSuccess(result.token,result.nonce);}catch(e:unknown){setAuthError(e instanceof Error?e.message:'Google sign-in could not open.');setAuthBusy('');}return;}
   if(!googleConfigured()){setAuthError('Google sign-in is not configured yet.');return;}
   setAuthBusy('Opening Google Sign-In…');
   setTimeout(()=>setAuthBusy(''),1200);
@@ -131,7 +172,7 @@ export default function Home(){
  // Desktop visitors get an invitation to open the table on a phone instead. A
  // narrow window or a touch screen goes straight to the game, so tablets and
  // device emulation still work; "continue anyway" is remembered per session.
- useEffect(()=>{const mq=window.matchMedia('(min-width: 860px) and (hover: hover) and (pointer: fine)');const update=()=>{let ok=false;try{ok=sessionStorage.getItem('lotus-desktop-ok')==='1';}catch{}setDesktop(mq.matches&&!ok);};update();mq.addEventListener('change',update);return()=>mq.removeEventListener('change',update);},[]);
+ useEffect(()=>{if(isNative())return;const mq=window.matchMedia('(min-width: 860px) and (hover: hover) and (pointer: fine)');const update=()=>{let ok=false;try{ok=sessionStorage.getItem('lotus-desktop-ok')==='1';}catch{}setDesktop(mq.matches&&!ok);};update();mq.addEventListener('change',update);return()=>mq.removeEventListener('change',update);},[]);
  useEffect(()=>{if(!emotePicker)return;const close=(e:Event)=>{if(!(e.target as HTMLElement)?.closest?.('.emote-picker,.emotes-button'))setEmotePicker(false);};const key=(e:KeyboardEvent)=>{if(e.key==='Escape')setEmotePicker(false);};document.addEventListener('pointerdown',close);document.addEventListener('keydown',key);return()=>{document.removeEventListener('pointerdown',close);document.removeEventListener('keydown',key);};},[emotePicker]);
  useEffect(()=>{if(!messagePicker)return;const close=(e:Event)=>{if(!(e.target as HTMLElement)?.closest?.('.message-picker,.message-button'))setMessagePicker(false);};const key=(e:KeyboardEvent)=>{if(e.key==='Escape')setMessagePicker(false);};document.addEventListener('pointerdown',close);document.addEventListener('keydown',key);return()=>{document.removeEventListener('pointerdown',close);document.removeEventListener('keydown',key);};},[messagePicker]);
  useEffect(()=>{const visibility=()=>{for(const a of animations.current)if(document.hidden)a.pause();else a.play();};document.addEventListener('visibilitychange',visibility);return()=>document.removeEventListener('visibilitychange',visibility);},[]);
@@ -141,8 +182,8 @@ export default function Home(){
  function hide(loc:string){if(loc==='discard')observedDiscard.current=null;content(loc).style.visibility='hidden';}
  function sound(k:string,p=0){audio.current?.play(k,p===1?-1:p===3?1:0);}
  function check(token:number){if(token!==epoch.current||!mounted.current)throw new DOMException('Cancelled','AbortError');}
- async function wait(ms:number,token:number){const signal=activeAbort.current.signal;let remaining=ms;while(remaining>0){check(token);const step=Math.min(remaining,60);await new Promise<void>((resolve,reject)=>{const abort=()=>{clearTimeout(timer);reject(new DOMException('Cancelled','AbortError'));};const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve();},step);signal.addEventListener('abort',abort,{once:true});});if(!document.hidden&&!paused.current)remaining-=step;}check(token);}
- async function animate(node:HTMLElement,frames:Keyframe[],duration:number,token:number){check(token);const a=node.animate(frames,{duration:duration*(config.current.motion?.65:1),easing:'cubic-bezier(.22,.7,.25,1)',fill:'forwards'});animations.current.add(a);if(document.hidden)a.pause();const abort=()=>a.cancel();activeAbort.current.signal.addEventListener('abort',abort,{once:true});try{await a.finished;check(token);}finally{animations.current.delete(a);activeAbort.current.signal.removeEventListener('abort',abort);a.cancel();}}
+ async function wait(ms:number,token:number){const signal=activeAbort.current.signal;let remaining=ms;while(remaining>0){check(token);const step=Math.min(remaining,60);await new Promise<void>((resolve,reject)=>{const abort=()=>{clearTimeout(timer);reject(new DOMException('Cancelled','AbortError'));};const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve();},step);signal.addEventListener('abort',abort,{once:true});});if(soloCanAdvance({hidden:document.hidden,active:nativeActive.current,panel:paused.current}))remaining-=step;}check(token);}
+ async function animate(node:HTMLElement,frames:Keyframe[],duration:number,token:number){check(token);const a=node.animate(frames,{duration,easing:'cubic-bezier(.22,.7,.25,1)',fill:'forwards'});animations.current.add(a);if(document.hidden)a.pause();const abort=()=>a.cancel();activeAbort.current.signal.addEventListener('abort',abort,{once:true});try{await a.finished;check(token);}finally{animations.current.delete(a);activeAbort.current.signal.removeEventListener('abort',abort);a.cancel();}}
  async function flip(loc:string,c:any,token:number,hideAgain=false,privatePeek=false){const host=content(loc);sound('flip');await animate(host,[{transform:'translateY(0) rotateY(0)'},{transform:'translateY(-7px) rotateY(90deg)'}],150,token);put(loc,c);await animate(host,[{transform:'translateY(-7px) rotateY(-90deg)'},{transform:'translateY(-5px) rotateY(0)'}],180,token);if(hideAgain){await wait(privatePeek?1500:500,token);await flip(loc,null,token);}}
  async function fly(from:string,to:string,c:any,token:number,duration=550,arc=0,remove=true){
   check(token);const a=el(from).getBoundingClientRect(),b=el(to).getBoundingClientRect();if(remove)hide(from);const node=document.createElement('div');node.className='flying-card';node.setAttribute('aria-hidden','true');node.innerHTML=cardHTML(c);Object.assign(node.style,{position:'fixed',left:a.left+'px',top:a.top+'px',width:a.width+'px',height:a.height+'px',zIndex:'80',pointerEvents:'none',transformOrigin:'0 0'});document.body.appendChild(node);
@@ -152,7 +193,7 @@ export default function Home(){
  function neutralPrompt(state:any){if(state.phase==='finished'||state.phase==='memory')return;if(state.phase==='lastCall'){setCaption('LAST CHANCE TO MATCH');setMessage('Throw a match before the final reveal.');return;}if(state.players[0].eliminated){setCaption('YOU’RE OUT · WATCH THE TABLE');setMessage(`${seatName(state.active,state)}’s turn. Six cards ended your hand.`);return;}if(state.phase==='swapConfirm'&&state.active===0&&state.pending){setCaption('TRADE OR KEEP');setMessage(`Your ${positionName(state.pending.i)} against ${seatName(state.pending.target,state)}’s. Trade, or keep yours.`);return;}const you=state.active===0;setCaption(state.caller!==null?`FINAL ROUND · ${state.remaining.map((p:number)=>seatName(p,state)).join(' · ')}`:you?'YOUR TURN':`${seatName(state.active,state).toUpperCase()}’S TURN`);
  const messages:any={ready:you?(state.discard.length&&!takeable(state)?'You threw this discard. Draw from the deck.':'Draw, take the discard, or throw a match.'):'You can throw a match during this turn.',decision:you?'Tap a card to replace it.':'Considering the draw.',peek:you?'Jack — peek at one of your cards.':'A private peek.',swap:you?'Red Queen — pick one of your cards, then an opponent.':'A same-position exchange.',swapConfirm:you?'Trade the two cards, or keep yours.':'Weighing the exchange.'};setMessage(messages[state.phase]||'');}
  function cancel(){epoch.current++;activeAbort.current.abort();activeAbort.current=new AbortController();animations.current.forEach(a=>a.cancel());animations.current.clear();document.querySelectorAll('.flying-card').forEach(e=>e.remove());locked.current=false;setBusy(false);setMemory(false);setTarget(null);setResult(false);setCountdown(null);setSwapSlot(null);queuedMatch.current=null;setQueued(false);movingSlots.current.clear();motionTarget.current=null;Object.values(emoteTimers.current).forEach(clearTimeout);emoteTimers.current={};emoteTokens.current={};setEmotes({});setEmotePicker(false);Object.values(bubbleTimers.current).forEach(clearTimeout);bubbleTimers.current={};bubbleTokens.current={};setBubbles({});setMessagePicker(false);}
- async function start(override?:{players?:number;difficulty?:string}){cancel();if(remote.current){try{remote.current.close();}catch{}remote.current=null;setLobby(null);lobbyRef.current=null;setOnline(null);setPresence([]);setConnection('');setClock(null);}memorized.current=false;audio.current?.unlock();setMenu(false);setPanel(null);const token=epoch.current;locked.current=true;setBusy(true);const {state,events}=createGame({...config.current,...override});commit(state);track('game_start',{mode:'solo',players:state.players.length,meta:{difficulty:state.difficulty}});setCaption('THE LANTERN TABLE');setMessage('A fresh hand. A clean slate.');await paint();
+ async function start(override?:{players?:number;difficulty?:string}){cancel();queue.current.reset();if(remote.current){try{remote.current.close();}catch{}remote.current=null;setLobby(null);lobbyRef.current=null;setOnline(null);setPresence([]);setConnection('');setClock(null);}memorized.current=false;audio.current?.unlock();setMenu(false);setPanel(null);const token=epoch.current;locked.current=true;setBusy(true);const {state,events}=createGame({...config.current,...override});commit(state);track('game_start',{mode:'solo',players:state.players.length,meta:{difficulty:state.difficulty}});setCaption('THE LANTERN TABLE');setMessage('A fresh hand. A clean slate.');await paint();
  try{check(token);for(let p=0;p<state.players.length;p++)for(let i=0;i<4;i++)put(`p${p}-${i}`,null,true);put('discard',null,true);for(const e of events){if(e.type==='deal'){await fly('deck',`p${e.p}-${e.i}`,null,token,105,0,false);sound('deal',e.p);}else await fly('deck','discard',e.card,token,360,0,false);}
  setCountdown(null);setMemory(true);setCaption('MEMORIZE THESE TWO');setMessage('Remember your bottom two cards.');await Promise.all([flip('p0-2',state.players[0].slots[2],token),flip('p0-3',state.players[0].slots[3],token)]);for(let n=7;n>0;n--){setCountdown(n);await wait(1000,token);}setCountdown(0);await Promise.all([flip('p0-2',null,token),flip('p0-3',null,token)]);setMemory(false);const next=transition(state,{type:'remember'}).state;commit(next);neutralPrompt(next);try{localStorage.setItem('lotus-tutorial','complete');}catch{}}
  catch(err:any){if(err.name!=='AbortError'){console.error(err);setMessage('The deal was interrupted. Start a new match.');}}finally{if(token===epoch.current){locked.current=false;setBusy(false);}}}
@@ -168,6 +209,7 @@ export default function Home(){
   setEmotes(prev=>{if(prev[p]?.token!==token)return prev;const next={...prev};delete next[p];return next;});
  }
  function playEmote(p:number,name:string){
+  if(p!==0&&config.current.muteEmotes)return;
   const token=(emoteTokens.current[p]=(emoteTokens.current[p]||0)+1);
   clearTimeout(emoteTimers.current[p]);
   setEmotes(prev=>({...prev,[p]:{name,token}}));
@@ -178,6 +220,7 @@ export default function Home(){
  // Quick-message chat bubbles, tracked per player exactly like emotes so two
  // people can send one at the same time without clobbering each other's.
  function playBubble(p:number,text:string){
+  if(p!==0&&config.current.muteMessages)return;
   const token=(bubbleTokens.current[p]=(bubbleTokens.current[p]||0)+1);
   setBubbles(prev=>({...prev,[p]:{text,token}}));
   clearTimeout(bubbleTimers.current[p]);
@@ -253,17 +296,43 @@ export default function Home(){
     }
     await eventsPlay(packet.events,before||next,next,token);check(token);commit(next);
    }
+   if(next.phase==='finished'&&resync&&before?.phase!=='finished')setResult(true);
    if(next.phase==='memory'&&!memorized.current){memorized.current=true;await memorize(next,token,silent);}
    else neutralPrompt(next);
-  }catch(err:any){if(err.name!=='AbortError'){console.error(err);commit(next);neutralPrompt(next);}}
+   const ackKey=packet.room.id+':'+packet.room.presentationId;
+   if(!silent&&next.phase!=='finished'&&next.active===0&&packet.room.presentationUntil>packet.room.serverTime&&presentationAck.current!==ackKey){
+    presentationAck.current=ackKey;
+    try{await remote.current?.command('presented',{presentationId:packet.room.presentationId});}catch{}
+   }
+   check(token);
+   const current=remote.current?.room;
+   if(!silent&&next.active===0&&current?.presentationId===packet.room.presentationId){const serverNow=current.serverTime+Math.max(0,Date.now()-(current.receivedAt||Date.now()));if(current.clockStartedAt>serverNow)await hold(Math.min(8000,current.clockStartedAt-serverNow),token);}
+  }catch(err:any){if(token===epoch.current&&err.name!=='AbortError'){console.error(err);commit(next);neutralPrompt(next);}}
   finally{if(token===epoch.current){locked.current=false;setBusy(false);}}
  }
  packetHandler.current=(packet:any)=>{
-  lobbyRef.current=packet.room;setLobby(packet.room);setJoinError('');
-  if(packet.recover){cancel();queue.current=Promise.resolve();}
-  queue.current=queue.current.then(()=>playPacket(packet)).catch(()=>{});
+  if(lobbyRef.current?.matchId&&packet.room.matchId!==lobbyRef.current.matchId){cancel();memorized.current=false;seenSocial.current.clear();game.current=null;queue.current.clearQueue();}
+  packet.room.receivedAt??=Date.now();lobbyRef.current=packet.room;setLobby(packet.room);setJoinError('');
+  const socialNow=packet.room.serverTime||Date.now();
+  for(const e of packet.social||[])if(e.at<=socialNow&&socialNow-e.at<6000&&!seenSocial.current.has(`${packet.room.id}:${e.id}`)){
+    seenSocial.current.add(`${packet.room.id}:${e.id}`);
+    if(e.type==='emote')playEmote(e.p,e.name);else if(e.type==='message')playBubble(e.p,e.text);
+  }
+  if(packet.metaOnly)return;
+  if(packet.recover&&!locked.current){cancel();queue.current.clearQueue();}
+  void queue.current.enqueue(()=>playPacket(packet));
  };
+ const seenSocial=useRef(new Set<string>()),presentationAck=useRef<string|null>(null);
+ useEffect(()=>{
+  if(settings.muteEmotes)setEmotes(prev=>Object.fromEntries(Object.entries(prev).filter(([p])=>p==='0')));
+  if(settings.muteMessages)setBubbles(prev=>Object.fromEntries(Object.entries(prev).filter(([p])=>p==='0')));
+ },[settings.muteEmotes,settings.muteMessages]);
+ useEffect(()=>{
+  if(online==='room'&&lobby?.id)void remote.current?.command('preferences',{allowRematches:settings.allowRematches}).catch(()=>{});
+ },[settings.allowRematches,online,lobby?.id]);
  async function continueAsGuest(){
+  if(isNative()||!connectionAvailable()){localStorage.setItem('lotus-onboarded','true');setGuest(true);setPlayerName(localStorage.getItem('lotus-name')||DEFAULT_NAME);setGate('ready');return;}
+  if(storedAge()==='under_13'){setGuest(true);setPlayerName('Player');setGate('ready');return;}
   setAuthBusy('Setting up…');setAuthError('');
   try{localStorage.setItem('lotus-onboarded','true');}catch{}
   try{
@@ -276,6 +345,7 @@ export default function Home(){
   }finally{setAuthBusy('');}
  }
  async function finishOnboarding(identity?: PlayerIdentityData){
+  if(storedAge()==='under_13'){setPlayerName(familyState()?.alias||'Player');setGate('ready');return;}
   const name=(identity?.name||draftName).trim().slice(0,NAME_LIMIT)||DEFAULT_NAME;
   const badge=identity?.badge??draftAvatar??'compass';
   const country=identity?.country||'';
@@ -297,29 +367,44 @@ export default function Home(){
   }finally{setAuthBusy('');setGate('ready');}
  }
  async function leaveAccount(){
-  if(remote.current){try{await remote.current.close();}catch{}remote.current=null;}
-  await signOut();
+  const previous=remote.current;remote.current=null;queue.current.reset();cancel();void previous?.close().catch(()=>{});
+  try{await signOut();}catch{setAuthError('Could not clear the saved sign-in. Please retry.');return;}
   setProfile(null);setGuest(false);setLobby(null);lobbyRef.current=null;setOnline(null);
-  setPanel(null);setMenu(true);setGate('signin');
+  setPanel(null);setMenu(true);if(storedAge()==='under_13')window.location.reload();else setGate('signin');
  }
  async function connect(command:'create'|'join'|'recover',extra:any={}){
-  cancel();setJoinError('');setOnline('connecting');setConnection('Connecting…');
+  cancel();queue.current.reset();setJoinError('');setOnline('connecting');setConnection('Connecting…');
   // Any previous table is torn down first: its channels and its room id would
   // otherwise follow this connection into the new room.
-  if(remote.current){try{await remote.current.close();}catch{}remote.current=null;}
+  const previous=remote.current;remote.current=null;void previous?.close().catch(()=>{});
   game.current=null;setS(null);setLobby(null);lobbyRef.current=null;setPresence([]);memorized.current=false;
-  queue.current=Promise.resolve();
+  queue.current.clearQueue();
+  let service:MultiplayerService|null=null;
   try{
    audio.current?.unlock();
-   remote.current=new MultiplayerService((pk:any)=>packetHandler.current(pk),setConnection,setPresence);
-   await remote.current.enter(command,extra);
+   service=new MultiplayerService(queue.current.guard((pk:any)=>packetHandler.current(pk)),queue.current.guard(setConnection),queue.current.guard(setPresence));remote.current=service;
+   await service.enter(command,extra);
+   if(remote.current!==service||service.closed)return;
    setOnline('room');setPanel(null);setMenu(false);
   }catch(err:any){
-   try{await remote.current?.close();}catch{}
-   remote.current=null;setOnline(null);setConnection('');setPanel('online');setJoinError(err?.message||'Could not reach the table.');
+   if(remote.current!==service)return;
+   remote.current=null;queue.current.reset();cancel();setOnline(null);setConnection('');setMenu(true);setPanel('online');setJoinError(err?.message||'Could not reach the table.');
+   void service?.close().catch(()=>{});
   }
  }
  async function sendCommand(command:string,extra:any={}){try{await remote.current?.command(command,extra);}catch(err:any){setJoinError(err?.message||'That did not reach the table.');}}
+ const connectRanked=useCallback(async(matchId:string)=>{
+  cancel();queue.current.reset();setPanel(null);setJoinError('');setOnline('connecting');setConnection('Connecting…');
+  const previous=remote.current;remote.current=null;void previous?.close().catch(()=>{});
+  game.current=null;setS(null);setLobby(null);lobbyRef.current=null;memorized.current=false;seenSocial.current.clear();queue.current.clearQueue();
+  const service=new RankedTable(matchId,queue.current.guard((p:any)=>packetHandler.current(p)),queue.current.guard(setConnection),queue.current.guard(setPresence));remote.current=service;
+  try{await service.enter();if(remote.current!==service||service.closed)return;setOnline('room');setMenu(false);}
+  catch{
+   if(remote.current!==service)return;
+   remote.current=null;queue.current.reset();cancel();setOnline(null);setConnection('');setMenu(true);setPanel('ranked');
+   void service.close().catch(()=>{});
+  }
+ },[]);
  async function copyRoomCode(code:string){
   try{await navigator.clipboard.writeText(code);}
   catch{
@@ -332,7 +417,7 @@ export default function Home(){
   setCodeCopied(true);clearTimeout(codeCopyTimer.current);codeCopyTimer.current=setTimeout(()=>setCodeCopied(false),1800);
  }
  function shareRoomCode(code:string){
-  const text=`Join my Kamayuu table — code ${code}`,url=typeof window!=='undefined'?window.location.origin:'';
+  const text=`Join my Kamayuu table — code ${code}`,url=roomShareUrl(isNative(),typeof window!=='undefined'?window.location.origin:'');
   if(typeof navigator!=='undefined'&&(navigator as any).share){(navigator as any).share({title:'Kamayuu',text,url}).catch(()=>{});return;}
   // No native share sheet (most desktop browsers) — WhatsApp Web link is the
   // closest thing to a universal "share" fallback for a table code.
@@ -343,8 +428,8 @@ export default function Home(){
   // that can hang on a bad connection, and awaiting it first left the button
   // looking dead at the one moment a player is already trying to get out.
   const service=remote.current;
-  remote.current=null;cancel();memorized.current=false;
-  game.current=null;setS(null);setLobby(null);lobbyRef.current=null;setOnline(null);setPresence([]);setConnection('');setClock(null);setMenu(true);
+  remote.current=null;queue.current.reset();cancel();memorized.current=false;seenSocial.current.clear();presentationAck.current=null;
+  game.current=null;setS(null);setLobby(null);lobbyRef.current=null;setOnline(null);setPresence([]);setConnection('');setClock(null);setPanel(null);setMenu(true);
   // Still release the seat, and the membership behind it, in the background.
   try{await service?.leave();}catch{}
   try{await service?.close();}catch{}
@@ -386,20 +471,20 @@ export default function Home(){
  },[s,busy,menu,panel,act,wake]);
  useEffect(()=>{
   if(!lobby?.deadline||!s||s.phase==='finished'){setClock(null);return;}
-  const skew=(lobby.serverTime||Date.now())-Date.now();
-  // The packet's own timestamp against its deadline is the turn's full length —
-  // what the ring drains from.
-  setClockTotal(Math.max(1,Math.round((lobby.deadline-(lobby.serverTime||Date.now()))/1000)));
-  const tick=()=>setClock(Math.max(0,Math.round((lobby.deadline-(Date.now()+skew))/1000)));
-  tick();const id=setInterval(tick,500);return()=>clearInterval(id);
+  const tick=()=>{const current=turnClock(lobby,lobby.clockPhase||s.phase);setClock(current.seconds);setClockProgress(current.progress);};
+  tick();const id=setInterval(tick,100);return()=>clearInterval(id);
  },[lobby,s]);
- useEffect(()=>()=>{remote.current?.close();},[]);
+ useEffect(()=>()=>{queue.current.reset();void remote.current?.close().catch(()=>{});remote.current=null;},[]);
  useEffect(()=>{const resume=()=>{if(!document.hidden)setWake(v=>v+1);};document.addEventListener('visibilitychange',resume);return()=>document.removeEventListener('visibilitychange',resume);},[]);
  useEffect(()=>{const ctx=(document as any).modelContext;if(!ctx?.registerTool)return;const lifecycle=new AbortController();try{Promise.resolve(ctx.registerTool({name:'play_table_action',description:'Perform one legal human action at the Kamayuu table. Hidden card identities are never returned.',inputSchema:{type:'object',properties:{type:{type:'string',enum:['draw','take','match','replace','discard','peek','inspect','swap','skip','buzz']},i:{type:'integer',minimum:0,maximum:51},target:{type:'integer',minimum:1,maximum:3}},required:['type'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:async(input:any)=>{if(!input||!['draw','take','match','replace','discard','peek','inspect','swap','skip','buzz'].includes(input.type))throw Error('Invalid action');const ok=await act(input);if(!ok)throw Error('Action is unavailable');return {phase:game.current.phase,active:seatName(game.current.active,game.current),counts:game.current.players.map((p:any)=>p.slots.filter(Boolean).length)};}},{signal:lifecycle.signal})).catch(()=>{});}catch{}return()=>lifecycle.abort();},[act]);
- useEffect(()=>{if(process.env.NODE_ENV!=='production'){(window as any).__lotusQA={state:()=>structuredClone(game.current),busy:()=>locked.current,load:(state:any,hold=true)=>{cancel();qaHold.current=hold;setMenu(false);setPanel(null);commit(state);neutralPrompt(state);},act:(a:any)=>act(a,true),release:()=>{qaHold.current=false;setRevision(v=>v+1);},online:async(seats=3)=>{const {LocalTable}=await import('@/lib/local-table.mjs');cancel();memorized.current=false;remote.current=new LocalTable(seats,(pk:any)=>packetHandler.current(pk),setConnection,setPresence,['You','Kai','Rin','Mira']);setOnline('room');setMenu(false);setPanel(null);await remote.current.enter();return remote.current.room;},table:()=>remote.current?.record?.data};return()=>{delete (window as any).__lotusQA;};}},[act]); const players=s?.players||Array.from({length:lobby&&!s?Math.max(2,lobby.members.length):settings.players},(_,p)=>({name:lobby&&!s?(lobby.members[p]?.name||'Waiting…'):NAMES[p],slots:[true,true,true,true],penalty:0}));
+ useEffect(()=>{if(process.env.NODE_ENV!=='production'){(window as any).__lotusQA={state:()=>structuredClone(game.current),busy:()=>locked.current,load:(state:any,hold=true)=>{cancel();qaHold.current=hold;setMenu(false);setPanel(null);commit(state);neutralPrompt(state);},act:(a:any)=>act(a,true),release:()=>{qaHold.current=false;setRevision(v=>v+1);},online:async(seats=3)=>{const {LocalTable}=await import('@/lib/local-table.mjs');cancel();queue.current.reset();memorized.current=false;void remote.current?.close().catch(()=>{});remote.current=new LocalTable(seats,queue.current.guard((pk:any)=>packetHandler.current(pk)),queue.current.guard(setConnection),queue.current.guard(setPresence),['You','Kai','Rin','Mira']);setOnline('room');setMenu(false);setPanel(null);await remote.current.enter();return remote.current.room;},table:()=>remote.current?.record?.data};return()=>{delete (window as any).__lotusQA;};}},[act]); const players=s?.players||Array.from({length:lobby&&!s?Math.max(2,lobby.members.length):settings.players},(_,p)=>({name:lobby&&!s?(lobby.members[p]?.name||'Waiting…'):NAMES[p],slots:[true,true,true,true],penalty:0}));
  const myReady=!!lobby?.members?.find((m:any)=>m.id===lobby.me)?.ready;
  const isHost=!!lobby&&lobby.host===lobby.me;
  const canStart=isHost&&lobby.members.length>=2&&lobby.members.every((m:any)=>m.ready);
+ const isRanked=lobby?.mode==='ranked';
+ const rematchOffer=isRanked?lobby?.rematch:lobby?.rematch?{...lobby.rematch,fromSeat:lobby.rematch.from===lobby.me?0:1}:null;
+ const rematchControls=lobby?.members.length===2?<RematchControls offer={rematchOffer} allowIncoming={settings.allowRematches} opponentName={lobby?.members.find((m:any)=>m.id!==lobby.me)?.name} onResponse={async response=>{await remote.current?.command(isRanked?'rematch':`rematch_${response}`,isRanked?{response}:{});}}/>:
+  isHost?<button className="primary" onClick={()=>void sendCommand('rematch')}>Rematch</button>:<p>The host opens the next table.</p>;
  const can=s&&!s.players[0].eliminated&&s.active===0&&!busy&&!menu&&!panel;const ready=can&&s.phase==='ready';
  // The gap after your turn ends, before the next player has drawn: you may
  // still call the final round, even though it is no longer your turn.
@@ -426,21 +511,27 @@ export default function Home(){
  // null; rendering from the last panel it showed keeps a closing sheet from
  // morphing into the settings fallback on its way out.
  const lastPanelRef=useRef<string|null>(null);if(panel)lastPanelRef.current=panel;const view=panel??lastPanelRef.current;
- if(desktop)return <DesktopGate onContinue={()=>{try{sessionStorage.setItem('lotus-desktop-ok','1');}catch{}setDesktop(false);}}/>;
+ // Preserve the closing drawer's contents during its exit animation. Leaving
+ // must not briefly replace table controls with the larger home settings.
+ const settingsContext=useRef<'home'|'online'|'practice'>('home');
+ if(panel==='settings')settingsContext.current=menu?'home':online==='room'?'online':'practice';
+ const inTable=settingsContext.current!=='home';
+ if(desktop&&!isNative())return <DesktopGate onContinue={()=>{try{sessionStorage.setItem('lotus-desktop-ok','1');}catch{}setDesktop(false);}}/>;
  if(tutorial)return <KamayuuTutorial sound={settings.sound} haptics={settings.haptics} motion={settings.motion} onExit={()=>{setTutorial(false);setMenu(true);}} onPlayFirstGame={()=>{setTutorial(false);audio.current?.unlock();start();}}/>;
- return <main className="game-shell"><section ref={table as any} className={'table '+(s?.caller!==null&&s?'final-round':'')} data-phase={s?.phase||'menu'} aria-label="Kamayuu game table"><header className="table-header"><div className="brand"><Lotus/><span>KAMAYUU</span></div>{online==='room'&&s&&<div className="online-hud" aria-label={`Room ${lobby?.code}`}><i className={'seat-dot'+(connection==='Connected'?' on':'')}/><span>{lobby?.code}</span></div>}<div className="header-actions"><button className="icon-btn" aria-label={settings.sound?'Mute sound':'Enable sound'} onClick={()=>{audio.current?.unlock();setSettings(v=>({...v,sound:!v.sound}));}}>{settings.sound?<Volume2 size={17}/>:<VolumeX size={17}/>}</button><button className="icon-btn" aria-label="How to play" onClick={()=>setPanel('learn')}><BookOpen size={17}/></button></div></header><div className="round-label">{s?`ROUND ${s.round}`:'THE LANTERN TABLE'}</div>
+ return <main className="game-shell" data-short-motion={settings.motion}><section ref={table as any} className={'table '+(s?.caller!==null&&s?'final-round':'')} data-phase={s?.phase||'menu'} aria-label="Kamayuu game table"><header className="table-header"><div className="brand"><KamayuuMark/><span>KAMAYUU</span></div>{online==='room'&&s&&<div className="online-hud" aria-label={`Room ${lobby?.code}`}><i className={'seat-dot'+(connection==='Connected'?' on':'')}/><span>{lobby?.code}</span></div>}<div className="header-actions"><button className="icon-btn" aria-label={settings.sound?'Mute sound':'Enable sound'} onClick={()=>{audio.current?.unlock();setSettings(v=>({...v,sound:!v.sound}));}}>{settings.sound?<Volume2 size={17}/>:<VolumeX size={17}/>}</button><button className="icon-btn" aria-label="How to play" onClick={()=>setPanel('learn')}><BookOpen size={17}/></button></div></header><div className="round-label">{s?`ROUND ${s.round}`:'THE LANTERN TABLE'}</div>
  {players.map((player:any,p:number)=><section key={p} className={'player '+positions[p]+(player.eliminated?' eliminated':'')+(s?.active===p&&!menu&&!player.eliminated?' active':'')+(can&&!player.eliminated&&s.phase==='swap'&&p!==0?' targetable':'')+(target===p?' targeted':'')} aria-label={player.name+' board'}><button className="player-label" disabled={!(can&&!player.eliminated&&s.phase==='swap'&&p!==0)} onClick={()=>chooseSwap(swapSlot,p)}><span className={'avatar avatar-'+p}>{p===0?'✧':player.name[0]}</span><span className="player-name">{player.name}</span><i>{player.slots.filter(Boolean).length}</i>{player.eliminated&&<b className="out-badge">OUT</b>}{s?.remaining.includes(p)&&<b className="final-dot" title="Final turn remaining"/>}</button><div className="card-grid">{seatOrder(Math.max(5,player.slots.length+(player.eliminated||player.slots.slice(4).some((c:any)=>!c)?0:1)),p).map((i:number)=>renderSlot(player,p,player.slots[i]||null,i))}{emotes[p]&&<div key={emotes[p].token} className="emote-overlay emote-playing" aria-hidden="true" onAnimationEnd={e=>{if(e.target===e.currentTarget&&e.animationName==='emoteOverlayFade')finishEmote(p,emotes[p].token);}}><div className={`emote-sprite emote-sprite-${emotes[p].name}`}/></div>}{bubbles[p]&&<div key={bubbles[p].token} className="emote-overlay" role="status"><div className="chat-bubble">{bubbles[p].text}</div></div>}</div>{player.penalty>0&&<span className="penalty">+{player.penalty} penalty</span>}{s?.phase==='finished'&&<span className="total-label">{player.eliminated?'Eliminated':`${s.totals[p]} points`}</span>}<div data-loc={`held${p}`} className="decision-slot"><Card rev={revision} empty={!(s?.active===p&&s?.held)} card={s?.active===p&&s?.held?.rank&&(p===0||s.source==='discard'||s.phase==='peek'||s.phase==='swap')?s.held:null}/></div><div data-loc={`reveal${p}`} className="reveal-slot"><Card rev={revision} empty/></div></section>)}
  <div className="piles"><div><button data-loc="deck" className={'pile deck '+(ready?'available':'')} disabled={!ready} onClick={()=>act({type:'draw'})} aria-label="Draw from deck"><Card rev={revision}/></button><span>DECK <i>{deckSize(s)}</i></span></div><div><button data-loc="discard" className={'pile discard '+(ready&&takeable(s)?'available':'')} disabled={!(ready&&takeable(s))} onClick={()=>act({type:'take'})} aria-label={'Take discard '+(s?.discard.length?label(s.discard.at(-1)):s?'empty':'King of hearts')}><Card rev={revision} empty={s&&!s.discard.length} card={s?s.discard.at(-1):{rank:'K',suit:'♥'}}/></button><span>DISCARD</span></div></div>
- <div className="status" role="status" aria-live="polite">{online==='room'&&clock!==null&&<span className={'turn-clock'+(clock<=5?' urgent':'')} style={{'--p':Math.min(1,clock/clockTotal)} as React.CSSProperties} role="timer" aria-label={`${clock} seconds left`}><b>{clock}</b></span>}<span>{caption}</span><p>{message}</p>{memory&&countdown!==null&&<div className="memory-timer"><i style={{width:`${countdown/7*100}%`}}/><b>{countdown}</b></div>}</div>
- {can&&s.phase==='decision'&&s.source==='deck'&&<button className="text-action hand-action" onClick={()=>act({type:'discard'})}>Discard draw</button>}{can&&['swap','peek'].includes(s.phase)&&<button className="text-action hand-action" onClick={()=>act({type:'skip'})}>Pass power</button>}{can&&s.phase==='swapConfirm'&&<div className="swap-confirm"><button className="primary" onClick={()=>act({type:'swap'})}>Trade cards</button><button className="text-action" onClick={()=>act({type:'skip'})}>Keep mine</button></div>}{announce&&<div className="announce" role="status" aria-live="assertive">{announce}</div>}<div className="buzzer-area"><button className={'buzzer '+(buzzReady?'tempting':'')} disabled={!buzzReady} onClick={()=>act({type:'buzz'})} aria-label="Buzz — start the final round"><span>♛</span></button><b>{s?.caller!==null&&s?'FINAL ROUND':'BUZZER'}</b></div><button className={'emotes-button'+(emotePicker?' open':'')} disabled={!s||menu||!!panel} onClick={()=>{setEmotePicker(v=>!v);setMessagePicker(false);}} aria-haspopup="true" aria-expanded={emotePicker} aria-label="Choose an emote"><span className="emotes-avatar"><img src="/emotes-icon.png" alt="" draggable={false}/></span><span>EMOTES</span></button>
+ <div className="status" role="status" aria-live="polite">{online==='room'&&clock!==null&&<span className={'turn-clock'+(clock<=5?' urgent':'')} style={{'--p':clockProgress} as React.CSSProperties} role="timer" aria-label={busy?'Card animation · timer paused':`${clock} seconds left`}><b>{busy?'…':clock}</b></span>}<span>{caption}</span><p>{message}</p>{can&&['decision','peek','swap','swapConfirm'].includes(s.phase)&&<div className="turn-action-row">{can&&s.phase==='decision'&&s.source==='deck'&&<button className="text-action hand-action" onClick={()=>act({type:'discard'})}>Discard draw</button>}{can&&['swap','peek'].includes(s.phase)&&<button className="text-action hand-action" onClick={()=>act({type:'skip'})}>Skip power</button>}{can&&s.phase==='swapConfirm'&&<div className="swap-confirm"><button className="primary" onClick={()=>act({type:'swap'})}>Trade cards</button><button className="text-action" onClick={()=>act({type:'skip'})}>Keep mine</button></div>}</div>}{memory&&countdown!==null&&<div className="memory-timer"><i style={{width:`${countdown/7*100}%`}}/><b>{countdown}</b></div>}</div>
+ {announce&&<div className="announce" role="status" aria-live="assertive">{announce}</div>}<div className="buzzer-area"><button className={'buzzer '+(buzzReady?'tempting':'')} disabled={!buzzReady} onClick={()=>act({type:'buzz'})} aria-label="Buzz — start the final round"><span>♛</span></button><b>{s?.caller!==null&&s?'FINAL ROUND':'BUZZER'}</b></div><button className={'emotes-button'+(emotePicker?' open':'')} disabled={!s||menu||!!panel} onClick={()=>{setEmotePicker(v=>!v);setMessagePicker(false);}} aria-haspopup="true" aria-expanded={emotePicker} aria-label="Choose an emote"><span className="emotes-avatar"><img src="/emotes-icon.png" alt="" draggable={false}/></span><span>EMOTES</span></button>
  {emotePicker&&<div className="emote-picker" role="menu"><p>Select an emote</p><div className="emote-picker-grid">{EMOTE_LIST.map(e=><button key={e.key} role="menuitem" className={'emote-option'+(e.ready?'':' soon')} disabled={!e.ready} onClick={()=>e.ready&&sendEmote(e.key)} aria-label={e.ready?`Send the ${e.label.toLowerCase()} emote`:`${e.label} — coming soon`}><span className="emote-option-icon"><img src={e.icon} alt="" draggable={false}/></span><span>{e.ready?e.label:'SOON'}</span></button>)}</div></div>}<button className={'message-button'+(messagePicker?' open':'')} disabled={!s||menu||!!panel} onClick={()=>{setMessagePicker(v=>!v);setEmotePicker(false);}} aria-haspopup="true" aria-expanded={messagePicker} aria-label="Send a quick message"><span className="message-avatar"><MessageCircle size={20}/></span><span>Message</span></button>
  {messagePicker&&<div className="message-picker" role="menu"><p>Quick message</p><div className="message-picker-list">{QUICK_MESSAGES.map(m=><button key={m.key} role="menuitem" className="message-option" onClick={()=>sendQuickMessage(m.text)}><span className="message-option-icon">{m.icon}</span><span>{m.text}</span></button>)}</div></div>}
  <button className="settings-button" onClick={()=>setPanel('settings')} aria-label="Settings"><Settings size={21}/><span>Settings</span></button><footer className="table-footer"><span>{queued?'MATCH QUEUED · WAITING FOR THE CARD TO LAND':busy?'FOLLOW THE CARDS':'REMEMBER. OBSERVE. OUTTHINK.'}</span></footer>
  <LoadingScreen visible={gate==='loading'||!assetsDone||!minTimeElapsed} progress={assetProgress} motionShort={settings.motion}/>
- {gate==='signin'&&(
+ {gate==='signin'&&storedAge()!=='under_13'&&(
    <OnboardingScreen
     onContinueWithGoogle={handleGoogleClick}
     onContinueAsGuest={continueAsGuest}
+    onReviewerSignIn={()=>{setAuthError('');setGate('reviewer');}}
     authBusy={authBusy}
     authError={authError}
     googleConfigured={googleConfigured()}
@@ -449,6 +540,7 @@ export default function Home(){
     backgroundImageUrl="/onboarding-bg.webp"
    />
   )}
+ {gate==='reviewer'&&<ReviewerSignIn onBack={()=>setGate('signin')} onSignIn={handleReviewerSignIn}/>}
  {gate==='onboarding'&&(
     <PlayerIdentityScreen
       initialName={draftName || (typeof window !== 'undefined' ? localStorage.getItem('lotus-name') || '' : '')}
@@ -462,7 +554,7 @@ export default function Home(){
       backgroundImageUrl="/onboarding-identity-bg.webp"
     />
   )}
- {online==='room'&&!s&&lobby&&<div className="welcome"><div className="welcome-card lobby-card"><Lotus/><p className="eyebrow">TABLE CODE</p><h1 className="room-code">{lobby.code}</h1>
+ {online==='room'&&!s&&lobby&&<div className="welcome"><div className="welcome-card lobby-card"><KamayuuMark/><p className="eyebrow">TABLE CODE</p><h1 className="room-code">{lobby.code}</h1>
  <div className="code-actions">
   <button className="code-action" onClick={()=>copyRoomCode(lobby.code)} aria-label="Copy table code">{codeCopied?<Check size={15}/>:<Copy size={15}/>}<span>{codeCopied?'Copied':'Copy code'}</span></button>
   <button className="code-action" onClick={()=>shareRoomCode(lobby.code)} aria-label="Share table code"><Share2 size={15}/><span>Share</span></button>
@@ -474,19 +566,19 @@ export default function Home(){
  {joinError&&<p className="form-error">{joinError}</p>}
  <button className="text-action" onClick={leaveOnline}>Leave table</button>
  <small>{connection||'Connected'}</small></div></div>}
- {online==='connecting'&&<div className="welcome"><div className="welcome-card"><Lotus/><p className="eyebrow">{connection||'CONNECTING…'}</p></div></div>}
+ {online==='connecting'&&<div className="welcome"><div className="welcome-card"><KamayuuMark/><p className="eyebrow">{connection||'CONNECTING…'}</p></div></div>}
   {gate==='ready'&&menu&&(
     <HomeScreen
       playerName={profile?.display_name || playerName || DEFAULT_NAME}
       playerPhoto={typeof window !== 'undefined' ? localStorage.getItem('lotus-avatar-photo') || '' : ''}
-      playerRank="Gold II"
-      playerRating={1248}
+      playerRank={standing?.played?standing.tier.label:'Unranked'}
+      playerRating={standing?.rating||0}
       aiDifficulty={settings.difficulty}
       onDifficultyChange={(diff) => setSettings((x) => ({ ...x, difficulty: diff }))}
       playerCount={settings.players}
       onPlayerCountChange={(count) => setSettings((x) => ({ ...x, players: count }))}
-      onQuickMatch={() => setPanel('soon')}
-      onComingSoon={() => setPanel('soon')}
+      onQuickMatch={() => setPanel('ranked')}
+      onComingSoon={(mode) => setPanel(mode==='ranked'?'ranked':'soon')}
       onPrivateTable={() => {
         setJoinError('');
         setPanel('online');
@@ -506,31 +598,28 @@ export default function Home(){
       backgroundImageUrl="/onboarding-identity-bg.webp"
     />
   )}
- {result&&s&&<ScoreLedger winnerNames={s.winners.map((p:number)=>seatName(p,s))} winningTotal={s.totals[s.winners[0]]} note={online==='room'&&!isHost?'Waiting for the host to start a rematch.':undefined} players={s.players.map((p:any,i:number)=>({name:p.name,total:s.totals[i],cards:p.slots.filter(Boolean).length,penalty:p.penalty,eliminated:!!p.eliminated,winner:s.winners.includes(i),you:i===0}))}>{online==='room'?<>{isHost&&<button className="primary" onClick={()=>sendCommand('rematch')}>Rematch</button>}<button className="text-action" onClick={()=>leaveOnline()}>Leave the table</button></>:<><button className="primary" onClick={()=>start()}>Play again</button><button className="text-action" onClick={()=>{cancel();setMenu(true);}}>Main menu</button></>}<button className="text-action" onClick={()=>setResult(false)}>View table</button></ScoreLedger>}
+ {result&&s&&<ScoreLedger winnerNames={s.winners.map((p:number)=>seatName(p,s))} winningTotal={s.totals[s.winners[0]]}  players={s.players.map((p:any,i:number)=>({name:p.name,total:s.totals[i],cards:p.slots.filter(Boolean).length,penalty:p.penalty,eliminated:!!p.eliminated,winner:s.winners.includes(i),you:i===0}))}>{online==='room'?<>{rematchControls}{isRanked&&<button className="text-action" onClick={()=>{void leaveOnline();setResult(false);setPanel('ranked');}}>Find another opponent</button>}<button className="text-action" onClick={()=>leaveOnline()}>Leave the table</button></>:<><button className="primary" onClick={()=>start()}>Play again</button><button className="text-action" onClick={()=>{cancel();setMenu(true);}}>Main menu</button></>}<button className="text-action" onClick={()=>setResult(false)}>View table</button></ScoreLedger>}
  {s?.phase==='finished'&&!result&&!menu&&<button className="show-results primary" onClick={()=>setResult(true)}>View results</button>}
- </section><Dialog open={!!panel} onOpenChange={(open)=>{if(!open)setPanel(null);}}><DialogContent className={'game-dialog '+(view==='settings'?'lacquer':'parchment')}><DialogTitle>{view==='soon'?'Quick Match is coming soon':view==='learn'?'Learn Kamayuu':view==='quick'?'Quick Rules':view==='rules'?'The rules of the table':view==='online'?'Play with friends':view==='leaderboard'?'Leaderboard & Honor':'Your table'}</DialogTitle><DialogDescription>{view==='soon'?'Matchmaking opens once the tables fill.':view==='learn'?'Pick how you want to learn.':view==='quick'?'The core loop, in about 30 seconds.':view==='rules'?'Lowest total wins. Memory makes the difference.':view==='online'?'Create a table and share the code, or join one.':view==='leaderboard'?'Season 1 · Lantern Ascendance Rankings':'These preferences stay on this device.'}</DialogDescription>{view==='learn'?<div className="learn-hub"><button className="learn-option" onClick={()=>{setPanel(null);setMenu(false);setTutorial(true);}}><b>Learn to Play</b><span>A short, playable hand — learn by doing.</span></button><button className="learn-option" onClick={()=>setPanel('quick')}><b>Quick Rules</b><span>The core loop, visually, in ~30 seconds.</span></button><button className="learn-option" onClick={()=>setPanel('rules')}><b>Full Rules</b><span>Every rule, power, and edge case.</span></button></div>:view==='quick'?<div className="rules-content quick-rules"><div className="rule"><b>①</b><p><strong>REMEMBER</strong> — see your initial cards and remember them.</p></div><div className="rule"><b>②</b><p><strong>DRAW</strong> — take your turn from the deck or the discard.</p></div><div className="rule"><b>③</b><p><strong>REPLACE</strong> — improve a card you know.</p></div><div className="rule"><b>④</b><p><strong>RISK</strong> — or gamble on a card you have never seen.</p></div><div className="rule"><b>⑤</b><p><strong>THROW</strong> — match the discard's rank to remove a card, any time.</p></div><div className="rule"><b>⑥</b><p><strong>POWERS</strong> — a red Jack peeks, a red Queen swaps, a red King is worth zero.</p></div><div className="rule"><b>⑦</b><p><strong>KAMAYUU</strong> — call it when you believe you are lowest.</p></div><button className="text-action" onClick={()=>setPanel('rules')}>Read the full rules</button></div>:view==='soon'?<div className="rules-content"><div className="rule"><b>✦</b><p><strong>Not live yet.</strong> Quick Match pairs you with strangers, so it needs a pool of players to draw from. Once enough people are playing Kamayuu, casual and ranked matchmaking will open right here.</p></div><p className="rules-foot">Until then: invite friends to a Private Table with a six-character code, or sharpen up against the AI in Practice.</p><button className="primary" onClick={()=>{setJoinError('');setPanel('online');}}>Open a private table</button></div>:view==='online'?<div className="online-content">
- <label className="name-field"><span>Your name</span><input value={playerName} onChange={e=>{setPlayerName(e.target.value);try{localStorage.setItem('lotus-name',e.target.value);}catch{}}} maxLength={16} placeholder="Guest" autoComplete="nickname"/></label>
- <button className="primary" onClick={()=>connect('create',{name:playerName})}>Create a table</button>
+ </section><Dialog open={!!panel} onOpenChange={(open)=>{if(!open)setPanel(null);}}><DialogContent className={'game-dialog '+(view==='ranked'||view==='leaderboard'?'ranked-dialog':view==='settings'?'lacquer'+(inTable?' in-match-settings':''):'parchment')}>{(view==='ranked'||view==='leaderboard')&&<div className="ranked-brand" aria-hidden="true"><img src="/brand/kamayuu-emblem.png" width={52} height={46} alt=""/><span>Kamayuu</span></div>}<DialogTitle>{view==='ranked'?'The Ranked Tables':view==='soon'?'Quick Match is coming soon':view==='learn'?'Learn Kamayuu':view==='quick'?'Quick Rules':view==='rules'?'The rules of the table':view==='online'?'Play with friends':view==='leaderboard'?'The Honor Roll':inTable?'Table settings':'Settings'}</DialogTitle><DialogDescription>{view==='ranked'?'Find your next rival.':view==='soon'?'Matchmaking opens once the tables fill.':view==='learn'?'Pick how you want to learn.':view==='quick'?'The core loop, in about 30 seconds.':view==='rules'?'Lowest total wins. Memory makes the difference.':view==='online'?'Create a table and share the code, or join one.':view==='leaderboard'?'This season’s standings.':inTable?(settingsContext.current==='online'?'Online play continues while settings are open.':'Sound and motion for your table.'):'Your preferences, profile, and account.'}</DialogDescription>{storedAge()==='under_13'&&['ranked','online','leaderboard','soon'].includes(view||'')?<div className="online-content"><p>Online play is available for ages 13 and above. You can enjoy practice on this device.</p><button className="primary" onClick={()=>{setPanel(null);start();}}>Play practice</button></div>:view==='ranked'?<RankedEntry onEnter={connectRanked} allowRematches={settings.allowRematches} motionShort={settings.motion} onSignIn={()=>{if(storedAge()==='under_13')window.location.reload();else{setPanel(null);setGate('signin');}}}/>:view==='learn'?<div className="learn-hub"><button className="learn-option" onClick={()=>{setPanel(null);setMenu(false);setTutorial(true);}}><b>Learn to Play</b><span>A short, playable hand — learn by doing.</span></button><button className="learn-option" onClick={()=>setPanel('quick')}><b>Quick Rules</b><span>The core loop, visually, in ~30 seconds.</span></button><button className="learn-option" onClick={()=>setPanel('rules')}><b>Full Rules</b><span>Every rule, power, and edge case.</span></button></div>:view==='quick'?<div className="rules-content quick-rules"><div className="rule"><b>①</b><p><strong>REMEMBER</strong> — see your initial cards and remember them.</p></div><div className="rule"><b>②</b><p><strong>DRAW</strong> — take your turn from the deck or the discard.</p></div><div className="rule"><b>③</b><p><strong>REPLACE</strong> — improve a card you know.</p></div><div className="rule"><b>④</b><p><strong>RISK</strong> — or gamble on a card you have never seen.</p></div><div className="rule"><b>⑤</b><p><strong>THROW</strong> — match the discard's rank to remove a card, any time.</p></div><div className="rule"><b>⑥</b><p><strong>POWERS</strong> — a red Jack peeks, a red Queen swaps, a red King is worth zero.</p></div><div className="rule"><b>⑦</b><p><strong>KAMAYUU</strong> — call it when you believe you are lowest.</p></div><button className="text-action" onClick={()=>setPanel('rules')}>Read the full rules</button></div>:view==='soon'?<div className="rules-content"><div className="rule"><b>✦</b><p><strong>Not live yet.</strong> Quick Match pairs you with strangers, so it needs a pool of players to draw from. Once enough people are playing Kamayuu, casual and ranked matchmaking will open right here.</p></div><p className="rules-foot">Until then: invite friends to a Private Table with a six-character code, or sharpen up against the AI in Practice.</p><button className="primary" onClick={()=>{setJoinError('');setPanel('online');}}>Open a private table</button></div>:view==='online'?<div className="online-content">
+ {storedAge()!=='under_13'&&<label className="name-field"><span>Your name</span><input value={playerName} onChange={e=>{setPlayerName(e.target.value);try{localStorage.setItem('lotus-name',e.target.value);}catch{}}} maxLength={16} placeholder="Guest" autoComplete="nickname"/></label>}
+ <ActionButton disabled={online==='connecting'} busyLabel="Creating your table…" onAction={()=>connect('create',{name:playerName})}>Create a table</ActionButton>
  <div className="join-row">
   <input value={joinCode} onChange={e=>setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z2-9]/g,'').slice(0,6))} placeholder="CODE" aria-label="Table code" autoCapitalize="characters" autoCorrect="off" spellCheck={false}/>
-  <button className="primary" disabled={joinCode.length<6} onClick={()=>connect('join',{code:joinCode,name:playerName})}>Join</button>
+  <ActionButton disabled={joinCode.length<6||online==='connecting'} busyLabel="Joining…" onAction={()=>connect('join',{code:joinCode,name:playerName})}>Join</ActionButton>
  </div>
  {joinError&&<p className="form-error">{joinError}</p>}
  <p>Two to four players. Everyone joins with the same six-character code. Your cards stay hidden on the server — nobody else can read them.</p>
-</div>:view==='leaderboard'?<div className="rules-content leaderboard-content">
-  <div className="rule"><b>✦</b><p><strong>Your Standing:</strong> Rank #42 · Gold II · 1,248 Rating · {stats.won} Wins / {stats.played} Played</p></div>
-  <div className="rule"><b>01</b><p><strong>Crown of Dawn</strong> — 2,450 Rating (Grandmaster)</p></div>
-  <div className="rule"><b>02</b><p><strong>Kai (Shadow Dancer)</strong> — 2,180 Rating (Master I)</p></div>
-  <div className="rule"><b>03</b><p><strong>Rin (Silent River)</strong> — 1,995 Rating (Diamond II)</p></div>
-  <div className="rule"><b>04</b><p><strong>Mira (Lotus Heart)</strong> — 1,820 Rating (Gold I)</p></div>
-  <div className="rule"><b>05</b><p><strong>{profile?.display_name||playerName||DEFAULT_NAME} (You)</strong> — 1,248 Rating (Gold II)</p></div>
- </div>:view==='rules'?<div className="rules-content"><div className="rule"><b>01</b><p><strong>Remember two.</strong> At the deal, only your bottom two cards are revealed. All four positions stay fixed, even when empty.</p></div><div className="rule"><b>02</b><p><strong>Take your turn.</strong> Draw from the deck, then replace one occupied card or discard your draw. Or take the public discard and replace a card, unless you were the one who discarded it. You cannot take back your own top discard. Removed cards reveal publicly.</p></div><div className="rule"><b>03</b><p><strong>Throw a match.</strong> During anyone’s turn, tap your card if you think its rank matches the top discard — but not once you are holding a draw of your own; finish that turn first. A hit does not spend a turn. A miss reveals your card to everyone, returns it, and adds the top discard to a separate penalty slot; if it was your own turn, the miss ends it. Penalty cards can be replaced, peeked at, or matched away.</p></div><div className="power-rules"><p><b className="red-text">J ♥</b><span>A <strong>red</strong> Jack drawn from the deck: privately peek at one of your cards. Black Jacks have no power.</span></p><p><b className="red-text">Q ♥</b><span>A <strong>red</strong> Queen drawn from the deck: pick one of your four positions and an opponent. You alone see both faces, then choose to trade or keep yours — the trade is never forced. Either way the Queen is discarded. Black Queens have no power.</span></p><p><b className="red-text">K ♦</b><span>Red Kings are worth zero. A = 1; numbers = face value; J = 11; Q = 12; black K = 13.</span></p></div><p>Red Jack and red Queen powers may be passed; the drawn power card is discarded. Taking either from the discard has no power.</p><div className="rule"><b>04</b><p><strong>Know when to buzz.</strong> Buzz at the start of your turn — it costs you nothing: you still play that turn, and then every other remaining player gets exactly one final turn. You may also buzz right after your turn ends, before the next player has drawn — then you do not get another turn, and the final round runs from the next player onward. You can still be targeted by a Queen. Then every card reveals; the lowest total among remaining players wins. Ties share the win.</p></div><p className="rules-foot">Empty hands automatically call the final round. The original four positions never move. Queen swaps use only those four positions, matched one to one: your top left pairs with their top left. Opponent boards are drawn mirrored, because their own bottom two face them. Penalty cards appear only when received. Your original four positions stay fixed as penalties extend horizontally. Reaching six cards on your board eliminates you immediately. Empty slots and your pending draw do not count. Eliminated players cannot act or be swapped with. The last remaining player wins automatically. When needed, shuffle the discards back into the deck, keeping its top card.</p></div>:<div className="settings-content"><label><span>Table sounds</span><Switch checked={settings.sound} onCheckedChange={v=>{audio.current?.unlock();setSettings(x=>({...x,sound:v}));}}/></label><label><span>Haptics <small>On supported devices</small></span><Switch checked={settings.haptics} onCheckedChange={v=>setSettings(x=>({...x,haptics:v}))}/></label><label><span>Shorter movements</span><Switch checked={settings.motion} onCheckedChange={v=>setSettings(x=>({...x,motion:v}))}/></label><p>{stats.won} wins in {stats.played} completed matches</p>{online==='room'?<>{isHost&&s?.phase==='finished'&&<button className="primary" onClick={()=>{setPanel(null);sendCommand('rematch');}}><RotateCcw size={16}/> Rematch</button>}{!isHost&&s?.phase==='finished'&&<small>The host starts the rematch.</small>}<button className="text-action" onClick={()=>{setPanel(null);leaveOnline();}}>Leave the table</button></>:<><button className="primary" onClick={()=>start()}><RotateCcw size={16}/> New match</button><button className="text-action" onClick={()=>{cancel();setPanel(null);setMenu(true);}}>Return to main menu</button></>}
+</div>:view==='leaderboard'?<RankedLeaderboardView/>:view==='rules'?<div className="rules-content"><div className="rule"><b>01</b><p><strong>Remember two.</strong> At the deal, only your bottom two cards are revealed. All four positions stay fixed, even when empty.</p></div><div className="rule"><b>02</b><p><strong>Take your turn.</strong> Draw from the deck, then replace one occupied card or discard your draw. Or take the public discard and replace a card, unless you were the one who discarded it. You cannot take back your own top discard. Removed cards reveal publicly.</p></div><div className="rule"><b>03</b><p><strong>Throw a match.</strong> During anyone’s turn, tap your card if you think its rank matches the top discard — but not once you are holding a draw of your own; finish that turn first. A hit does not spend a turn. A miss reveals your card to everyone, returns it, and adds the top discard to a separate penalty slot; if it was your own turn, the miss ends it. Penalty cards can be replaced, peeked at, or matched away.</p></div><div className="power-rules"><p><b className="red-text">J ♥</b><span>A <strong>red</strong> Jack drawn from the deck: privately peek at one of your cards. Black Jacks have no power.</span></p><p><b className="red-text">Q ♥</b><span>A <strong>red</strong> Queen drawn from the deck: pick one of your four positions and an opponent. You alone see both faces, then choose to trade or keep yours — the trade is never forced. Either way the Queen is discarded. Black Queens have no power.</span></p><p><b className="red-text">K ♦</b><span>Red Kings are worth zero. A = 1; numbers = face value; J = 11; Q = 12; black K = 13.</span></p></div><p>Red Jack and red Queen powers may be skipped; the drawn power card is discarded. Online turns allow 7 seconds to draw, then 25 seconds to finish playing, including power choices. Taking either from the discard has no power.</p><div className="rule"><b>04</b><p><strong>Know when to buzz.</strong> Buzz at the start of your turn — it costs you nothing: you still play that turn, and then every other remaining player gets exactly one final turn. You may also buzz right after your turn ends, before the next player has drawn — then you do not get another turn, and the final round runs from the next player onward. You can still be targeted by a Queen. Then every card reveals; the lowest total among remaining players wins. Ties share the win.</p></div><p className="rules-foot">Empty hands automatically call the final round. The original four positions never move. Queen swaps use only those four positions, matched one to one: your top left pairs with their top left. Opponent boards are drawn mirrored, because their own bottom two face them. Penalty cards appear only when received. Your original four positions stay fixed as penalties extend horizontally. Reaching six cards on your board eliminates you immediately. Empty slots and your pending draw do not count. Eliminated players cannot act or be swapped with. The last remaining player wins automatically. When needed, shuffle the discards back into the deck, keeping its top card.</p></div>:<div className="settings-content">
+ <TablePreferences settings={settings} onChange={(key,value)=>setSettings(previous=>({...previous,[key]:value}))} onUnlock={()=>audio.current?.unlock()} online={settingsContext.current!=='practice'}/>
+ {inTable?<div className="table-exit"><button className="primary" onClick={()=>void leaveOnline()}>Leave table</button><span>Return to the home page</span></div>:<><p>{stats.won} wins in {stats.played} completed matches</p>
  <div className="account-block">
-  <p><b>{profile?.display_name||playerName||DEFAULT_NAME}</b>{guest?' · guest':''}</p>
+  {authError&&<p role="alert">{authError}</p>}<p><b>{profile?.display_name||playerName||DEFAULT_NAME}</b>{guest?' · guest':''}</p>
   {profile&&<small>{profile.matches_won} online wins in {profile.matches_played} matches</small>}
-  <button className="text-action" onClick={()=>{setDraftName(profile?.display_name||playerName||'');setDraftAvatar(profile?.avatar||'lotus');setPanel(null);setIdentityFrom('ready');setGate('onboarding');}}>Change name or mark</button>
-  <button className="text-action" onClick={()=>{setPanel(null);setGate('signin');}}>View onboarding page</button>
-  <button className="text-action" onClick={leaveAccount}>{guest?'Sign in with Google':'Sign out'}</button>
+  {storedAge()!=='under_13'&&<button className="text-action" onClick={()=>{setDraftName(profile?.display_name||playerName||'');setDraftAvatar(profile?.avatar||'lotus');setPanel(null);setIdentityFrom('ready');setGate('onboarding');}}>Change name or mark</button>}
+  {storedAge()!=='under_13'&&<button className="text-action" onClick={()=>{setPanel(null);setGate('signin');}}>View onboarding page</button>}
+  <a className="text-action" href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a><a className="text-action" href="/terms.html" target="_blank" rel="noopener noreferrer">Terms</a><a className="text-action" href="/delete-account.html" target="_blank" rel="noopener noreferrer">Delete account or data</a>
+  {storedAge()!=='under_13'&&profile&&<button className="text-action" onClick={()=>{if(window.confirm('Delete your online account? This cannot be undone.'))void familyRequest('delete_account').then(()=>leaveAccount()).catch(e=>setAuthError(e.message));}}>Delete my online account</button>}
+  {storedAge()!=='under_13'&&<button className="text-action" onClick={leaveAccount}>{storedAge()==='under_13'?'Close online session':guest?'Sign in with Google':'Sign out'}</button>}
   <a className="text-action" href="/credits">Credits</a>
- </div></div>}</DialogContent></Dialog></main>
+ </div></>}</div>}</DialogContent></Dialog></main>
 }

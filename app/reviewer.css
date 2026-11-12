@@ -1,0 +1,21 @@
+.reviewer-entry{position:absolute;top:84%;left:50%;transform:translateX(-50%);z-index:21;min-height:44px;padding:8px 16px;color:#d4bc89;background:transparent;border:0;font-size:12px;text-decoration:underline;text-underline-offset:4px;white-space:nowrap}
+.reviewer-signin{position:fixed;inset:0;z-index:180;background:radial-gradient(ellipse at 50% 15%,#18303d88,transparent 65%),linear-gradient(#08131eef,#050c12f5),url('/onboarding-bg.webp') center/cover;overflow:auto;overscroll-behavior:contain;color:#ead8b0;padding:max(20px,env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(22px,env(safe-area-inset-left));display:flex;flex-direction:column}
+.reviewer-signin-sheet{width:100%;max-width:390px;margin:auto;flex-shrink:0;padding:12px 0 24px}
+.reviewer-back{display:flex;align-items:center;gap:8px;min-height:44px;background:none;border:0;color:#bca77e;font-size:13px;margin-bottom:24px}
+.reviewer-signin-sheet>img{display:block;margin:0 auto 10px;object-fit:contain}
+.reviewer-signin h1{text-align:center;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:36px;margin:0}
+.reviewer-divider{display:flex;align-items:center;gap:14px;color:#b88d46;margin:12px 0}
+.reviewer-divider:before,.reviewer-divider:after{content:'';height:1px;flex:1;background:linear-gradient(90deg,transparent,#9d773e)}
+.reviewer-divider:after{transform:rotate(180deg)}
+.reviewer-signin-sheet>p{text-align:center;color:#b7b2a5;font-size:14px;margin:0 0 30px}
+.reviewer-signin form>label{display:block;font-size:12px;letter-spacing:1.3px;color:#c4b087;margin:20px 0 8px}
+.reviewer-field{display:flex;align-items:center;gap:10px;border:1px solid #78624088;border-radius:8px;background:#071019cc;padding:0 12px;color:#ad8d54;min-height:54px}
+.reviewer-field:focus-within{border-color:#d7b976;box-shadow:0 0 0 2px #d7b97622}
+.reviewer-field input{width:100%;min-width:0;background:transparent;border:0;outline:0;color:#f0e2c7;font-size:16px;padding:15px 0}
+.reviewer-field button{flex-shrink:0;display:grid;place-items:center;min-width:44px;min-height:44px;background:none;border:0;color:#c6ac77;margin-right:-7px}
+.reviewer-submit{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:54px;margin-top:26px;border:1px solid #d8b575;border-radius:5px;background:linear-gradient(120deg,#ecd198,#b78a47);color:#251b10;font-family:'Cinzel',Georgia,serif;font-weight:600;letter-spacing:1px;box-shadow:0 5px 24px #0005}
+.reviewer-error{font-size:14px;line-height:1.5;color:#ffc0ad;margin:14px 0 0}
+.reviewer-signin footer{text-align:center;font-size:11px;letter-spacing:.7px;color:#9c927d;margin-top:28px}
+.reviewer-signin button:disabled,.reviewer-entry:disabled{opacity:.6;cursor:wait}
+.reviewer-signin button:focus-visible,.reviewer-entry:focus-visible{outline:2px solid #edcf90;outline-offset:3px}
+@media(max-height:550px){.reviewer-signin-sheet{margin:0 auto}.reviewer-back{margin-bottom:8px}.reviewer-signin-sheet>img{width:48px;height:48px}.reviewer-signin-sheet>p{margin-bottom:14px}}

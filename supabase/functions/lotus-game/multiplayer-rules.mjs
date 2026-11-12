@@ -1,12 +1,11 @@
 // Trusted multiplayer orchestration. This module runs on the Edge, never in the game client.
 import {createGame, transition, canTakeDiscard} from './engine.mjs';
 
-export const TURN_MS = 45_000;
-// A turn opens unclaimed and expires in AFK_MS. A player who is actually at the
-// table claims it with `hold`, which buys the full TURN_MS. Someone whose tab is
-// shut or phone is locked never claims, so the table moves on in seconds instead
-// of waiting out the whole turn.
-export const AFK_MS = 7_000;
+import {DRAW_MS,PLAY_MS,phaseDuration} from './turn-timing.mjs';
+import {pauseForPresentation,completePresentation} from './turn-presentation.mjs';
+export const TURN_MS = PLAY_MS;
+export const AFK_MS = DRAW_MS;
+function openClock(room,now,duration){room.clockStartedAt=now;room.clockDurationMs=duration;room.deadline=now+duration;room.presentationUntil=null;room.presentationEvents=[];room.presentationAt=0;}
 export const STRIKE_LIMIT = 2;
 export function cleanName(name) {
   const result=String(name||'').normalize('NFKC').replace(/[^\p{L}\p{N} _-]/gu,'').trim().slice(0,16);
@@ -37,7 +36,7 @@ export function applyIntent(before,userId,input,now=Date.now()) {
     if(s)throw Error('The match has already started.');room.members[p].ready=!!input.ready;
   }else if(input.command==='start'){
     if(room.host!==userId||s||room.members.length<2||room.members.some(m=>!m.ready))throw Error('The host can start when everyone is ready.');
-    const deal=secureGame(room.members.length);room.state=deal.state;events=deal.events;room.matchId=crypto.randomUUID();room.memorySeen=[];room.deadline=now+30_000;
+    const deal=secureGame(room.members.length);room.state=deal.state;events=deal.events;room.matchId=crypto.randomUUID();room.memorySeen=[];openClock(room,now,30_000);
     // The first turn moves on each deal so the same seat does not always open.
     // The host still presses start; only the opening turn rotates.
     room.starter=((room.starter??-1)+1)%room.members.length;room.state.active=room.starter;
@@ -45,7 +44,7 @@ export function applyIntent(before,userId,input,now=Date.now()) {
   }else if(input.command==='remember'){
     if(s?.phase!=='memory')return {room,events};
     if(!room.memorySeen.includes(userId))room.memorySeen.push(userId);
-    if(room.members.every((m,i)=>s.players[i].eliminated||room.memorySeen.includes(m.id))){const r=transition(s,{type:'remember'});room.state=r.state;events=r.events;room.deadline=now+AFK_MS;}
+    if(room.members.every((m,i)=>s.players[i].eliminated||room.memorySeen.includes(m.id))){const r=transition(s,{type:'remember'});room.state=r.state;events=r.events;openClock(room,now,AFK_MS);}
   }else if(input.command==='leave'){
     if(!s){room.members.splice(p,1);if(room.host===userId)room.host=room.members[0]?.id||null;}
     else{
@@ -55,7 +54,24 @@ export function applyIntent(before,userId,input,now=Date.now()) {
       room.departed=[...new Set([...(room.departed||[]),userId])];
       // A host who walks out hands the room over, or nobody could ever restart it.
       if(room.host===userId){const heir=room.members.find(m=>m.id!==userId&&!room.departed.includes(m.id));if(heir)room.host=heir.id;}
-      if(s.phase!=='finished'&&!s.players[p].eliminated){const r=transition(s,{type:'forfeit',player:p});room.state=r.state;events=r.events;room.deadline=now+AFK_MS;}
+      if(s.phase!=='finished'&&!s.players[p].eliminated){const r=transition(s,{type:'forfeit',player:p});room.state=r.state;events=r.events;openClock(room,now,AFK_MS);}
+    }
+  }else if(input.command==='preferences'){
+    room.members[p].allowRematches=input.allowRematches!==false;
+    if(input.allowRematches===false&&room.rematch?.status==='offered'&&room.rematch.from!==userId)room.rematch={status:'declined'};
+  }else if(['rematch_request','rematch_accept','rematch_decline','rematch_cancel'].includes(input.command)){
+    if(s?.phase!=='finished'||room.members.length!==2||(room.departed||[]).length)throw Error('A rematch needs both players at the finished table.');
+    const offer=room.rematch;
+    if(input.command==='rematch_decline'||input.command==='rematch_cancel')room.rematch={status:'declined'};
+    else if(input.command==='rematch_request'&&!(offer?.status==='offered'&&offer.from!==userId&&offer.expiresAt>now)){
+      if(offer?.status==='offered'&&offer.from===userId&&offer.expiresAt>now)return {room,events};
+      if(room.members.some(m=>m.id!==userId&&m.allowRematches===false))room.rematch={status:'declined'};
+      else room.rematch={status:'offered',from:userId,expiresAt:now+15000};
+    }else{
+      if(offer?.status!=='offered'||offer.from===userId||offer.expiresAt<=now)throw Error('This rematch offer has expired.');
+      let reset=applyIntent(room,room.host,{command:'rematch'},now).room;
+      for(const member of reset.members)reset=applyIntent(reset,member.id,{command:'ready',ready:true},now).room;
+      return applyIntent(reset,reset.host,{command:'start'},now);
     }
   }else if(input.command==='rematch'){
     if(!s)return {room,events};
@@ -63,33 +79,32 @@ export function applyIntent(before,userId,input,now=Date.now()) {
     if(room.host!==userId)throw Error('Only the host can start a rematch.');
     room.state=null;room.matchId=null;room.memorySeen=[];room.deadline=null;
     room.members=room.members.filter(m=>!(room.departed||[]).includes(m.id));
-    room.departed=[];room.strikes={};room.members.forEach(m=>{m.ready=false;});
+    room.departed=[];room.strikes={};delete room.rematch;room.members.forEach(m=>{m.ready=false;});
     if(!room.members.some(m=>m.id===room.host))room.host=room.members[0]?.id||null;
   }else if(input.command==='emote'){
+    if(!['haha','angry','noooo','crying','cool'].includes(input.name))throw Error('Unknown reaction');
     // Purely decorative: no state to mutate, just an event for everyone else's client to play.
     if(!s)return {room,events};
     events=[{type:'emote',p,name:String(input.name||'haha').slice(0,24)}];
   }else if(input.command==='message'){
+    if(!['Good luck!','Nice move!','Oops!','Well played!','Your turn!'].includes(input.text))throw Error('Unknown reaction');
     // Also purely decorative — a preset quick-chat line, capped short since it
     // rides the same untrusted client-text path as an emote name.
     if(!s)return {room,events};
     events=[{type:'message',p,text:String(input.text||'').slice(0,40)}];
   }else if(input.command==='hold'){
-    // Claiming only ever extends the caller's own turn, so it cannot be used to
-    // stall anyone else, and clears the strikes of a player who is clearly back.
-    // lastCall has no real "turn" left to claim — excluding it here keeps the
-    // trailing 5s reset below (which only fires for `action`) the sole thing
-    // that can extend that window, instead of a hold ballooning it to TURN_MS.
-    if(!s||s.phase==='finished'||s.phase==='memory'||s.phase==='lastCall'||p!==s.active)return {room,events};
-    room.deadline=now+TURN_MS;
+    // Compatibility with cached clients: presence never refills a gameplay clock.
+    if(!s||['finished','memory','lastCall'].includes(s.phase)||p!==s.active)return {room,events};
     if(room.strikes?.[userId]){const cleared={...room.strikes};delete cleared[userId];room.strikes=cleared;}
+  }else if(input.command==='presented'){
+    completePresentation(room,userId,input.presentationId,now);
   }else if(input.command==='timeout'){
     if(!s||!room.deadline||now<room.deadline||s.phase==='finished')throw Error('The turn is still open.');
     if(s.phase==='lastCall'){const r=transition(s,{type:'finish'});room.state=r.state;events=r.events;}
     else if(s.phase==='memory'){
       let current=transition(s,{type:'remember'}).state;
       for(let q=0;q<room.members.length;q++)if(!room.memorySeen.includes(room.members[q].id)&&current.phase!=='finished'&&!current.players[q].eliminated){const r=transition(current,{type:'forfeit',player:q});current=r.state;events.push(...r.events);}
-      room.state=current;room.deadline=now+AFK_MS;events.unshift({type:'memoryEnd'});
+      room.state=current;openClock(room,now,AFK_MS);events.unshift({type:'memoryEnd'});
     }else{
       const idle=room.members[s.active]?.id,strikes={...(room.strikes||{})};
       strikes[idle]=(strikes[idle]||0)+1;room.strikes=strikes;
@@ -103,7 +118,7 @@ export function applyIntent(before,userId,input,now=Date.now()) {
         if(room.host===idle){const heir=room.members.find(m=>m.id!==idle&&!room.departed.includes(m.id));if(heir)room.host=heir.id;}
         const r=transition(s,{type:'forfeit',player:s.active});room.state=r.state;events=r.events;
       }
-      room.deadline=now+AFK_MS;
+      openClock(room,now,AFK_MS);
     }
   }else if(input.command==='action'){
     if(!s||s.phase==='memory'||s.phase==='finished')throw Error('There is no active turn.');
@@ -120,22 +135,22 @@ export function applyIntent(before,userId,input,now=Date.now()) {
     const action={type:a.type,i:a.i,target:a.target,player:p};
     if(a.type==='match')action.expectedDiscard=a.expectedDiscard;
     const r=transition(s,action);room.state=r.state;events=r.events;
-    // `&&` binds tighter than `||` here, so without the fix this parsed as
-    // `turnChanged || activeChanged || (phaseChanged && isBuzz)` — a buzz that doesn't
-    // also flip the phase (the common case: a non-active finisher's buzz leaves
-    // `active`/`turn`/`phase` numerically unchanged, since the next player was already
-    // next in line) fell through without resetting the deadline, so the final round
-    // could inherit an almost-expired timer. Any `buzz` now unconditionally resets it.
-    if(r.state.turn!==s.turn||r.state.active!==s.active||r.state.phase!==s.phase||a.type==='buzz')room.deadline=now+AFK_MS;
-    // Playing is proof enough of presence; the next player still has to claim.
+    const next=r.state;
+    if(next.turn!==s.turn||next.active!==s.active||a.type==='buzz'&&next.phase==='ready')openClock(room,now,DRAW_MS);
+    else if(s.phase==='ready'&&['decision','peek','swap'].includes(next.phase))openClock(room,now,PLAY_MS);
+    else if(a.type==='match'&&p===s.active&&next.phase==='ready'&&events.some(e=>e.type==='match'&&e.ok))openClock(room,now,DRAW_MS);
+    // A successful own-turn throw is a reaction, not the required draw. Allow
+    // that draw its full window. Other players' reactions cannot extend it.
+    // Power inspection and social activity never refill the play budget.
     if(room.strikes?.[userId]){const cleared={...room.strikes};delete cleared[userId];room.strikes=cleared;}
   }else throw Error('Unknown request.');
   // Only an actual match attempt (the one legal move left during lastCall) refills
   // this window — every other command (an emote, a stray hold claim, etc.) used to
   // fall through here unconditionally and reset it too, letting the final countdown
   // be stalled indefinitely by anything that touched the room, not just a real match.
-  if(['action','timeout'].includes(input.command)&&room.state?.phase==='lastCall')room.deadline=now+5_000;
+  if(['action','timeout'].includes(input.command)&&room.state?.phase==='lastCall')openClock(room,now,5_000);
   if(room.state?.phase==='finished')room.deadline=null;
+  pauseForPresentation(room,events,now);
   return {room,events};
 }
 
@@ -143,8 +158,10 @@ export function playerPacket(record,userId,events=[],recover=false) {
   const room=record.data,seat=room.members.findIndex(m=>m.id===userId);
   if(seat<0)throw Error('You are not a member of this room.');
   const n=room.members.length,rotate=p=>p==null?null:(p-seat+n)%n,order=Array.from({length:n},(_,i)=>(seat+i)%n),s=room.state;
-  const metadata={id:record.id,code:record.code,version:record.version,host:room.host,me:userId,members:room.members,matchId:room.matchId,deadline:room.deadline,serverTime:Date.now()};
+  const metadata={id:record.id,code:record.code,version:record.version,host:room.host,me:userId,members:room.members,matchId:room.matchId,deadline:room.deadline,serverTime:Date.now(),presentationId:room.presentationId||0,presentationUntil:room.presentationUntil||null,clockPhase:s?.phase,clockStartedAt:room.clockStartedAt??null,clockDurationMs:room.clockDurationMs||phaseDuration(s?.phase),rematch:room.rematch||null};
   if(!s)return {room:metadata,state:null,events:[],recover};
+  const presentationReplay=!events.length&&!!room.presentationEvents?.length&&Date.now()-(room.presentationAt||0)<10000&&!['memory','finished'].includes(s.phase);
+  if(presentationReplay)events=room.presentationEvents;
   const top=s.discard.at(-1),showHeld=s.active===seat||s.source==='discard'||['peek','swap','swapConfirm'].includes(s.phase);
   const state={phase:s.phase,active:rotate(s.active),turn:s.turn,round:s.round,caller:rotate(s.caller),remaining:s.remaining.map(rotate),source:s.source,
     pending:s.pending?{target:rotate(s.pending.target),i:s.pending.i}:null,
@@ -164,5 +181,5 @@ export function playerPacket(record,userId,events=[],recover=false) {
     if('p' in out)out.p=rotate(out.p);if('target' in out)out.target=rotate(out.target);if(out.totals)out.totals=state.totals;
     return out;
   });
-  return {room:metadata,state,events:visible,recover};
+  return {room:metadata,state,events:visible,recover,presentationReplay};
 }

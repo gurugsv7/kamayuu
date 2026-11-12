@@ -1,5 +1,7 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.115.0';
 import {newRoom,applyIntent,playerPacket} from './multiplayer-rules.mjs';
+import {familyGuard,familyAccount,safePacket} from '../_shared/family.ts';
+import {familyPermissions} from '../_shared/family-policy.mjs';
 
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Content-Type':'application/json','Cache-Control':'no-store'};
 const respond=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
@@ -9,7 +11,7 @@ const respond=(data:unknown,status=200)=>new Response(JSON.stringify(data),{stat
 // response being sent is itself enough for the runtime to consider the worker
 // done and tear it down before this call ever reaches the database.
 function track(server:any,user:string,event:string|null,extra:{session?:string;room?:string;mode?:string;players?:number;meta?:unknown}={}){
- const p=server.rpc('lotus_track',{p_user:user,p_event:event,p_session:extra.session||null,p_room:extra.room||null,p_mode:extra.mode||null,p_players:extra.players??null,p_meta:extra.meta||{}}).then(()=>{},()=>{});
+ const p=familyAccount(server,user).then(a=>familyPermissions(a).analytics?server.rpc('lotus_track',{p_user:user,p_event:event,p_session:extra.session||null,p_room:extra.room||null,p_mode:extra.mode||null,p_players:extra.players??null,p_meta:extra.meta||{}}):null).then(()=>{},()=>{});
  if(typeof EdgeRuntime!=='undefined')EdgeRuntime.waitUntil(p);
 }
 Deno.serve(async req=>{
@@ -24,6 +26,7 @@ Deno.serve(async req=>{
   if(authError||!auth.user)return respond({error:'Your guest session expired. Reconnect to play.'},401);
   const user=auth.user.id,raw=await req.text();if(raw.length>4096)return respond({error:'Request is too large.'},413);
   const input=JSON.parse(raw);
+  await familyGuard(server,user,input);
   const {error:limit}=await server.rpc('lotus_gate',{p_user:user});if(limit)return respond({error:limit.message},429);
   if(input.command==='track'){
    // Client-driven analytics only: the session heartbeat, and solo game_start/
@@ -39,7 +42,7 @@ Deno.serve(async req=>{
    for(let n=0;n<4;n++){
     const bytes=crypto.getRandomValues(new Uint8Array(6)),alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',code=Array.from(bytes,x=>alphabet[x%32]).join('');
     const {data:record,error}=await server.rpc('lotus_create',{p_id:crypto.randomUUID(),p_code:code,p_data:data,p_user:user});
-    if(!error){track(server,user,'room_create',{session:input.session,room:code,mode:'online'});return respond(playerPacket(record,user));}
+    if(!error){track(server,user,'room_create',{session:input.session,room:code,mode:'online'});return respond(await safePacket(server,user,playerPacket(record,user)));}
     if(error.code!=='23505')throw Error(error.message);
    }
    throw Error('Could not allocate a room. Try again.');
@@ -49,10 +52,13 @@ Deno.serve(async req=>{
    if(error)throw Error(error.message);if(!record)throw Error('Room not found. Check the code.');
    const member=record.data.members.some((m:any)=>m.id===user);
    if(input.command!=='join'&&!member)return respond({error:'You are not a member of this room.'},403);
-   if(input.command==='recover')return respond(playerPacket(record,user,[],true));
+   if(input.command==='recover')return respond(await safePacket(server,user,playerPacket(record,user,[],true)));
    if(typeof input.actionId!=='string'||!/^[a-f0-9-]{36}$/i.test(input.actionId))throw Error('An action ID is required.');
-   if(record.data.receipts.some((r:any)=>r.user===user&&r.id===input.actionId))return respond(playerPacket(record,user,[],true));
-   if(input.command==='action'&&input.version!==record.version)return respond({error:'The table moved. Try again.',packet:playerPacket(record,user,[],true)},409);
+   if(record.data.receipts.some((r:any)=>r.user===user&&r.id===input.actionId))return respond(await safePacket(server,user,playerPacket(record,user,[],true)));
+   if(input.command==='action'&&input.version!==record.version)return respond({error:'The table moved. Try again.',packet:await safePacket(server,user,playerPacket(record,user,[],true))},409);
+   if(['rematch','rematch_request','rematch_accept'].includes(input.command)){
+    for(const member of record.data.members){const f=await familyAccount(server,member.id),permissions=familyPermissions(f);if(!permissions.rematches)throw Error('A player has disabled rematches.');}
+   }
    const {room,events}=applyIntent(record.data,user,input);
    room.receipts.push({user,id:input.actionId});room.receipts=room.receipts.slice(-128);
    const next={...record,data:room,version:record.version+1};
@@ -62,8 +68,8 @@ Deno.serve(async req=>{
    const was=record.data;
    const quiet=!events.length&&room.deadline===was.deadline&&room.host===was.host
     &&(room.state?.phase||null)===(was.state?.phase||null)
-    &&JSON.stringify(room.members)===JSON.stringify(was.members);
-   const packets=quiet?[]:room.members.filter((m:any)=>m.id!==user).map((m:any)=>({user_id:m.id,payload:playerPacket(next,m.id,events)}));
+    &&JSON.stringify(room.members)===JSON.stringify(was.members)&&JSON.stringify(room.rematch)===JSON.stringify(was.rematch);
+   const packets=quiet?[]:await Promise.all(room.members.filter((m:any)=>m.id!==user).map(async(m:any)=>({user_id:m.id,payload:await safePacket(server,m.id,playerPacket(next,m.id,events))})));
    const {data:committed,error:commitError}=await server.rpc('lotus_commit',{p_id:record.id,p_version:record.version,p_data:room,p_packets:packets});
    if(commitError)throw Error(commitError.message);
    if(committed){
@@ -82,7 +88,7 @@ Deno.serve(async req=>{
      for(const id of newlyDeparted)track(server,id,'room_abandon',{room:record.code,mode:'online',players});
     }
     if(was.state?.phase!=='finished'&&room.state?.phase==='finished')track(server,user,'game_end',{session:input.session,room:record.code,mode:'online',players});
-    return respond(room.members.some((m:any)=>m.id===user)?playerPacket(next,user,events):{left:true});
+    return respond(room.members.some((m:any)=>m.id===user)?await safePacket(server,user,playerPacket(next,user,events)):{left:true});
    }
   }
   return respond({error:'Another action just landed. Try again.'},409);
