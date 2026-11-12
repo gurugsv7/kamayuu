@@ -230,7 +230,7 @@ export default function OnboardingScreen({
         <div className="onboarding-footer-tagline onboarding-about">
           <h1>Kamayuu — a free card game of memory &amp; nerve</h1>
           <p>Play solo against AI or with friends.</p>
-          <a href="/how-to-play">How to play</a><span aria-hidden="true"> · </span><a href="/credits">Credits</a>
+          <a href={isNative() ? 'https://kamayuu.builtbygsv.in/how-to-play' : '/how-to-play'}>How to play</a><span aria-hidden="true"> · </span><a href="/credits">Credits</a>
         </div>
       </div>
     </div>
