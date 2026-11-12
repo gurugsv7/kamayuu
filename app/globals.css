@@ -2254,3 +2254,9 @@ html,body,#root { background: #090f15; }
    edge, so on a narrow phone the first one landed on the discard. Mirror the
    left seat instead: anchor to that grid's right edge and fan inward. */
 .player-3 .penalty-slot{left:auto;right:calc((var(--extra-column) * 2 + var(--extra-row)) * 17px)}
+
+/* Public introduction and crawlable links fit below the sign-in controls. */
+.onboarding-about{top:93%;width:94%;white-space:normal;text-align:center;letter-spacing:.4px;font:11px/1.5 Arial,sans-serif;color:#d7c4a4}
+.onboarding-about h1{font:inherit;font-weight:600;margin:0}
+.onboarding-about p{margin:2px 0 4px}
+.onboarding-about a{pointer-events:auto;color:#edd09b;text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:3px 6px}

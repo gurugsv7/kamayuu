@@ -221,9 +221,11 @@ export default function OnboardingScreen({
           </div>
         </div>
 
-        <p className="onboarding-footer-tagline">
-          Built by <a href="https://builtbygsv.in" target="_blank" rel="noopener noreferrer">builtbygsv</a>
-        </p>
+        <div className="onboarding-footer-tagline onboarding-about">
+          <h1>Kamayuu — a free card game of memory &amp; nerve</h1>
+          <p>Play solo against AI or with friends.</p>
+          <a href="/how-to-play">How to play</a><span aria-hidden="true"> · </span><a href="/credits">Credits</a>
+        </div>
       </div>
     </div>
   );

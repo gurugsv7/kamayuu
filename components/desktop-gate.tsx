@@ -39,7 +39,7 @@ export default function DesktopGate({onContinue}: {onContinue: () => void}) {
           <p className="lesson-eyebrow">Played in the hand</p>
           <h1 className="gate-title">Kamayuu is a phone game.</h1>
           <p className="gate-body">
-            The table, the cards you hold, the buzzer under your thumb — all of it is built for a screen you can carry.
+            Kamayuu is a free card game of memory and nerve. Remember four face-down cards, draw and swap to lower your total, then buzz when you think you can win. Play solo against AI or at a private table with friends.
             Open this address on your phone and the table is waiting.
           </p>
           <div className="gate-scan">
@@ -54,6 +54,7 @@ export default function DesktopGate({onContinue}: {onContinue: () => void}) {
             </div>
           </div>
           <p className="gate-foot">Works in any phone browser. Nothing to install.</p>
+          <a href="/how-to-play">Read the rules of Kamayuu</a>
         </article>
         <figure className="gate-phone" aria-hidden="true">
           <div className="gate-phone-screen"><img src="/onboarding-bg.webp" alt="" draggable={false} /></div>

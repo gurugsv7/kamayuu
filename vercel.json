@@ -3,7 +3,20 @@
   "outputDirectory": "dist-vercel",
   "installCommand": "npm install",
   "rewrites": [
-    { "source": "/googlefce352bc4bc11be0.html", "destination": "/googlefce352bc4bc11be0.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/how-to-play",
+      "destination": "/how-to-play/index.html"
+    },
+    {
+      "source": "/credits",
+      "destination": "/credits/index.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    }
   ]
 }
